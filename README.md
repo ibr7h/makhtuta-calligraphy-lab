@@ -68,3 +68,11 @@ Canvas ليس مصدر الحقيقة. كل ضربة تحفظ كبيانات م�
 بعد أول تحميل ناجح، يحتفظ Service Worker بملفات التطبيق الأساسية ويستخدم Runtime Cache للموارد الخارجية. عند توفر Service Worker جديد، يظهر إشعار **تحديث الآن** داخل التطبيق.
 
 > ملاحظة: بعض الخطوط وTailwind وFont Awesome ما زالت تأتي من CDN. للحصول على Offline كامل من أول تشغيل يجب نقل هذه الموارد إلى المشروع محليًا.
+
+
+## Replay & Presets
+
+- Forward Replay and Reverse Replay for the current visible writing session.
+- Saved replay sessions are stored locally in IndexedDB.
+- Multiple custom brush presets can be saved with user-defined names.
+- App/brush preferences can be saved locally and restored on the next launch.
