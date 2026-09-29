@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-4-1-qalam-diagnostic-2026-09-29';
+const CACHE_VERSION = 'makhtuta-pwa-v6-4-2-ra-waw-diagnostic-2026-09-29';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CORE = [
   './',
