@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-10-optional-descender-flip-2026-09-29';
+const CACHE_VERSION = 'makhtuta-pwa-v6-11-aliqaseef-brushes-2026-09-30';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CORE = [
   './',
