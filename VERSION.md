@@ -1,6 +1,6 @@
 # Version
 
-**Hybrid V5 — Brush Settings**
+**Hybrid V6 — PWA + Brush Settings**
 
 - SVG guide layer
 - Canvas renderer
@@ -9,3 +9,9 @@
 - Pressure calibration
 - Stroke Replay
 - Photoshop-inspired Arabic Qalam Brush Settings
+- Web App Manifest
+- Service Worker + offline fallback
+- Runtime cache for external assets
+- Install flow for Android/Chromium
+- iPhone/iPad Add to Home Screen guidance
+- In-app service-worker update notification
