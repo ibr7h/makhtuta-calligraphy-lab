@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-8-baseline-guard-gapless-flip-2026-09-29';
+const CACHE_VERSION = 'makhtuta-pwa-v6-9-strict-baseline-nib-2026-09-29';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 const CORE = [
   './',
