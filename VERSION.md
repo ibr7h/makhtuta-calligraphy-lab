@@ -1,6 +1,6 @@
 # Version
 
-**Hybrid V6.4.1 — Guided Qalam Angle Diagnostic**
+**Hybrid V6.5 — Ra/Waw Descender Nib Flip**
 
 - SVG guide layer
 - Canvas renderer
@@ -25,3 +25,7 @@
 - Guided diagnostic letters: ج، ح، خ، ع، غ، م
 - Default diagnostic comparison: +θ versus −θ on the exact same recorded stroke
 - Displays the originally recorded nib angle alongside diagnostic angles
+
+- ر and و now preserve the selected nib angle above the 62% baseline and mirror the nib cut only below it.
+- The per-stroke letter policy is stored with Stroke Data so redraw and replay remain deterministic.
+- Brush Lab includes a dedicated «عكس تحت السطر» comparison mode.
