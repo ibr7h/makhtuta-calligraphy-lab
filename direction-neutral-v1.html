@@ -1,0 +1,2806 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>مخطوطة — تجربة اتجاه محايد للقصبة</title>
+  <meta name="theme-color" content="#78350F">
+  <meta name="application-name" content="مخطوطة">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="مخطوطة">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon.svg">
+  
+  <!-- Google Fonts: Cairo, Amiri, Reem Kufi -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700;800;900&family=Reem+Kufi:wght@500;700&family=Aref+Ruqaa:wght@400;700&family=Katibeh&family=Noto+Naskh+Arabic:wght@400;700&family=Lateef&family=Amiri+Quran&family=Noto+Kufi+Arabic:wght@400;700&family=Kufam:wght@400;700&family=Reem+Kufi+Ink&family=Aref+Ruqaa+Ink:wght@400;700&family=Mirza:wght@400;700&family=Noto+Nastaliq+Urdu:wght@400;700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            parchment: {
+              50: '#FDFBF7',
+              100: '#F7F3E9',
+              200: '#EFE7D3',
+              300: '#E2D5B7',
+              800: '#3D3425',
+              900: '#2A2419'
+            },
+            callig: {
+              top: '#D97706',      /* خط القمة: كهرماني */
+              mid: '#0284C7',      /* خط الوسط: أزرق سماوي */
+              base: '#DC2626',     /* خط الأساس: قرمزي بارز */
+              bottom: '#059669'    /* خط الهبوط: زمردي */
+            }
+          },
+          fontFamily: {
+            sans: ['Cairo', 'sans-serif'],
+            qalam: ['Amiri', 'serif'],
+            kufi: ['"Reem Kufi"', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #F7F3E9;
+      background-image: radial-gradient(#E8E0CE 1px, transparent 1px);
+      background-size: 24px 24px;
+      touch-action: pan-y;
+      user-select: none;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 8px;
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #EFE7D3;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #C59A45;
+      border-radius: 9999px;
+    }
+
+    #drawingCanvas {
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    /* Fixed rule lines positioning */
+    .guideline-row {
+      position: absolute;
+      left: 0;
+      right: 0;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    #practiceSection:fullscreen,#practiceSection.pseudo-fs{background:#F7F3E9;padding:12px;overflow:auto}
+    #practiceSection.pseudo-fs{position:fixed;inset:0;z-index:60}
+    #practiceSection:fullscreen #canvasContainer,#practiceSection.pseudo-fs #canvasContainer{height:calc(100vh - 400px)!important;min-height:260px}
+    #printArea{display:none}
+    .sr{position:relative;height:26mm;break-inside:avoid;margin-bottom:1.5mm}
+    .sr .l{position:absolute;left:0;right:0;height:0}
+    .sr .tx{position:absolute;inset:0;display:flex;align-items:center;gap:12px;white-space:nowrap;overflow:hidden;font-size:14mm;line-height:1;padding:0 6px;direction:rtl}
+    .sr .tx i{font-style:normal;color:#b8b8b8}
+    .sr .lb{position:absolute;top:0;left:2px;font:10px Cairo,sans-serif;color:#888}
+    @media print{
+      @page{size:A4;margin:10mm}
+      body>*:not(#printArea){display:none!important}
+      #printArea{display:block!important}
+      body{background:#fff!important}
+      *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    }
+  </style>
+</head>
+<body class="font-sans text-stone-800 min-h-screen flex flex-col justify-between selection:bg-amber-200">
+  <div style="position:sticky;top:0;z-index:100;background:#1f2937;color:#fff;padding:8px 12px;text-align:center;font-family:Cairo,sans-serif;font-size:12px;font-weight:700;border-bottom:2px solid #f59e0b">
+    نسخة تجريبية للمقارنة — Direction‑Neutral Qalam
+    <span style="opacity:.75;margin:0 8px">|</span>
+    إعادة بناء الضربة من البيانات الخام بتنعيم متناظر لا يعتمد على اتجاه الكتابة
+    <a href="./" style="display:inline-block;margin-right:10px;color:#fde68a;text-decoration:underline">النسخة الأساسية</a>
+  </div>
+
+  <header class="border-b border-amber-200/80 bg-parchment-50/95 sticky top-0 z-30 shadow-sm backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-reverse space-x-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-800 via-amber-700 to-amber-500 flex items-center justify-center text-white shadow-md shadow-amber-900/15">
+          <i class="fa-solid fa-pen-nib text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
+          <p class="text-xs text-stone-600">تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="toggleGuide(true)" class="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 text-amber-900 text-xs sm:text-sm font-bold border border-amber-300 transition-all flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-book-bookmark text-amber-700"></i><span class="hidden sm:inline">إرشادات الخطوط</span></button>
+        <button onclick="togglePrint(true)" class="px-3 py-1.5 rounded-xl bg-white hover:bg-amber-50 text-amber-900 text-xs sm:text-sm font-bold border border-amber-300 transition-all flex items-center gap-1.5 shadow-sm"><i class="fa-solid fa-print text-amber-700"></i><span class="hidden sm:inline">أوراق عمل</span></button>
+        <button id="btnChallengeMode" onclick="toggleChallengeModal(true)" class="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs sm:text-sm font-bold border border-amber-300 transition-all flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-graduation-cap text-amber-700"></i>
+          <span>اختبر معلوماتك</span>
+        </button>
+        <button id="btnAudioSayLetter" onclick="pronounceCurrent()" class="px-3.5 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-xs sm:text-sm font-bold transition-all shadow-md shadow-amber-950/20 flex items-center gap-1.5">
+          <i class="fa-solid fa-volume-high"></i>
+          <span>نطق الحرف</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-5">
+    
+    <!-- LEFT COLUMN: Canvas and controls (8 cols on lg) -->
+    <section id="practiceSection" class="lg:col-span-8 flex flex-col gap-4">
+
+      <div class="bg-white rounded-2xl p-2.5 border border-amber-200 shadow-sm flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-1" id="modeTabs">
+          <button data-mode="letters" onclick="setMode('letters')" class="mode-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border"><i class="fa-solid fa-font ml-1"></i>حروف</button>
+          <button data-mode="words" onclick="setMode('words')" class="mode-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border"><i class="fa-solid fa-spell-check ml-1"></i>كلمات</button>
+          <button data-mode="phrases" onclick="setMode('phrases')" class="mode-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border"><i class="fa-solid fa-align-right ml-1"></i>عبارات</button>
+        </div>
+        <label class="flex items-center gap-1.5 text-xs font-bold text-amber-950">الخط:
+          <select id="fontSelect" onchange="setFont(this.value)" class="bg-white border border-amber-300 rounded-lg text-xs py-1 px-2"></select>
+        </label>
+        <div class="flex items-center gap-1.5">
+          <button onclick="document.getElementById('fontFile').click()" title="حمّل ملف خط (TTF/OTF/WOFF) مثل خطوط مجمع الملك فهد" class="px-2.5 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-300 text-xs font-bold text-amber-900"><i class="fa-solid fa-file-arrow-up ml-1"></i>خط من ملف</button>
+          <a href="https://fonts.qurancomplex.gov.sa/" target="_blank" rel="noopener" class="text-xs font-bold text-amber-800 underline">خطوط مجمع الملك فهد</a>
+          <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2" multiple class="hidden" onchange="loadCustomFonts(this.files)">
+        </div>
+      </div>
+
+      <div id="wordsPanel" class="hidden bg-parchment-50 rounded-2xl p-3 border border-amber-200 shadow-sm flex-col gap-2">
+        <div class="flex flex-wrap items-center gap-2 justify-between">
+          <div class="flex items-center gap-1.5">
+            <button onclick="stepItem(-1)" class="px-2.5 py-1.5 rounded-xl bg-white border border-amber-300 text-xs font-bold hover:bg-amber-100"><i class="fa-solid fa-chevron-right ml-1"></i>السابق</button>
+            <span id="itemCounter" class="text-xs font-bold font-mono text-amber-950">1/1</span>
+            <button onclick="stepItem(1)" class="px-2.5 py-1.5 rounded-xl bg-white border border-amber-300 text-xs font-bold hover:bg-amber-100">التالي<i class="fa-solid fa-chevron-left mr-1"></i></button>
+          </div>
+          <select id="catSelect" onchange="setCategory(this.value)" class="bg-white border border-amber-300 rounded-lg text-xs py-1 px-2"></select>
+          <label class="flex items-center gap-1.5 text-xs font-bold cursor-pointer"><input type="checkbox" id="wordTashkeelChk" checked onchange="toggleWordTashkeel(this.checked)" class="w-4 h-4"> إظهار التشكيل</label>
+        </div>
+        <div id="wordChips" class="flex gap-1.5 overflow-x-auto custom-scrollbar pb-1"></div>
+      </div>
+
+
+      <!-- Form Selector Tabs (منفصل، بداية، وسط، نهاية) -->
+      <div id="formBar" class="bg-parchment-50 rounded-2xl p-2.5 border border-amber-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-1 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0" id="formTabs">
+          <button onclick="setLetterForm('isolated')" data-form="isolated" class="form-tab-btn flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border border-amber-600 bg-amber-800 text-white shadow-sm flex items-center justify-center gap-1.5">
+            <span>منفصل</span>
+            <span class="text-xs opacity-80 font-qalam text-lg" id="tabGlyphIsolated">ـ</span>
+          </button>
+          <button onclick="setLetterForm('initial')" data-form="initial" class="form-tab-btn flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border border-amber-200 bg-white text-stone-700 hover:bg-amber-50 flex items-center justify-center gap-1.5">
+            <span>أول الكلمة</span>
+            <span class="text-xs opacity-80 font-qalam text-lg" id="tabGlyphInitial">ـ</span>
+          </button>
+          <button onclick="setLetterForm('medial')" data-form="medial" class="form-tab-btn flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border border-amber-200 bg-white text-stone-700 hover:bg-amber-50 flex items-center justify-center gap-1.5">
+            <span>وسط الكلمة</span>
+            <span class="text-xs opacity-80 font-qalam text-lg" id="tabGlyphMedial">ـ</span>
+          </button>
+          <button onclick="setLetterForm('final')" data-form="final" class="form-tab-btn flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border border-amber-200 bg-white text-stone-700 hover:bg-amber-50 flex items-center justify-center gap-1.5">
+            <span>آخر الكلمة</span>
+            <span class="text-xs opacity-80 font-qalam text-lg" id="tabGlyphFinal">ـ</span>
+          </button>
+        </div>
+
+        <!-- Example word pill with highlight -->
+        <div class="w-full sm:w-auto text-center sm:text-left bg-amber-100/80 border border-amber-300/80 px-3.5 py-1.5 rounded-xl flex items-center justify-between sm:justify-start gap-2">
+          <span class="text-xs text-stone-500 font-bold">مثال الكلمة:</span>
+          <span id="exampleWordContainer" class="font-qalam text-2xl font-bold text-amber-950">
+            <!-- Populated via JS -->
+          </span>
+        </div>
+      </div>
+
+      <div class="relative bg-white rounded-3xl border-2 border-amber-300/80 shadow-lg overflow-hidden flex flex-col">
+        
+        <!-- Canvas Toolbar -->
+        <div class="bg-parchment-100/90 border-b border-amber-200 p-2 sm:p-3 flex flex-wrap items-center justify-between gap-2 text-stone-700">
+          
+          <!-- Pen style selectors -->
+          <div class="flex items-center gap-1 bg-white p-1 rounded-xl border border-amber-200 shadow-xs">
+            <button id="btnQalamCalligraphy" onclick="setBrushType('calligraphy')" title="قلم خطاط مشطوف" class="brush-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-amber-800 text-white flex items-center gap-1">
+              <i class="fa-solid fa-paintbrush text-xs"></i>
+              <span class="hidden sm:inline">قلم خطاط</span>
+            </button>
+            <button id="btnQalamNormal" onclick="setBrushType('smooth')" title="حبر ناعم دائري" class="brush-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-600 hover:bg-amber-100/60 flex items-center gap-1">
+              <i class="fa-solid fa-pen text-xs"></i>
+              <span class="hidden sm:inline">حبر ناعم</span>
+            </button>
+            <button id="btnEraser" onclick="setBrushType('eraser')" title="ممحاة" class="brush-btn px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-stone-600 hover:bg-amber-100/60 flex items-center gap-1">
+              <i class="fa-solid fa-eraser text-xs"></i>
+              <span class="hidden sm:inline">ممحاة</span>
+            </button>
+            <button id="btnBrushSettings" onclick="toggleBrushSettings(true)" title="إعدادات القصبة والفرشاة" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-amber-900 hover:bg-amber-100/70 flex items-center gap-1 border-r border-amber-200 mr-1 pr-2">
+              <i class="fa-solid fa-sliders text-xs"></i>
+              <span class="hidden md:inline">إعدادات القصبة</span>
+            </button>
+          </div>
+
+          <!-- Color palette picker -->
+          <div class="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-amber-200">
+            <button onclick="setInkColor('#1A1817')" class="color-dot w-5 h-5 rounded-full bg-stone-900 ring-2 ring-amber-700 ring-offset-1 transition-transform transform hover:scale-110" title="مداد أسود"></button>
+            <button onclick="setInkColor('#16325C')" class="color-dot w-5 h-5 rounded-full bg-[#16325C] transition-transform transform hover:scale-110" title="مداد أزرق"></button>
+            <button onclick="setInkColor('#8C1D24')" class="color-dot w-5 h-5 rounded-full bg-[#8C1D24] transition-transform transform hover:scale-110" title="مداد أحمر"></button>
+            <button onclick="setInkColor('#1C5C38')" class="color-dot w-5 h-5 rounded-full bg-[#1C5C38] transition-transform transform hover:scale-110" title="مداد أخضر"></button>
+            <input type="color" id="customColorPicker" onchange="setInkColor(this.value)" class="w-5 h-5 rounded-full cursor-pointer border-0 bg-transparent p-0" title="لون إضافي">
+          </div>
+
+          <!-- Pen Size slider -->
+          <div class="flex items-center gap-2 bg-white px-2 py-1 rounded-xl border border-amber-200">
+            <i class="fa-solid fa-text-height text-xs text-stone-500"></i>
+            <input type="range" id="brushSize" min="4" max="32" value="15" oninput="updateBrushSize(this.value)" class="w-16 sm:w-20 accent-amber-800 h-1.5 bg-amber-200 rounded-lg cursor-pointer">
+            <span id="brushSizeVal" class="text-xs font-mono font-bold text-amber-950 w-5">15</span>
+          </div>
+
+          <!-- Qalam nib angle: only meaningful for the chisel calligraphy tool -->
+          <div id="nibAngleControl" class="flex items-center gap-2 bg-white px-2 py-1 rounded-xl border border-amber-200" title="زاوية قطّة القصبة بالنسبة للمحور الأفقي">
+            <i class="fa-solid fa-slash text-xs text-stone-500"></i>
+            <input type="range" id="nibAngle" min="20" max="75" value="42" oninput="updateNibAngle(this.value)" class="w-16 sm:w-20 accent-amber-800 h-1.5 bg-amber-200 rounded-lg cursor-pointer">
+            <span id="nibAngleVal" class="text-xs font-mono font-bold text-amber-950 w-8">42°</span>
+          </div>
+
+          <!-- Stylus pressure calibration (applies to future strokes only) -->
+          <div id="pressureControl" class="flex items-center gap-2 bg-white px-2 py-1 rounded-xl border border-amber-200" title="استجابة سُمك القصبة لضغط القلم الإلكتروني">
+            <label class="flex items-center gap-1 cursor-pointer text-[11px] font-bold text-stone-600 whitespace-nowrap">
+              <input id="pressureEnabled" type="checkbox" checked onchange="setPressureEnabled(this.checked)" class="accent-amber-800">
+              ضغط
+            </label>
+            <input type="range" id="pressureSensitivity" min="0" max="100" value="62" oninput="updatePressureSensitivity(this.value)" class="w-14 sm:w-16 accent-amber-800 h-1.5 bg-amber-200 rounded-lg cursor-pointer" title="حساسية الضغط">
+            <button id="btnPressureCalibrate" type="button" onclick="armPressureCalibration()" class="px-2 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-[10px] font-bold text-amber-900 whitespace-nowrap" title="اكتب ضربة واحدة بالقلم لمعايرة مجال الضغط">معايرة</button>
+            <span id="pressureCalStatus" class="hidden xl:inline text-[9px] text-stone-500 whitespace-nowrap">0.08–0.95</span>
+          </div>
+
+          <!-- Stroke replay: replays only the visible session after the most recent clear -->
+          <div class="flex items-center gap-1 bg-white px-1.5 py-1 rounded-xl border border-amber-200">
+            <button id="btnReplay" type="button" onclick="toggleStrokeReplay()" title="إعادة تشغيل حركة الكتابة" class="px-2 py-1 rounded-lg hover:bg-amber-50 text-amber-900 text-xs font-bold transition flex items-center gap-1">
+              <i class="fa-solid fa-play"></i><span class="hidden xl:inline">إعادة الحركة</span>
+            </button>
+            <select id="replaySpeed" onchange="setReplaySpeed(this.value)" class="bg-transparent text-[10px] font-bold text-stone-600 outline-none" title="سرعة إعادة الحركة">
+              <option value="0.75">×0.75</option>
+              <option value="1" selected>×1</option>
+              <option value="1.5">×1.5</option>
+              <option value="2">×2</option>
+            </select>
+          </div>
+
+          <!-- Actions: Undo, Clear, Download -->
+          <div class="flex items-center gap-1.5 mr-auto">
+            <button id="btnFs" onclick="toggleFullscreen()" title="ملء الشاشة" class="p-2 rounded-xl bg-white border border-amber-200 hover:bg-amber-50 text-stone-700 transition"><i class="fa-solid fa-expand"></i></button>
+            <button onclick="undoStroke()" title="تراجع خطوة" class="p-2 rounded-xl bg-white border border-amber-200 hover:bg-amber-50 text-stone-700 transition">
+              <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <button onclick="clearCanvas()" title="مسح اللوحة" class="p-2 rounded-xl bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 transition">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+            <button onclick="saveCanvasAsImage()" title="حفظ لوحة الخط كصورة" class="px-2.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition flex items-center gap-1">
+              <i class="fa-solid fa-download"></i>
+              <span class="hidden sm:inline">حفظ</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hybrid workspace: SVG guidance layer + Canvas ink layer -->
+        <div class="relative w-full h-[380px] sm:h-[440px] bg-[#FEFDFB] overflow-hidden select-none" id="canvasContainer">
+          
+          <!-- Unified SVG guidance layer: grid + calligraphy rules + tracing model -->
+          <svg id="trainingGuideSvg"
+               class="absolute inset-0 w-full h-full pointer-events-none select-none z-10"
+               xmlns="http://www.w3.org/2000/svg"
+               aria-hidden="true"
+               preserveAspectRatio="none">
+            <defs>
+              <pattern id="gridSquarePattern" width="24" height="24" patternUnits="userSpaceOnUse">
+                <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#E5DEC9" stroke-width="0.8" vector-effect="non-scaling-stroke"/>
+              </pattern>
+            </defs>
+
+            <rect id="svgGridRect" x="0" y="0" width="100%" height="100%" fill="url(#gridSquarePattern)" opacity="0.40"/>
+
+            <g id="svgGuidelinesGroup">
+              <line id="svgTopLine" x1="0" x2="100%" y1="0" y2="0" stroke="#D97706" stroke-opacity="0.8" stroke-width="2" stroke-dasharray="8 6" vector-effect="non-scaling-stroke"/>
+              <line id="svgMidLine" x1="0" x2="100%" y1="0" y2="0" stroke="#38BDF8" stroke-width="1" vector-effect="non-scaling-stroke"/>
+              <line id="svgBaseLine" x1="0" x2="100%" y1="0" y2="0" stroke="#DC2626" stroke-width="3" vector-effect="non-scaling-stroke"/>
+              <line id="svgBottomLine" x1="0" x2="100%" y1="0" y2="0" stroke="#059669" stroke-opacity="0.8" stroke-width="2" stroke-dasharray="8 6" vector-effect="non-scaling-stroke"/>
+
+              <g id="svgGuideLabelsGroup" font-family="Cairo, sans-serif" font-size="12" font-weight="700">
+                <g id="svgTopBadge" class="svg-guide-badge">
+                  <rect width="246" height="30" rx="8" fill="#F59E0B" stroke="#D97706"/>
+                  <text x="234" y="20" direction="rtl" text-anchor="start" fill="#fff" style="unicode-bidi:plaintext">خط القمة (الألف واللام والكاف)</text>
+                </g>
+                <g id="svgMidBadge" class="svg-guide-badge">
+                  <rect width="260" height="30" rx="8" fill="#0284C7" stroke="#0369A1"/>
+                  <text x="248" y="20" direction="rtl" text-anchor="start" fill="#fff" style="unicode-bidi:plaintext">خط الوسط (رؤوس الحروف والحركات)</text>
+                </g>
+                <g id="svgBaseBadge" class="svg-guide-badge">
+                  <rect width="278" height="32" rx="8" fill="#DC2626" stroke="#B91C1C" stroke-width="2"/>
+                  <text x="266" y="21" direction="rtl" text-anchor="start" fill="#fff" font-size="13" font-weight="900" style="unicode-bidi:plaintext">خط الأساس (سطر الارتكاز الرئيسي)</text>
+                </g>
+                <g id="svgBottomBadge" class="svg-guide-badge">
+                  <rect width="264" height="30" rx="8" fill="#047857" stroke="#065F46"/>
+                  <text x="252" y="20" direction="rtl" text-anchor="start" fill="#fff" style="unicode-bidi:plaintext">خط الهبوط (كؤوس النون والراء والجيم)</text>
+                </g>
+              </g>
+            </g>
+
+            <g id="svgGhostGroup">
+              <text id="ghostSvgText"
+                    x="0" y="0"
+                    fill="#451A03" fill-opacity="0.22"
+                    direction="rtl" text-anchor="middle"
+                    dominant-baseline="alphabetic"
+                    xml:space="preserve"
+                    style="unicode-bidi:plaintext; white-space:pre;">أ</text>
+            </g>
+          </svg>
+
+          <!-- Active Interactive Drawing Canvas -->
+          <canvas id="drawingCanvas" class="absolute inset-0 w-full h-full z-20"></canvas>
+        </div>
+
+        <div class="bg-parchment-50 border-t border-amber-200 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs text-stone-700 gap-3">
+          <div class="flex flex-wrap items-center gap-4">
+            <!-- Guidelines Visibility Checkbox -->
+            <label class="flex items-center gap-1.5 cursor-pointer font-bold text-amber-950">
+              <input type="checkbox" id="toggleGuidesCheckbox" checked onchange="toggleGuidelines(this.checked)" class="rounded text-amber-800 focus:ring-amber-600 w-4 h-4">
+              <span>إظهار خطوط الخطاط</span>
+            </label>
+
+            <!-- Guidelines Labels Visibility Checkbox (Fix for user issue) -->
+            <label class="flex items-center gap-1.5 cursor-pointer font-bold text-amber-900 bg-amber-100/90 px-2.5 py-1 rounded-lg border border-amber-300">
+              <input type="checkbox" id="toggleLabelsCheckbox" checked onchange="toggleGuidelineLabels(this.checked)" class="rounded text-amber-800 focus:ring-amber-600 w-4 h-4">
+              <i class="fa-solid fa-tag text-amber-700 text-[11px]"></i>
+              <span>عناوين وشارات الخطوط</span>
+            </label>
+
+            <!-- Ghost Guide Checkbox -->
+            <label class="flex items-center gap-1.5 cursor-pointer font-bold text-stone-700">
+              <input type="checkbox" id="toggleGhostCheckbox" checked onchange="toggleGhost(this.checked)" class="rounded text-amber-800 focus:ring-amber-600 w-4 h-4">
+              <span>الحرف الإرشادي (للشّف)</span>
+            </label>
+          </div>
+
+          <!-- Ghost Opacity Slider -->
+          <div class="flex items-center gap-2">
+            <span>وضوح الحرف:</span>
+            <input type="range" id="ghostOpacitySlider" min="0" max="0.55" step="0.05" value="0.22" oninput="setGhostOpacity(this.value)" class="w-20 accent-amber-800 h-1.5 bg-amber-200 rounded cursor-pointer">
+          </div>
+        </div>
+      </div>
+
+      <!-- Diacritics (Harakat) Selector Bar -->
+      <div id="tashkeelBar" class="bg-white rounded-2xl p-3 border border-amber-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-sm">
+            <i class="fa-solid fa-shapes"></i>
+          </span>
+          <span class="text-xs sm:text-sm font-bold text-stone-800">التشكيل والحركات:</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5" id="tashkeelContainer">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+    </section>
+
+    <aside id="sidePanel" class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- Current Letter Details Hero Card -->
+      <div class="bg-gradient-to-br from-amber-850 via-amber-900 to-amber-950 rounded-3xl p-5 text-white shadow-md relative overflow-hidden flex items-center justify-between">
+        <div class="relative z-10">
+          <div class="flex items-center gap-2 text-amber-300 text-xs font-bold mb-1">
+            <span id="letterOrderBadge" class="bg-amber-800/80 px-2.5 py-0.5 rounded-full border border-amber-600/50">الحرف 1 من 28</span>
+            <span id="letterMakhraj">مخرجي</span>
+          </div>
+          <h2 id="currentLetterName" class="text-3xl font-extrabold font-kufi">حرف الألف</h2>
+          <p id="currentFormDescription" class="text-amber-100 text-xs mt-1">الموضع: منفصل (مستقل)</p>
+          
+          <div class="mt-3 flex items-center gap-2">
+            <button onclick="pronounceCurrent()" class="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-amber-950 font-black rounded-xl text-xs flex items-center gap-1.5 transition shadow-sm">
+              <i class="fa-solid fa-volume-high"></i>
+              <span>نطق الحرف</span>
+            </button>
+            <button onclick="pronounceExampleWord()" class="px-3 py-1.5 bg-white/15 hover:bg-white/25 text-white rounded-xl text-xs flex items-center gap-1.5 transition">
+              <i class="fa-solid fa-comment-dots"></i>
+              <span>نطق الكلمة</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="w-24 h-24 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center shadow-inner relative z-10 backdrop-blur-xs">
+          <span id="bigHeroGlyph" class="font-qalam text-7xl font-bold text-amber-200">أ</span>
+        </div>
+
+        <i class="fa-solid fa-scroll absolute -left-4 -bottom-6 text-9xl text-white/5 pointer-events-none"></i>
+      </div>
+
+      <!-- 28 Arabic Letters Matrix -->
+      <div class="bg-parchment-50 rounded-3xl p-4 border border-amber-200 shadow-sm flex flex-col flex-grow">
+        <div class="flex items-center justify-between mb-3 gap-2">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-book-open text-amber-800"></i>
+            <h3 class="font-bold text-sm text-stone-800">الحروف الهجائية (28)</h3>
+          </div>
+          <!-- Quick search -->
+          <div class="relative w-32">
+            <input type="text" id="letterSearchInput" placeholder="بحث عن حرف..." oninput="filterLetters(this.value)" class="w-full bg-white border border-amber-300 rounded-lg text-xs py-1 px-2.5 focus:outline-none focus:ring-1 focus:ring-amber-700 text-stone-800">
+          </div>
+        </div>
+
+        <!-- Grid -->
+        <div id="alphabetGrid" class="grid grid-cols-4 sm:grid-cols-7 lg:grid-cols-4 gap-2 max-h-[340px] overflow-y-auto pr-1 custom-scrollbar">
+          <!-- Injected via JavaScript -->
+        </div>
+
+        <!-- Calligraphy Tip Box -->
+        <div class="mt-4 p-3 bg-amber-100/70 rounded-2xl border border-amber-300/80 text-xs text-amber-950 flex items-start gap-2.5">
+          <i class="fa-solid fa-compass-drafting text-amber-800 text-sm mt-0.5"></i>
+          <div>
+            <span class="font-bold block text-amber-900">قاعدة استقرار الحرف على السطر:</span>
+            <span id="calligraphyTip">الحروف (ا، د، ذ، ط، ظ، ك، هـ) تستقر على خط الأساس دائماً ولا تنزل عنه.</span>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+
+  <!-- Brush Settings — Photoshop-inspired, adapted for Arabic qalam dynamics -->
+  <div id="brushSettingsModal" class="fixed inset-0 z-[70] bg-black/45 backdrop-blur-sm hidden items-center justify-center p-3" onclick="if(event.target===this)toggleBrushSettings(false)">
+    <div class="bg-parchment-50 w-full max-w-3xl max-h-[92vh] rounded-3xl border-2 border-amber-300 shadow-2xl overflow-hidden flex flex-col">
+      <div class="bg-amber-950 text-white px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-pen-nib text-amber-300"></i>
+          <div>
+            <h3 class="font-bold font-kufi text-base">إعدادات القصبة والفرشاة</h3>
+            <p class="text-[10px] text-amber-200">Brush Settings — مهيأة للخط العربي</p>
+          </div>
+        </div>
+        <button onclick="toggleBrushSettings(false)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-[190px_1fr] min-h-0 flex-1">
+        <aside class="bg-amber-100/60 border-l border-amber-200 p-3 flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto">
+          <div class="min-w-[165px] md:min-w-0">
+            <div class="text-[11px] font-black text-amber-950 mb-2">إعدادات جاهزة</div>
+            <div class="grid grid-cols-2 md:grid-cols-1 gap-1.5">
+              <button onclick="applyBrushPreset('naskh')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">نسخ تعليمي</button>
+              <button onclick="applyBrushPreset('ruqaa')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">رقعة سريع</button>
+              <button onclick="applyBrushPreset('thuluth')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">ثلث عريض</button>
+              <button onclick="applyBrushPreset('kufi')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">كوفي هندسي</button>
+              <button onclick="applyBrushPreset('soft')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">قلم ناعم</button>
+            </div>
+          </div>
+          <div class="min-w-[165px] md:min-w-0 md:mt-3 md:pt-3 md:border-t md:border-amber-200">
+            <button onclick="savePersonalBrushPreset()" class="w-full px-3 py-2 rounded-xl bg-amber-800 text-white text-xs font-bold hover:bg-amber-900"><i class="fa-solid fa-floppy-disk ml-1"></i>حفظ الإعداد الحالي</button>
+            <button id="btnLoadPersonalPreset" onclick="loadPersonalBrushPreset()" class="w-full mt-1.5 px-3 py-2 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs font-bold hover:bg-amber-50">تطبيق المحفوظ</button>
+            <button onclick="resetBrushSettings()" class="w-full mt-1.5 px-3 py-2 rounded-xl text-stone-600 text-xs font-bold hover:bg-stone-100">إعادة الافتراضي</button>
+          </div>
+        </aside>
+
+        <div class="p-4 overflow-y-auto custom-scrollbar">
+          <div class="flex items-center gap-4 p-3 bg-white border border-amber-200 rounded-2xl mb-4">
+            <div class="w-24 h-24 bg-[#FEFDFB] border border-amber-200 rounded-2xl flex items-center justify-center overflow-hidden relative">
+              <div class="absolute left-2 right-2 top-1/2 border-t border-dashed border-red-300"></div>
+              <div id="brushTipPreview" class="bg-stone-900 rounded-full relative z-10 origin-center" style="width:64px;height:8px;transform:rotate(-42deg)"></div>
+            </div>
+            <div class="flex-1">
+              <div class="font-black text-sm text-amber-950">معاينة قطّة القصبة</div>
+              <div id="brushPreviewSummary" class="text-[11px] text-stone-500 mt-1">15px • 42° • استدارة 12%</div>
+              <p class="text-[10px] text-stone-500 mt-2 leading-5">الإعدادات الجديدة تطبق على الضربات التالية فقط. الضربات السابقة تحتفظ بخصائصها لضمان إعادة التشغيل والتراجع بشكل حتمي.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <section class="bg-white border border-amber-200 rounded-2xl p-3">
+              <h4 class="text-xs font-black text-amber-950 mb-3"><i class="fa-solid fa-circle-notch ml-1 text-amber-700"></i>شكل سن القصبة</h4>
+              <label class="block text-[11px] font-bold mb-2">الحجم <span id="bsSizeVal" class="float-left font-mono">15px</span><input id="bsSize" type="range" min="4" max="48" value="15" oninput="updateBrushSetting('size',this.value)" class="w-full accent-amber-800"></label>
+              <label class="block text-[11px] font-bold mb-2">الزاوية <span id="bsAngleVal" class="float-left font-mono">42°</span><input id="bsAngle" type="range" min="0" max="90" value="42" oninput="updateBrushSetting('angle',this.value)" class="w-full accent-amber-800"></label>
+              <label class="block text-[11px] font-bold mb-2">استدارة السن <span id="bsRoundnessVal" class="float-left font-mono">12%</span><input id="bsRoundness" type="range" min="0" max="100" value="12" oninput="updateBrushSetting('roundness',this.value)" class="w-full accent-amber-800"></label>
+              <label class="block text-[11px] font-bold">التباعد <span id="bsSpacingVal" class="float-left font-mono">8%</span><input id="bsSpacing" type="range" min="1" max="30" value="8" oninput="updateBrushSetting('spacing',this.value)" class="w-full accent-amber-800"></label>
+            </section>
+
+            <section class="bg-white border border-amber-200 rounded-2xl p-3">
+              <h4 class="text-xs font-black text-amber-950 mb-3"><i class="fa-solid fa-wave-square ml-1 text-amber-700"></i>ديناميكية الضربة</h4>
+              <label class="block text-[11px] font-bold mb-2">التنعيم <span id="bsSmoothingVal" class="float-left font-mono">58%</span><input id="bsSmoothing" type="range" min="0" max="95" value="58" oninput="updateBrushSetting('smoothing',this.value)" class="w-full accent-amber-800"></label>
+              <label class="block text-[11px] font-bold mb-2">شفافية الحبر <span id="bsOpacityVal" class="float-left font-mono">100%</span><input id="bsOpacity" type="range" min="10" max="100" value="100" oninput="updateBrushSetting('opacity',this.value)" class="w-full accent-amber-800"></label>
+              <label class="block text-[11px] font-bold mb-1">مصدر دوران السن</label>
+              <select id="bsRotationSource" onchange="updateBrushSetting('rotationSource',this.value)" class="w-full bg-parchment-50 border border-amber-300 rounded-xl text-xs py-2 px-2">
+                <option value="fixed">زاوية ثابتة</option>
+                <option value="twist">دوران القلم الإلكتروني (Twist)</option>
+              </select>
+              <label class="block text-[11px] font-bold mt-2">تأثير دوران القلم <span id="bsTwistVal" class="float-left font-mono">22%</span><input id="bsTwist" type="range" min="0" max="100" value="22" oninput="updateBrushSetting('twist',this.value)" class="w-full accent-amber-800"></label>
+            </section>
+
+            <section class="bg-white border border-amber-200 rounded-2xl p-3 sm:col-span-2">
+              <div class="flex items-center justify-between gap-3 mb-3">
+                <h4 class="text-xs font-black text-amber-950"><i class="fa-solid fa-gauge-high ml-1 text-amber-700"></i>الضغط والتحكم</h4>
+                <label class="flex items-center gap-1.5 text-[11px] font-bold"><input id="bsPressureEnabled" type="checkbox" checked onchange="updateBrushSetting('pressureEnabled',this.checked)" class="accent-amber-800">تفعيل ضغط القلم</label>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <label class="block text-[11px] font-bold">حساسية الضغط <span id="bsPressureSensVal" class="float-left font-mono">62%</span><input id="bsPressureSens" type="range" min="0" max="100" value="62" oninput="updateBrushSetting('pressureSensitivity',this.value)" class="w-full accent-amber-800"></label>
+                <label class="block text-[11px] font-bold">أدنى سماكة <span id="bsMinWidthVal" class="float-left font-mono">70%</span><input id="bsMinWidth" type="range" min="20" max="100" value="70" oninput="updateBrushSetting('minWidth',this.value)" class="w-full accent-amber-800"></label>
+                <label class="block text-[11px] font-bold">منحنى الضغط<select id="bsPressureCurve" onchange="updateBrushSetting('pressureCurve',this.value)" class="w-full mt-1 bg-parchment-50 border border-amber-300 rounded-xl text-xs py-2 px-2"><option value="soft">ناعم</option><option value="linear" selected>خطي</option><option value="firm">قوي</option></select></label>
+              </div>
+              <div class="mt-3 flex items-center gap-2">
+                <button onclick="armPressureCalibration()" class="px-3 py-1.5 rounded-xl bg-amber-100 border border-amber-300 text-xs font-bold text-amber-900">معايرة ضغط القلم</button>
+                <span id="bsPressureRange" class="text-[10px] text-stone-500">النطاق: 0.08–0.95</span>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="challengeModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-parchment-50 w-full max-w-lg rounded-3xl border-2 border-amber-300 shadow-2xl overflow-hidden flex flex-col">
+      <div class="bg-amber-900 text-white p-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-award text-amber-300 text-xl"></i>
+          <h3 class="font-bold font-kufi text-lg">اختبر معلوماتك في مواضع الحروف</h3>
+        </div>
+        <button onclick="toggleChallengeModal(false)" class="text-white/80 hover:text-white p-1 rounded-lg text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 flex flex-col items-center text-center">
+        <div class="w-full flex justify-between text-xs font-bold text-stone-500 mb-2">
+          <span>السؤال: <span id="quizScoreCount" class="text-amber-900 font-mono text-sm">1</span></span>
+          <span id="quizScorePoints" class="text-emerald-700">النقاط: 0</span>
+        </div>
+
+        <p class="text-stone-700 text-sm mb-2" id="quizQuestionText">اختر الحرف بالشكل المناسب لإكمال الكلمة:</p>
+        
+        <div class="my-4 py-3 px-6 bg-white border-2 border-dashed border-amber-400 rounded-2xl shadow-inner w-full">
+          <div class="font-qalam text-4xl sm:text-5xl font-bold tracking-wider text-amber-950" id="quizWordDisplay">
+            <!-- Word target blank -->
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full mt-2" id="quizOptionsContainer"></div>
+
+        <div id="quizFeedback" class="h-8 mt-3 text-sm font-bold flex items-center justify-center transition-all"></div>
+      </div>
+
+      <div class="bg-amber-100/70 p-3 border-t border-amber-200 flex items-center justify-between">
+        <span class="text-xs text-stone-600">اختر الشكل بحسب اتصاله بما قبله وما بعده</span>
+        <button onclick="generateNextQuizQuestion()" class="px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white font-bold rounded-xl text-xs transition">
+          السؤال التالي <i class="fa-solid fa-arrow-left mr-1"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="guideModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-3">
+    <div class="bg-parchment-50 w-full max-w-3xl max-h-[92vh] rounded-3xl border-2 border-amber-300 shadow-2xl overflow-hidden flex flex-col">
+      <div class="bg-amber-900 text-white p-4 flex items-center justify-between">
+        <h3 class="font-bold font-kufi text-lg"><i class="fa-solid fa-book-bookmark text-amber-300 ml-2"></i>إرشادات الخطوط العربية وكيفية كتابتها</h3>
+        <button onclick="toggleGuide(false)" class="text-white/80 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div id="guideTabs" class="flex gap-1.5 p-2.5 overflow-x-auto custom-scrollbar border-b border-amber-200 bg-amber-50"></div>
+      <div id="guideBody" class="p-5 overflow-y-auto text-sm text-stone-800 leading-7"></div>
+    </div>
+  </div>
+
+  <div id="printModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-parchment-50 w-full max-w-md rounded-3xl border-2 border-amber-300 shadow-2xl overflow-hidden">
+      <div class="bg-amber-900 text-white p-4 flex items-center justify-between">
+        <h3 class="font-bold font-kufi text-lg"><i class="fa-solid fa-print text-amber-300 ml-2"></i>أوراق عمل للطباعة</h3>
+        <button onclick="togglePrint(false)" class="text-white/80 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-5 flex flex-col gap-3 text-sm font-bold text-stone-800">
+        <label class="flex items-center gap-2"><input type="radio" name="pscope" value="cur" checked> الحرف الحالي بأشكاله الأربعة</label>
+        <label class="flex items-center gap-2"><input type="radio" name="pscope" value="alpha"> الأبجدية كاملة (28 حرفاً)</label>
+        <label class="flex items-center gap-2"><input type="radio" name="pscope" value="words"> الكلمات (حسب التصنيف المختار)</label>
+        <label class="flex items-center gap-2"><input type="radio" name="pscope" value="phrases"> العبارات</label>
+        <hr class="border-amber-200">
+        <label class="flex items-center gap-2"><input type="checkbox" id="pTrace" checked> نموذج + تكرار باهت للتتبع</label>
+        <label class="flex items-center gap-2"><input type="checkbox" id="pBlank" checked> سطر فارغ للكتابة الحرة بعد كل نموذج</label>
+        <p class="text-xs font-normal text-stone-600">الخط المستخدم: <span id="printFontName" class="font-bold"></span> (غيّره من قائمة الخط أعلى صفحة التدريب). قد يختلف موضع الحرف على خط الأساس قليلاً بين الخطوط.</p>
+        <button onclick="printSheet()" class="px-4 py-2.5 bg-amber-800 hover:bg-amber-900 text-white rounded-xl"><i class="fa-solid fa-print ml-1"></i>طباعة / حفظ PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="printArea" dir="rtl"></div>
+
+  <!-- Footer -->
+  <footer class="border-t border-amber-200 bg-parchment-100 py-3 text-center text-xs text-stone-600">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <p>معمل التدريب التفاعلي على الخط وقواعد التسطير العربية • خط القمة • خط الوسط • خط الأساس • خط الهبوط</p>
+      <div class="flex items-center gap-2 text-amber-900 font-semibold">
+        <span><i class="fa-solid fa-feather text-amber-700"></i> خط النسخ العربي المدرسي</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const ARABIC_LETTERS = [
+      {
+        id: 1, name: "ألف", letter: "ا",
+        forms: { isolated: "أ", initial: "أ", medial: "ـا", final: "ـا" },
+        examples: {
+          isolated: { word: "أَمَل", target: "أ" },
+          initial: { word: "أَسَد", target: "أ" },
+          medial: { word: "كِتَاب", target: "ا" },
+          final: { word: "عَصَا", target: "ا" }
+        },
+        tip: "حرف الألف عمودي مستقيم، يمتد من خط القمة ويستقر مباشرة على خط الأساس دون أن ينزل عنه.",
+        makhraj: "الجوف (حرف مَد)"
+      },
+      {
+        id: 2, name: "باء", letter: "ب",
+        forms: { isolated: "ب", initial: "بـ", medial: "ـبـ", final: "ـب" },
+        examples: {
+          isolated: { word: "بَاب", target: "ب" },
+          initial: { word: "بَحْر", target: "بـ" },
+          medial: { word: "خُبْز", target: "ـبـ" },
+          final: { word: "عِنَب", target: "ـب" }
+        },
+        tip: "جسم الباء مستقر تماماً على خط الأساس، ونقطتها أسفل خط الأساس.",
+        makhraj: "الشفتان بانطباقهما"
+      },
+      {
+        id: 3, name: "تاء", letter: "ت",
+        forms: { isolated: "ت", initial: "تـ", medial: "ـتـ", final: "ـت" },
+        examples: {
+          isolated: { word: "تُوت", target: "ت" },
+          initial: { word: "تَمْر", target: "تـ" },
+          medial: { word: "كِتَاب", target: "ـتـ" },
+          final: { word: "بِنْت", target: "ـت" }
+        },
+        tip: "ترتكز على خط الأساس تماماً ونقطتاها تعلوان في منطقة خط الوسط.",
+        makhraj: "طرف اللسان مع أصول الثنايا"
+      },
+      {
+        id: 4, name: "ثاء", letter: "ث",
+        forms: { isolated: "ث", initial: "ثـ", medial: "ـثـ", final: "ـث" },
+        examples: {
+          isolated: { word: "أَثَاث", target: "ث" },
+          initial: { word: "ثَعْلَب", target: "ثـ" },
+          medial: { word: "مُثَلَّث", target: "ـثـ" },
+          final: { word: "غَيْث", target: "ـث" }
+        },
+        tip: "حرف لثوي متماثل مع الباء والتاء في الارتكاز مع 3 نقاط مثلثة فوق خط الوسط.",
+        makhraj: "طرف اللسان مع أطراف الثنايا"
+      },
+      {
+        id: 5, name: "جيم", letter: "ج",
+        forms: { isolated: "ج", initial: "جـ", medial: "ـجـ", final: "ـج" },
+        examples: {
+          isolated: { word: "بُرْج", target: "ج" },
+          initial: { word: "جَمَل", target: "جـ" },
+          medial: { word: "نَجْم", target: "ـجـ" },
+          final: { word: "ثَلْج", target: "ـج" }
+        },
+        tip: "رأس الجيم يعلو خط الأساس، بينما بطنها المنفصل يهبط حتى خط الهبوط.",
+        makhraj: "وسط اللسان مع الحنك الأعلى"
+      },
+      {
+        id: 6, name: "حاء", letter: "ح",
+        forms: { isolated: "ح", initial: "حـ", medial: "ـحـ", final: "ـح" },
+        examples: {
+          isolated: { word: "لَوْح", target: "ح" },
+          initial: { word: "حَمَامَة", target: "حـ" },
+          medial: { word: "سَحَاب", target: "ـحـ" },
+          final: { word: "مِلْح", target: "ـح" }
+        },
+        tip: "رسم الجيم ذاته بدون نقط، ينزل تجويفها المقوس حتى خط الهبوط الأخضر.",
+        makhraj: "وسط الحلق"
+      },
+      {
+        id: 7, name: "خاء", letter: "خ",
+        forms: { isolated: "خ", initial: "خـ", medial: "ـخـ", final: "ـخ" },
+        examples: {
+          isolated: { word: "كُوخ", target: "خ" },
+          initial: { word: "خَرُوف", target: "خـ" },
+          medial: { word: "نَخْلَة", target: "ـخـ" },
+          final: { word: "بَطِّيخ", target: "ـخ" }
+        },
+        tip: "نقطتها تعلو فوق رأسها باتجاه خط القمة، وتغوص نهايتها إلى خط الهبوط.",
+        makhraj: "أدنى الحلق"
+      },
+      {
+        id: 8, name: "دال", letter: "د",
+        forms: { isolated: "د", initial: "د", medial: "ـد", final: "ـد" },
+        examples: {
+          isolated: { word: "دَار", target: "د" },
+          initial: { word: "دَرَاجَة", target: "د" },
+          medial: { word: "حَدِيقَة", target: "ـد" },
+          final: { word: "وَلَد", target: "ـد" }
+        },
+        tip: "ترتكز قاعدتها بالكامل على خط الأساس الأحمر ولا تهبط تحته مطلقاً.",
+        makhraj: "طرف اللسان مع أصول الثنايا"
+      },
+      {
+        id: 9, name: "ذال", letter: "ذ",
+        forms: { isolated: "ذ", initial: "ذ", medial: "ـذ", final: "ـذ" },
+        examples: {
+          isolated: { word: "رَذَاذ", target: "ذ" },
+          initial: { word: "ذِئْب", target: "ذ" },
+          medial: { word: "بُذُور", target: "ـذ" },
+          final: { word: "قُنْفُذ", target: "ـذ" }
+        },
+        tip: "تستقر على خط الأساس وتوضع نقطتها عند خط الوسط تقريباً.",
+        makhraj: "طرف اللسان مع أطراف الثنايا العليا"
+      },
+      {
+        id: 10, name: "راء", letter: "ر",
+        forms: { isolated: "ر", initial: "ر", medial: "ـر", final: "ـر" },
+        examples: {
+          isolated: { word: "زَرَافَة", target: "ر" },
+          initial: { word: "رُمَّان", target: "ر" },
+          medial: { word: "قَمَر", target: "ـر" },
+          final: { word: "بَحْر", target: "ـر" }
+        },
+        tip: "يبدأ رأس الراء فوق خط الأساس بقليل، ثم يهبط جسمها المقوس نحو خط الهبوط.",
+        makhraj: "طرف اللسان مائلاً لظهره"
+      },
+      {
+        id: 11, name: "زاي", letter: "ز",
+        forms: { isolated: "ز", initial: "ز", medial: "ـز", final: "ـز" },
+        examples: {
+          isolated: { word: "أَرُزّ", target: "ز" },
+          initial: { word: "زَيْتُون", target: "ز" },
+          medial: { word: "مَزْرَعَة", target: "ـز" },
+          final: { word: "كَنْز", target: "ـز" }
+        },
+        tip: "نفس هيئة الراء مع نقطة واحدة فوق خط الأساس في مستوى خط الوسط.",
+        makhraj: "طرف اللسان وفويق الثنايا السفلى"
+      },
+      {
+        id: 12, name: "سين", letter: "س",
+        forms: { isolated: "س", initial: "سـ", medial: "ـسـ", final: "ـس" },
+        examples: {
+          isolated: { word: "جَرَس", target: "س" },
+          initial: { word: "سَفِينَة", target: "سـ" },
+          medial: { word: "عَسَل", target: "ـسـ" },
+          final: { word: "شَمْس", target: "ـس" }
+        },
+        tip: "أسنان السين فوق خط الأساس، وكأسها ينزل رشيقاً حتى خط الهبوط ثم يعود للأساس.",
+        makhraj: "طرف اللسان وأسفل الثنايا"
+      },
+      {
+        id: 13, name: "شين", letter: "ش",
+        forms: { isolated: "ش", initial: "شـ", medial: "ـشـ", final: "ـش" },
+        examples: {
+          isolated: { word: "عُشّ", target: "ش" },
+          initial: { word: "شَجَرَة", target: "شـ" },
+          medial: { word: "مِشْمِش", target: "ـشـ" },
+          final: { word: "رِيش", target: "ـش" }
+        },
+        tip: "كأسها يهبط تحت خط الأساس كحرف السين، وتتوج بنقاط ثلاث.",
+        makhraj: "وسط اللسان"
+      },
+      {
+        id: 14, name: "صاد", letter: "ص",
+        forms: { isolated: "ص", initial: "صـ", medial: "ـصـ", final: "ـص" },
+        examples: {
+          isolated: { word: "إِجَّاص", target: "ص" },
+          initial: { word: "صَقْر", target: "صـ" },
+          medial: { word: "بَصَل", target: "ـصـ" },
+          final: { word: "قَفَص", target: "ـص" }
+        },
+        tip: "جسم الصاد يستقر على السطر ويتبعه سِن صغير، ثم ينحدر الكأس لخط الهبوط.",
+        makhraj: "طرف اللسان مع فويق الثنايا"
+      },
+      {
+        id: 15, name: "ضاد", letter: "ض",
+        forms: { isolated: "ض", initial: "ضـ", medial: "ـضـ", final: "ـض" },
+        examples: {
+          isolated: { word: "أَرْض", target: "ض" },
+          initial: { word: "ضِفْدَع", target: "ضـ" },
+          medial: { word: "خُضَار", target: "ـضـ" },
+          final: { word: "بَيْض", target: "ـض" }
+        },
+        tip: "حرف لغتنا المجيدة، يرسم كالصاد مع نقطة واضحة في منتصفه العلوي.",
+        makhraj: "إحدى حافتي اللسان مع الأضراس العليا"
+      },
+      {
+        id: 16, name: "طاء", letter: "ط",
+        forms: { isolated: "ط", initial: "طـ", medial: "ـطـ", final: "ـط" },
+        examples: {
+          isolated: { word: "أَخْطَبُوط", target: "ط" },
+          initial: { word: "طَيَّارَة", target: "طـ" },
+          medial: { word: "مَطَر", target: "ـطـ" },
+          final: { word: "قِطّ", target: "ـط" }
+        },
+        tip: "يرتكز على خط الأساس بالكامل ولا يهبط منه شيء، وعصاه تمتد من خط القمة.",
+        makhraj: "طرف اللسان مع أصول الثنايا العليا"
+      },
+      {
+        id: 17, name: "ظاء", letter: "ظ",
+        forms: { isolated: "ظ", initial: "ظـ", medial: "ـظـ", final: "ـظ" },
+        examples: {
+          isolated: { word: "حَظّ", target: "ظ" },
+          initial: { word: "ظَرْف", target: "ظـ" },
+          medial: { word: "مِظَلَّة", target: "ـظـ" },
+          final: { word: "حِفْظ", target: "ـظ" }
+        },
+        tip: "شقيقة الطاء الثابتة على السطر مع نقطة في جهة اليمين قرب الألف.",
+        makhraj: "طرف اللسان مع أطراف الثنايا العليا"
+      },
+      {
+        id: 18, name: "عين", letter: "ع",
+        forms: { isolated: "ع", initial: "عـ", medial: "ـعـ", final: "ـع" },
+        examples: {
+          isolated: { word: "شِرَاع", target: "ع" },
+          initial: { word: "عَصِير", target: "عـ" },
+          medial: { word: "ثَعْلَب", target: "ـعـ" },
+          final: { word: "مُذِيع", target: "ـع" }
+        },
+        tip: "رأس العين فوق خط الأساس، ونصف دائرتها السفلية تنزل عميقاً لخط الهبوط.",
+        makhraj: "وسط الحلق"
+      },
+      {
+        id: 19, name: "غين", letter: "غ",
+        forms: { isolated: "غ", initial: "غـ", medial: "ـغـ", final: "ـغ" },
+        examples: {
+          isolated: { word: "دِمَاغ", target: "غ" },
+          initial: { word: "غَزَال", target: "غـ" },
+          medial: { word: "بَبَّغَاء", target: "ـغـ" },
+          final: { word: "صَمْغ", target: "ـغ" }
+        },
+        tip: "تطابق العين في خط سيرها بين خط الأساس وخط الهبوط وتزداد بنقطة عليا.",
+        makhraj: "أدنى الحلق"
+      },
+      {
+        id: 20, name: "فاء", letter: "ف",
+        forms: { isolated: "ف", initial: "فـ", medial: "ـفـ", final: "ـف" },
+        examples: {
+          isolated: { word: "صُوف", target: "ف" },
+          initial: { word: "فَرَاشَة", target: "فـ" },
+          medial: { word: "تُفَّاح", target: "ـفـ" },
+          final: { word: "هَاتِف", target: "ـف" }
+        },
+        tip: "تستقر الفاء على خط الأساس كالباء، ولا تنزل عنه مطلقاً في كافة أشكالها.",
+        makhraj: "بطن الشفة السفلى مع الثنايا العليا"
+      },
+      {
+        id: 21, name: "قاف", letter: "ق",
+        forms: { isolated: "ق", initial: "قـ", medial: "ـقـ", final: "ـق" },
+        examples: {
+          isolated: { word: "بُرْقُوق", target: "ق" },
+          initial: { word: "قَلَم", target: "قـ" },
+          medial: { word: "بَقَرَة", target: "ـقـ" },
+          final: { word: "شُرُوق", target: "ـق" }
+        },
+        tip: "القاف المنفصلة والمتطرفة يهبط كأسها تحت خط الأساس كالنون بخلاف الفاء المستقرة.",
+        makhraj: "أقصى اللسان مع الحنك اللحمي"
+      },
+      {
+        id: 22, name: "كاف", letter: "ك",
+        forms: { isolated: "ك", initial: "كـ", medial: "ـكـ", final: "ـك" },
+        examples: {
+          isolated: { word: "شُبَّاك", target: "ك" },
+          initial: { word: "كِتَاب", target: "كـ" },
+          medial: { word: "سَمَكَة", target: "ـكـ" },
+          final: { word: "دِيك", target: "ـك" }
+        },
+        tip: "ترتفع أَلِفُها حتى خط القمة وتستقر قاعدتها الأفقية تماماً على خط الأساس.",
+        makhraj: "أقصى اللسان أسفل مخرج القاف"
+      },
+      {
+        id: 23, name: "لام", letter: "ل",
+        forms: { isolated: "ل", initial: "لـ", medial: "ـلـ", final: "ـل" },
+        examples: {
+          isolated: { word: "غَزَال", target: "ل" },
+          initial: { word: "لَيْمُون", target: "لـ" },
+          medial: { word: "قَلَم", target: "ـلـ" },
+          final: { word: "جَمَل", target: "ـل" }
+        },
+        tip: "تبدأ من خط القمة الأعلى، ثم ينزل قاع الصنارة تحت خط الأساس نحو خط الهبوط.",
+        makhraj: "أدنى حافة اللسان إلى منتهاها"
+      },
+      {
+        id: 24, name: "ميم", letter: "م",
+        forms: { isolated: "م", initial: "مـ", medial: "ـمـ", final: "ـم" },
+        examples: {
+          isolated: { word: "نُجُوم", target: "م" },
+          initial: { word: "مَسْجِد", target: "مـ" },
+          medial: { word: "شَمْس", target: "ـمـ" },
+          final: { word: "قَلَم", target: "ـم" }
+        },
+        tip: "رأس الميم يرتكز فوق خط الأساس، وساقها النهائية تنحدر شاقولياً نحو خط الهبوط.",
+        makhraj: "الشفتان بانطباقهما مع الغنة"
+      },
+      {
+        id: 25, name: "نون", letter: "ن",
+        forms: { isolated: "ن", initial: "نـ", medial: "ـنـ", final: "ـن" },
+        examples: {
+          isolated: { word: "مِيزَان", target: "ن" },
+          initial: { word: "نَخْلَة", target: "نـ" },
+          medial: { word: "عِنَب", target: "ـنـ" },
+          final: { word: "عَيْن", target: "ـن" }
+        },
+        tip: "كأس النون نصف دائرة غائرة تستقر أدنى نقطة فيها عند خط الهبوط الأخضر.",
+        makhraj: "طرف اللسان تحت مخرج اللام"
+      },
+      {
+        id: 26, name: "هاء", letter: "هـ",
+        forms: { isolated: "ه", initial: "هـ", medial: "ـهـ", final: "ـه" },
+        examples: {
+          isolated: { word: "مِيَاه", target: "ه" },
+          initial: { word: "هَرَم", target: "هـ" },
+          medial: { word: "نَهْر", target: "ـهـ" },
+          final: { word: "وَجْه", target: "ـه" }
+        },
+        tip: "ترتكز الهاء المربوطة والأولية على خط الأساس، بينما فيونكة الوسطية تنزل قليلاً.",
+        makhraj: "أقصى الحلق"
+      },
+      {
+        id: 27, name: "واو", letter: "و",
+        forms: { isolated: "و", initial: "و", medial: "ـو", final: "ـو" },
+        examples: {
+          isolated: { word: "دَلْو", target: "و" },
+          initial: { word: "وَرْدَة", target: "و" },
+          medial: { word: "طَاوُوس", target: "ـو" },
+          final: { word: "جَرْو", target: "ـو" }
+        },
+        tip: "رأس الواو دائرية فوق خط الأساس مباشرة، وذيلها ينحني بانسيابية لخط الهبوط.",
+        makhraj: "الشفتان بانضمامهما"
+      },
+      {
+        id: 28, name: "ياء", letter: "ي",
+        forms: { isolated: "ي", initial: "يـ", medial: "ـيـ", final: "ـي" },
+        examples: {
+          isolated: { word: "شَاي", target: "ي" },
+          initial: { word: "يَد", target: "يـ" },
+          medial: { word: "بَيْت", target: "ـيـ" },
+          final: { word: "كُرْسِيّ", target: "ـي" }
+        },
+        tip: "رأسها فوق خط الأساس، وجسمها (البطة) يهبط إلى خط الهبوط ثم يعود صاعداً.",
+        makhraj: "وسط اللسان"
+      }
+    ];
+
+    const TASHKEEL_LIST = [
+      { id: "fatha", name: "فَتْحَة", mark: "َ", symbol: "ـَ", pos: "فوق" },
+      { id: "damma", name: "ضَمَّة", mark: "ُ", symbol: "ـُ", pos: "فوق" },
+      { id: "kasra", name: "كَسْرَة", mark: "ِ", symbol: "ـِ", pos: "تحت" },
+      { id: "sukoon", name: "سُكُون", mark: "ْ", symbol: "ـْ", pos: "فوق" },
+      { id: "shadda", name: "شَدَّة", mark: "ّ", symbol: "ـّ", pos: "فوق" },
+      { id: "tdamm", name: "تَنْوِين ضَمّ", mark: "ٌ", symbol: "ـٌ", pos: "فوق" },
+      { id: "tfath", name: "تَنْوِين فَتْح", mark: "ً", symbol: "ـً", pos: "فوق" },
+      { id: "tkasr", name: "تَنْوِين كَسْر", mark: "ٍ", symbol: "ـٍ", pos: "تحت" }
+    ];
+
+    // State Variables
+    let currentLetterIndex = 0;
+    let currentForm = 'isolated';
+    let currentTashkeel = "";
+
+    let canvas, ctx;
+    let isDrawing = false;
+    let activePointerId = null;
+    let brushType = 'calligraphy';
+    let inkColor = '#1A1817';
+    let brushSize = 15;
+    let nibAngleDeg = 42;
+    let qalamSmoothing = 0.58; // adjustable from Brush Settings
+
+    // Qalam Engine V3 pressure profile. Stored per stroke so replay/redraw is deterministic.
+    let pressureEnabled = true;
+    let pressureSensitivity = 0.62;
+    let pressureMin = 0.08;
+    let pressureMax = 0.95;
+    // Photoshop-inspired qalam settings. Stored per stroke for deterministic replay/redraw.
+    let nibRoundness = 0.12;
+    let brushSpacing = 0.08;
+    let brushOpacity = 1;
+    let pressureMinWidth = 0.70;
+    let pressureCurve = 'linear';    let rotationSource = 'fixed';
+    let twistInfluence = 0.22;
+    let pressureCalibrationArmed = false;
+    let pressureCalibrationSamples = [];
+
+    // Stroke replay state. Replay never mutates strokeHistory.
+    let replayActive = false;
+    let replayRaf = 0;
+    let replaySpeed = 1;
+    let replayRunToken = 0;
+
+    // Hybrid V4 — Qalam Engine V3 + Replay + calibrated pressure.
+    // Qalam Engine V3 + vector-like stroke model: Canvas is only the renderer, not the source of truth.
+    // Coordinates and brush size are normalized so strokes survive resize/fullscreen/orientation changes.
+    let strokeHistory = []; // [{kind:'stroke', tool, color, angle, sizeNorm, points:[...]}, {kind:'clear'}]
+    let currentStroke = null;
+    let canvasCssWidth = 1;
+    let canvasCssHeight = 1;
+    const MAX_STROKE_ACTIONS = 600;
+
+    // Quiz State
+    let quizScore = 0;
+    let quizCount = 1;
+    let currentQuizLetter = null;
+    let currentQuizCorrectForm = '';
+
+    // Initialize on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      initCanvas();
+      renderAlphabetGrid();
+      initExtras();
+      syncBrushSettingsUI();
+      window.addEventListener('resize', debounceResizeCanvas);
+    });
+
+    function initCanvas() {
+      canvas = document.getElementById('drawingCanvas');
+      ctx = canvas.getContext('2d', { alpha: true });
+      resizeCanvasToContainer();
+
+      // Unified Pointer Events path: mouse, touch, Apple Pencil and other styluses.
+      canvas.addEventListener('pointerdown', startDrawing, { passive: false });
+      canvas.addEventListener('pointermove', draw, { passive: false });
+      canvas.addEventListener('pointerup', stopDrawing, { passive: false });
+      canvas.addEventListener('pointercancel', stopDrawing, { passive: false });
+      canvas.addEventListener('lostpointercapture', stopDrawing);
+      canvas.addEventListener('contextmenu', e => e.preventDefault());
+    }
+
+    function resizeCanvasToContainer() {
+      if (replayActive) stopStrokeReplay(true);
+      const container = document.getElementById('canvasContainer');
+      const rect = container.getBoundingClientRect();
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+      canvasCssWidth = Math.max(1, rect.width);
+      canvasCssHeight = Math.max(1, rect.height);
+      canvas.width = Math.max(1, Math.round(canvasCssWidth * dpr));
+      canvas.height = Math.max(1, Math.round(canvasCssHeight * dpr));
+
+      // Work in CSS-pixel coordinates while retaining high-DPI backing resolution.
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      redrawAllStrokes();
+      updateGuideSvgGeometry();
+    }
+
+    let resizeTimer;
+    function debounceResizeCanvas() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resizeCanvasToContainer, 120);
+    }
+
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+    function effectivePressure(e) {
+      // Mouse reports 0 or 0.5 depending on browser. Use 0.5 as neutral pressure.
+      if (e.pointerType === 'mouse') return 0.5;
+      return clamp(Number.isFinite(e.pressure) ? e.pressure : 0.5, 0, 1);
+    }
+
+    function pointerPoint(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = clamp(e.clientX - rect.left, 0, rect.width);
+      const y = clamp(e.clientY - rect.top, 0, rect.height);
+      const nx = rect.width ? x / rect.width : 0;
+      const ny = rect.height ? y / rect.height : 0;
+      const p = effectivePressure(e);
+      if (pressureCalibrationArmed && e.pointerType === 'pen' && Number.isFinite(p) && p > 0) {
+        pressureCalibrationSamples.push(p);
+      }
+      return {
+        nx, ny, rawNx: nx, rawNy: ny,
+        pressure: p,
+        tiltX: Number.isFinite(e.tiltX) ? e.tiltX : 0,
+        tiltY: Number.isFinite(e.tiltY) ? e.tiltY : 0,
+        twist: Number.isFinite(e.twist) ? e.twist : 0,
+        altitudeAngle: Number.isFinite(e.altitudeAngle) ? e.altitudeAngle : null,
+        azimuthAngle: Number.isFinite(e.azimuthAngle) ? e.azimuthAngle : null,
+        pointerType: e.pointerType || 'unknown',
+        t: Number.isFinite(e.timeStamp) ? e.timeStamp : performance.now()
+      };
+    }
+
+    function smoothStrokePoint(raw, prev) {
+      if (!prev) return raw;
+
+      const dx = (raw.rawNx - (prev.rawNx ?? prev.nx)) * canvasCssWidth;
+      const dy = (raw.rawNy - (prev.rawNy ?? prev.ny)) * canvasCssHeight;
+      const dt = Math.max(1, raw.t - (prev.t ?? raw.t - 1));
+      const speed = Math.hypot(dx, dy) / dt; // CSS px / ms
+
+      // Slow movements get more smoothing; fast strokes stay responsive.
+      const alpha = clamp((1 - qalamSmoothing) + speed * 0.24, 0.18, 0.94);
+      const pressureAlpha = raw.pointerType === 'pen' ? 0.36 : 1;
+
+      return {
+        ...raw,
+        nx: prev.nx + (raw.rawNx - prev.nx) * alpha,
+        ny: prev.ny + (raw.rawNy - prev.ny) * alpha,
+        pressure: prev.pressure + (raw.pressure - prev.pressure) * pressureAlpha
+      };
+    }
+
+    function denormalizePoint(p) {
+      return {
+        x: p.nx * canvasCssWidth,
+        y: p.ny * canvasCssHeight,
+        pressure: p.pressure ?? 0.5,
+        tiltX: p.tiltX ?? 0,
+        tiltY: p.tiltY ?? 0,
+        twist: p.twist ?? 0,
+        pointerType: p.pointerType || 'unknown',
+        t: p.t ?? 0
+      };
+    }
+
+    function smoothstep01(v) {
+      const x = clamp(v, 0, 1);
+      return x * x * (3 - 2 * x);
+    }
+
+    function strokeSizePx(stroke, point) {
+      const base = stroke.sizeNorm * Math.min(canvasCssWidth, canvasCssHeight);
+      if (!point || point.pointerType !== 'pen' || stroke.pressureEnabled === false) return Math.max(1, base);
+
+      const minP = Number.isFinite(stroke.pressureMin) ? stroke.pressureMin : 0.08;
+      const maxP = Number.isFinite(stroke.pressureMax) ? stroke.pressureMax : 0.95;
+      const sens = clamp(Number.isFinite(stroke.pressureSensitivity) ? stroke.pressureSensitivity : 0.62, 0, 1);
+      const rawP = clamp(point.pressure ?? 0.5, 0, 1);
+      let normalized = smoothstep01((rawP - minP) / Math.max(0.08, maxP - minP));
+      const curve = stroke.pressureCurve || 'linear';
+      if (curve === 'soft') normalized = Math.sqrt(normalized);
+      else if (curve === 'firm') normalized = normalized * normalized;
+
+      // Photoshop-like minimum diameter adapted to qalam width.
+      const minFactor = clamp(Number.isFinite(stroke.pressureMinWidth) ? stroke.pressureMinWidth : 0.70, 0.2, 1);
+      const maxFactor = 1 + (0.38 * sens);
+      const pressureFactor = minFactor + (maxFactor - minFactor) * normalized;
+      return Math.max(1, base * pressureFactor);
+    }
+
+    function effectiveNibAngle(stroke, point) {
+      // User-selected qalam angle is authoritative. Barrel twist is used only when a pen actually reports it.
+      let angle = Number.isFinite(stroke.angle) ? stroke.angle : -(42 * Math.PI / 180);
+      if ((stroke.rotationSource || 'fixed') === 'twist' && point?.pointerType === 'pen' && Number.isFinite(point.twist) && Math.abs(point.twist) > 0.01) {
+        const twistRad = -(point.twist * Math.PI / 180);
+        const mix = clamp(Number.isFinite(stroke.twistInfluence) ? stroke.twistInfluence : 0.22, 0, 1);
+        // User angle remains the anchor; barrel rotation can influence it progressively.
+        angle = angle * (1 - mix) + twistRad * mix;
+      }
+      return angle;
+    }
+
+    function clearRenderedCanvas() {
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function renderDot(point, stroke) {
+      const p = denormalizePoint(point);
+      const size = strokeSizePx(stroke, point);
+      ctx.save();
+      if (stroke.tool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (stroke.tool === 'smooth') {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = Number.isFinite(stroke.opacity) ? stroke.opacity : 1;
+        ctx.fillStyle = stroke.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = Number.isFinite(stroke.opacity) ? stroke.opacity : 1;
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth = Math.max(1.5, size * 0.16);
+        ctx.lineCap = 'round';
+        const angle = effectiveNibAngle(stroke, point);
+        const dx = Math.cos(angle) * (size / 2);
+        const dy = Math.sin(angle) * (size / 2);
+        ctx.beginPath();
+        ctx.moveTo(p.x - dx, p.y - dy);
+        ctx.lineTo(p.x + dx, p.y + dy);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function nibEdgesAtPoint(pointNorm, stroke) {
+      const p = denormalizePoint(pointNorm);
+      const width = strokeSizePx(stroke, pointNorm);
+      const angle = effectiveNibAngle(stroke, pointNorm);
+      const dx = Math.cos(angle) * (width / 2);
+      const dy = Math.sin(angle) * (width / 2);
+      return {
+        center: p,
+        left: { x: p.x - dx, y: p.y - dy },
+        right: { x: p.x + dx, y: p.y + dy }
+      };
+    }
+
+    function traceSoftPolyline(points, reverse = false, continuePath = false) {
+      const pts = reverse ? [...points].reverse() : points;
+      if (!pts.length) return;
+      if (!continuePath) ctx.moveTo(pts[0].x, pts[0].y);
+      if (pts.length === 1) return;
+      if (pts.length === 2) {
+        ctx.lineTo(pts[1].x, pts[1].y);
+        return;
+      }
+      for (let i = 1; i < pts.length - 1; i++) {
+        const midX = (pts[i].x + pts[i + 1].x) / 2;
+        const midY = (pts[i].y + pts[i + 1].y) / 2;
+        ctx.quadraticCurveTo(pts[i].x, pts[i].y, midX, midY);
+      }
+      ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+    }
+
+    let strokeCompositeCanvas = null;
+    let strokeCompositeCtx = null;
+
+    function prepareStrokeCompositeLayer() {
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      if (!strokeCompositeCanvas) strokeCompositeCanvas = document.createElement('canvas');
+      if (strokeCompositeCanvas.width !== canvas.width || strokeCompositeCanvas.height !== canvas.height) {
+        strokeCompositeCanvas.width = canvas.width;
+        strokeCompositeCanvas.height = canvas.height;
+        strokeCompositeCtx = null;
+      }
+      if (!strokeCompositeCtx) strokeCompositeCtx = strokeCompositeCanvas.getContext('2d', { alpha: true });
+
+      strokeCompositeCtx.save();
+      strokeCompositeCtx.setTransform(1, 0, 0, 1, 0, 0);
+      strokeCompositeCtx.clearRect(0, 0, strokeCompositeCanvas.width, strokeCompositeCanvas.height);
+      strokeCompositeCtx.restore();
+      strokeCompositeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      strokeCompositeCtx.globalCompositeOperation = 'source-over';
+      strokeCompositeCtx.globalAlpha = 1;
+      return strokeCompositeCtx;
+    }
+
+    function renderQalamSegmentToContext(targetCtx, aNorm, bNorm, stroke) {
+      const a = denormalizePoint(aNorm);
+      const b = denormalizePoint(bNorm);
+      const sizeA = strokeSizePx(stroke, aNorm);
+      const sizeB = strokeSizePx(stroke, bNorm);
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+      const steps = Math.max(2, Math.min(32, Math.ceil(dist / 1.35)));
+      const left = [];
+      const right = [];
+
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const x = a.x + (b.x - a.x) * t;
+        const y = a.y + (b.y - a.y) * t;
+        const width = sizeA + (sizeB - sizeA) * t;
+        const interpPoint = {
+          pressure: (aNorm.pressure ?? 0.5) + ((bNorm.pressure ?? 0.5) - (aNorm.pressure ?? 0.5)) * t,
+          pointerType: bNorm.pointerType || aNorm.pointerType,
+          twist: (aNorm.twist ?? 0) + ((bNorm.twist ?? 0) - (aNorm.twist ?? 0)) * t
+        };
+        const angle = effectiveNibAngle(stroke, interpPoint);
+        const dx = Math.cos(angle) * (width / 2);
+        const dy = Math.sin(angle) * (width / 2);
+        left.push({ x: x - dx, y: y - dy });
+        right.push({ x: x + dx, y: y + dy });
+      }
+
+      targetCtx.save();
+      targetCtx.globalCompositeOperation = 'source-over';
+      targetCtx.globalAlpha = 1;
+      targetCtx.fillStyle = stroke.color;
+      targetCtx.beginPath();
+      targetCtx.moveTo(left[0].x, left[0].y);
+      for (let i = 1; i < left.length; i++) targetCtx.lineTo(left[i].x, left[i].y);
+      for (let i = right.length - 1; i >= 0; i--) targetCtx.lineTo(right[i].x, right[i].y);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.restore();
+    }
+
+    function renderQalamJoinToContext(targetCtx, prevNorm, pivotNorm, nextNorm, stroke) {
+      if (!prevNorm || !pivotNorm || !nextNorm) return;
+      const e = nibEdgesAtPoint(pivotNorm, stroke);
+      const p = denormalizePoint(prevNorm);
+      const n = denormalizePoint(nextNorm);
+      const vx = n.x - p.x, vy = n.y - p.y;
+      const len = Math.max(0.001, Math.hypot(vx, vy));
+      const ux = vx / len, uy = vy / len;
+      const overlap = Math.max(1, strokeSizePx(stroke, pivotNorm) * 0.13);
+
+      targetCtx.save();
+      targetCtx.globalCompositeOperation = 'source-over';
+      targetCtx.globalAlpha = 1;
+      targetCtx.fillStyle = stroke.color;
+      targetCtx.beginPath();
+      targetCtx.moveTo(e.left.x - ux * overlap, e.left.y - uy * overlap);
+      targetCtx.lineTo(e.left.x + ux * overlap, e.left.y + uy * overlap);
+      targetCtx.lineTo(e.right.x + ux * overlap, e.right.y + uy * overlap);
+      targetCtx.lineTo(e.right.x - ux * overlap, e.right.y - uy * overlap);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.restore();
+    }
+
+    function renderCalligraphyStrokeContinuous(stroke) {
+      if (!stroke.points?.length) return;
+      if (stroke.points.length === 1) return renderDot(stroke.points[0], stroke);
+
+      // Render each short qalam ribbon into an opaque per-stroke layer first.
+      // This turns self-intersections into a union of ink instead of one
+      // self-intersecting polygon whose fill rule can create apparent holes.
+      const layerCtx = prepareStrokeCompositeLayer();
+
+      for (let i = 1; i < stroke.points.length; i++) {
+        renderQalamSegmentToContext(layerCtx, stroke.points[i - 1], stroke.points[i], stroke);
+        if (i >= 2) {
+          renderQalamJoinToContext(
+            layerCtx,
+            stroke.points[i - 2],
+            stroke.points[i - 1],
+            stroke.points[i],
+            stroke
+          );
+        }
+      }
+
+      // Rounded-edge blend is also accumulated opaquely on the same layer so
+      // repeated passes do not darken self-crossings when opacity < 1.
+      const roundness = clamp(Number.isFinite(stroke.roundness) ? stroke.roundness : 0.12, 0, 1);
+      if (roundness > 0.01) {
+        layerCtx.save();
+        layerCtx.globalCompositeOperation = 'source-over';
+        layerCtx.globalAlpha = 1;
+        layerCtx.fillStyle = stroke.color;
+        const stride = Math.max(1, Math.round(5 - roundness * 3));
+        for (let i = 0; i < stroke.points.length; i += stride) {
+          const p = denormalizePoint(stroke.points[i]);
+          const r = Math.max(0.35, strokeSizePx(stroke, stroke.points[i]) * roundness * 0.22);
+          layerCtx.beginPath();
+          layerCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          layerCtx.fill();
+        }
+        layerCtx.restore();
+      }
+
+      // Composite the completed stroke once. Opacity therefore belongs to the
+      // whole stroke, not to each overlapping segment.
+      const opacity = clamp(Number.isFinite(stroke.opacity) ? stroke.opacity : 1, 0, 1);
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(strokeCompositeCanvas, 0, 0);
+      ctx.restore();
+    }
+
+    function renderCalligraphyJoin(prevNorm, pivotNorm, nextNorm, stroke) {
+      if (!prevNorm || !pivotNorm || !nextNorm) return;
+      // Small overlap patch removes anti-alias hairlines between live ribbon segments.
+      const e = nibEdgesAtPoint(pivotNorm, stroke);
+      const p = denormalizePoint(prevNorm);
+      const n = denormalizePoint(nextNorm);
+      const vx = n.x - p.x, vy = n.y - p.y;
+      const len = Math.max(0.001, Math.hypot(vx, vy));
+      const ux = vx / len, uy = vy / len;
+      const overlap = Math.max(0.8, strokeSizePx(stroke, pivotNorm) * 0.10);
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = Number.isFinite(stroke.opacity) ? stroke.opacity : 1;
+      ctx.fillStyle = stroke.color;
+      ctx.beginPath();
+      ctx.moveTo(e.left.x - ux * overlap, e.left.y - uy * overlap);
+      ctx.lineTo(e.left.x + ux * overlap, e.left.y + uy * overlap);
+      ctx.lineTo(e.right.x + ux * overlap, e.right.y + uy * overlap);
+      ctx.lineTo(e.right.x - ux * overlap, e.right.y - uy * overlap);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function renderStrokeSegment(aNorm, bNorm, stroke) {
+      const a = denormalizePoint(aNorm);
+      const b = denormalizePoint(bNorm);
+      const sizeA = strokeSizePx(stroke, aNorm);
+      const sizeB = strokeSizePx(stroke, bNorm);
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+
+      if (stroke.tool === 'eraser') {
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = ((sizeA + sizeB) / 2) * 3;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.restore();
+        return;
+      }
+
+      if (stroke.tool === 'smooth') {
+        ctx.save();
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = Number.isFinite(stroke.opacity) ? stroke.opacity : 1;
+        ctx.strokeStyle = stroke.color;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = (sizeA + sizeB) / 2;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+        ctx.restore();
+        return;
+      }
+
+      // Qalam Engine V2: sweep the chisel nib as one continuous ribbon instead of disconnected stamps.
+      const steps = Math.max(2, Math.min(28, Math.ceil(dist / 1.6)));
+      const left = [];
+      const right = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const x = a.x + (b.x - a.x) * t;
+        const y = a.y + (b.y - a.y) * t;
+        const width = sizeA + (sizeB - sizeA) * t;
+        const interpPoint = {
+          pressure: (aNorm.pressure ?? 0.5) + ((bNorm.pressure ?? 0.5) - (aNorm.pressure ?? 0.5)) * t,
+          pointerType: bNorm.pointerType || aNorm.pointerType,
+          twist: (aNorm.twist ?? 0) + ((bNorm.twist ?? 0) - (aNorm.twist ?? 0)) * t
+        };
+        const angle = effectiveNibAngle(stroke, interpPoint);
+        const dx = Math.cos(angle) * (width / 2);
+        const dy = Math.sin(angle) * (width / 2);
+        left.push({ x: x - dx, y: y - dy });
+        right.push({ x: x + dx, y: y + dy });
+      }
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = Number.isFinite(stroke.opacity) ? stroke.opacity : 1;
+      ctx.fillStyle = stroke.color;
+      ctx.beginPath();
+      ctx.moveTo(left[0].x, left[0].y);
+      for (let i = 1; i < left.length; i++) ctx.lineTo(left[i].x, left[i].y);
+      for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // ===== EXPERIMENT: Direction-neutral final stroke geometry =====
+    // Live drawing keeps the original low-latency renderer. Once a stroke is
+    // finalized/redrawn, qalam geometry is rebuilt from raw pointer samples
+    // with equal-arc resampling and a symmetric smoothing kernel. The filter
+    // uses points on both sides, so reversing the same sampled path should
+    // produce nearly the same centerline geometry.
+
+    function rawStrokePoint(p) {
+      return {
+        ...p,
+        nx: Number.isFinite(p.rawNx) ? p.rawNx : p.nx,
+        ny: Number.isFinite(p.rawNy) ? p.rawNy : p.ny
+      };
+    }
+
+    function circularLerpDegrees(a, b, t) {
+      const aa = Number.isFinite(a) ? a : 0;
+      const bb = Number.isFinite(b) ? b : aa;
+      const delta = ((bb - aa + 540) % 360) - 180;
+      return (aa + delta * t + 360) % 360;
+    }
+
+    function interpolateRawStrokePoint(a, b, t) {
+      const lerp = (x, y) => x + (y - x) * t;
+      const nx = lerp(a.nx, b.nx);
+      const ny = lerp(a.ny, b.ny);
+      return {
+        ...a,
+        nx, ny,
+        rawNx: nx,
+        rawNy: ny,
+        pressure: lerp(a.pressure ?? 0.5, b.pressure ?? 0.5),
+        tiltX: lerp(a.tiltX ?? 0, b.tiltX ?? 0),
+        tiltY: lerp(a.tiltY ?? 0, b.tiltY ?? 0),
+        twist: circularLerpDegrees(a.twist ?? 0, b.twist ?? 0, t),
+        altitudeAngle: (Number.isFinite(a.altitudeAngle) && Number.isFinite(b.altitudeAngle))
+          ? lerp(a.altitudeAngle, b.altitudeAngle) : (a.altitudeAngle ?? b.altitudeAngle ?? null),
+        azimuthAngle: (Number.isFinite(a.azimuthAngle) && Number.isFinite(b.azimuthAngle))
+          ? lerp(a.azimuthAngle, b.azimuthAngle) : (a.azimuthAngle ?? b.azimuthAngle ?? null),
+        t: lerp(a.t ?? 0, b.t ?? 0)
+      };
+    }
+
+    function resampleStrokeEqualArc(stroke, rawPoints) {
+      if (!rawPoints || rawPoints.length < 2) return rawPoints ? rawPoints.map(rawStrokePoint) : [];
+
+      const pts = rawPoints.map(rawStrokePoint);
+      const cumulative = [0];
+      for (let i = 1; i < pts.length; i++) {
+        const dx = (pts[i].nx - pts[i - 1].nx) * canvasCssWidth;
+        const dy = (pts[i].ny - pts[i - 1].ny) * canvasCssHeight;
+        cumulative.push(cumulative[i - 1] + Math.hypot(dx, dy));
+      }
+
+      const total = cumulative[cumulative.length - 1];
+      if (total < 0.01) return [pts[0]];
+
+      const baseSize = Math.max(1, stroke.sizeNorm * Math.min(canvasCssWidth, canvasCssHeight));
+      const targetSpacing = clamp(baseSize * 0.085, 0.8, 2.4);
+      // Equal number of intervals in either direction makes the resampling
+      // invariant to reversing the path.
+      const intervals = Math.max(1, Math.round(total / targetSpacing));
+      const result = [];
+      let seg = 1;
+
+      for (let i = 0; i <= intervals; i++) {
+        const d = total * (i / intervals);
+        while (seg < cumulative.length - 1 && cumulative[seg] < d) seg++;
+        const d0 = cumulative[seg - 1];
+        const d1 = cumulative[seg];
+        const local = d1 > d0 ? (d - d0) / (d1 - d0) : 0;
+        result.push(interpolateRawStrokePoint(pts[seg - 1], pts[seg], local));
+      }
+      return result;
+    }
+
+    function symmetricSmoothStroke(points, smoothingAmount) {
+      if (!points || points.length < 3) return points ? points.map(p => ({...p})) : [];
+
+      const amount = clamp(Number.isFinite(smoothingAmount) ? smoothingAmount : 0.58, 0, 0.95);
+      const passes = amount > 0.72 ? 3 : amount > 0.34 ? 2 : 1;
+      const spatialBlend = 0.18 + amount * 0.62;
+      const pressureBlend = amount * 0.32;
+      let src = points.map(p => ({...p}));
+
+      // Symmetric 1-2-3-2-1 kernel. Clamped edge access and fixed endpoints
+      // preserve reversal symmetry while avoiding endpoint drift.
+      for (let pass = 0; pass < passes; pass++) {
+        const out = src.map(p => ({...p}));
+        for (let i = 1; i < src.length - 1; i++) {
+          const ids = [
+            Math.max(0, i - 2),
+            Math.max(0, i - 1),
+            i,
+            Math.min(src.length - 1, i + 1),
+            Math.min(src.length - 1, i + 2)
+          ];
+          const w = [1, 2, 3, 2, 1];
+          let sx = 0, sy = 0, sp = 0, sw = 0;
+          for (let k = 0; k < ids.length; k++) {
+            const p = src[ids[k]];
+            sx += p.nx * w[k];
+            sy += p.ny * w[k];
+            sp += (p.pressure ?? 0.5) * w[k];
+            sw += w[k];
+          }
+          const ax = sx / sw;
+          const ay = sy / sw;
+          const ap = sp / sw;
+          out[i].nx = src[i].nx + (ax - src[i].nx) * spatialBlend;
+          out[i].ny = src[i].ny + (ay - src[i].ny) * spatialBlend;
+          out[i].pressure = (src[i].pressure ?? 0.5) + (ap - (src[i].pressure ?? 0.5)) * pressureBlend;
+          // rawNx/rawNy intentionally keep the equal-arc sample before smoothing.
+        }
+        src = out;
+      }
+      return src;
+    }
+
+    function buildDirectionNeutralQalamPoints(stroke) {
+      const raw = (stroke.points || []).map(rawStrokePoint);
+      const resampled = resampleStrokeEqualArc(stroke, raw);
+      return symmetricSmoothStroke(resampled, stroke.smoothing);
+    }
+
+    function renderWholeStroke(stroke) {
+      if (!stroke.points?.length) return;
+      if (stroke.tool === 'calligraphy') {
+        const neutralPoints = buildDirectionNeutralQalamPoints(stroke);
+        const neutralStroke = { ...stroke, points: neutralPoints };
+        renderCalligraphyStrokeContinuous(neutralStroke);
+        return;
+      }
+      if (stroke.points.length === 1) {
+        renderDot(stroke.points[0], stroke);
+        return;
+      }
+      for (let i = 1; i < stroke.points.length; i++) {
+        renderStrokeSegment(stroke.points[i - 1], stroke.points[i], stroke);
+      }
+    }
+
+    function redrawAllStrokes() {
+      clearRenderedCanvas();
+      for (const action of strokeHistory) {
+        if (action.kind === 'clear') {
+          clearRenderedCanvas();
+        } else if (action.kind === 'stroke') {
+          renderWholeStroke(action);
+        }
+      }
+    }
+
+    function pushHistory(action) {
+      strokeHistory.push(action);
+      if (strokeHistory.length > MAX_STROKE_ACTIONS) strokeHistory.shift();
+    }
+
+    function undoStroke() {
+      if (replayActive) stopStrokeReplay(false);
+      if (!strokeHistory.length) return;
+      strokeHistory.pop();
+      redrawAllStrokes();
+    }
+
+    function clearCanvas() {
+      if (replayActive) stopStrokeReplay(false);
+      if (!strokeHistory.length) {
+        clearRenderedCanvas();
+        return;
+      }
+      pushHistory({ kind: 'clear', t: performance.now() });
+      redrawAllStrokes();
+    }
+
+    function beginStrokeFromEvent(e) {
+      const point = pointerPoint(e);
+      currentStroke = {
+        kind: 'stroke',
+        tool: brushType,
+        color: inkColor,
+        sizeNorm: brushSize / Math.max(1, Math.min(canvasCssWidth, canvasCssHeight)),
+        angle: -(nibAngleDeg * Math.PI / 180),
+        pressureEnabled,
+        pressureSensitivity,
+        pressureMin,
+        pressureMax,
+        pressureMinWidth,
+        pressureCurve,
+        roundness: nibRoundness,
+        spacing: brushSpacing,
+        opacity: brushOpacity,
+        smoothing: qalamSmoothing,
+        rotationSource,
+        twistInfluence,
+        startedAt: point.t,
+        pointerType: point.pointerType,
+        points: [point]
+      };
+      renderDot(point, currentStroke);
+    }
+
+    function appendPointFromEvent(e) {
+      if (!currentStroke) return;
+      const prev = currentStroke.points[currentStroke.points.length - 1];
+      const raw = pointerPoint(e);
+      const point = smoothStrokePoint(raw, prev);
+      if (prev) {
+        const dx = (point.nx - prev.nx) * canvasCssWidth;
+        const dy = (point.ny - prev.ny) * canvasCssHeight;
+        const spacingPx = Math.max(0.28, brushSize * brushSpacing);
+        if (Math.hypot(dx, dy) < spacingPx) return;
+        renderStrokeSegment(prev, point, currentStroke);
+        if (currentStroke.tool === 'calligraphy' && currentStroke.points.length >= 2) {
+          const beforePrev = currentStroke.points[currentStroke.points.length - 2];
+          renderCalligraphyJoin(beforePrev, prev, point, currentStroke);
+        }
+      } else {
+        renderDot(point, currentStroke);
+      }
+      currentStroke.points.push(point);
+    }
+
+    function startDrawing(e) {
+      if (replayActive) stopStrokeReplay(false);
+      if (isDrawing) return;
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (e.cancelable) e.preventDefault();
+
+      isDrawing = true;
+      activePointerId = e.pointerId;
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+      beginStrokeFromEvent(e);
+    }
+
+    function draw(e) {
+      if (!isDrawing || e.pointerId !== activePointerId) return;
+      if (e.cancelable) e.preventDefault();
+
+      const events = (typeof e.getCoalescedEvents === 'function') ? e.getCoalescedEvents() : [];
+      if (events.length) {
+        events.forEach(appendPointFromEvent);
+      } else {
+        appendPointFromEvent(e);
+      }
+    }
+
+    function stopDrawing(e) {
+      if (!isDrawing) return;
+      if (e && activePointerId !== null && e.pointerId !== undefined && e.pointerId !== activePointerId) return;
+      if (e?.cancelable) e.preventDefault();
+
+      if (e && currentStroke && e.type === 'pointerup') appendPointFromEvent(e);
+      if (currentStroke?.points?.length) {
+        pushHistory(currentStroke);
+        // Replace incremental live joins by the deterministic continuous outline.
+        redrawAllStrokes();
+      }
+      finalizePressureCalibration();
+
+      try {
+        if (activePointerId !== null && canvas.hasPointerCapture?.(activePointerId)) {
+          canvas.releasePointerCapture(activePointerId);
+        }
+      } catch (_) {}
+
+      currentStroke = null;
+      activePointerId = null;
+      isDrawing = false;
+    }
+
+    function setBrushType(type) {
+      brushType = type;
+      document.querySelectorAll('.brush-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-800', 'text-white');
+        btn.classList.add('text-stone-600');
+      });
+
+      if (type === 'calligraphy') {
+        document.getElementById('btnQalamCalligraphy').classList.add('bg-amber-800', 'text-white');
+      } else if (type === 'smooth') {
+        document.getElementById('btnQalamNormal').classList.add('bg-amber-800', 'text-white');
+      } else if (type === 'eraser') {
+        document.getElementById('btnEraser').classList.add('bg-amber-800', 'text-white');
+      }
+      const angleControl = document.getElementById('nibAngleControl');
+      if (angleControl) angleControl.style.display = type === 'calligraphy' ? 'flex' : 'none';
+    }
+
+    function setInkColor(color) {
+      inkColor = color;
+      if (brushType === 'eraser') {
+        setBrushType('calligraphy');
+      }
+      document.getElementById('customColorPicker').value = color;
+    }
+
+    function updateBrushSize(val) {
+      brushSize = parseInt(val, 10);
+      document.getElementById('brushSizeVal').textContent = val;
+    }
+
+    function updateNibAngle(val) {
+      nibAngleDeg = clamp(parseFloat(val) || 42, 20, 75);
+      document.getElementById('nibAngleVal').textContent = `${Math.round(nibAngleDeg)}°`;
+    }
+
+    function setPressureEnabled(on) {
+      pressureEnabled = !!on;
+      const slider = document.getElementById('pressureSensitivity');
+      const cal = document.getElementById('btnPressureCalibrate');
+      if (slider) slider.disabled = !pressureEnabled;
+      if (cal) cal.disabled = !pressureEnabled;
+    }
+
+    function updatePressureSensitivity(val) {
+      pressureSensitivity = clamp((parseFloat(val) || 0) / 100, 0, 1);
+    }
+
+    function updatePressureStatus(message = '') {
+      const el = document.getElementById('pressureCalStatus');
+      if (!el) return;
+      el.textContent = message || `${pressureMin.toFixed(2)}–${pressureMax.toFixed(2)}`;
+      const bs = document.getElementById('bsPressureRange');
+      if (bs) bs.textContent = message ? `الحالة: ${message}` : `النطاق: ${pressureMin.toFixed(2)}–${pressureMax.toFixed(2)}`;
+    }
+
+    function armPressureCalibration() {
+      if (!pressureEnabled) setPressureEnabled(true);
+      pressureCalibrationArmed = true;
+      pressureCalibrationSamples = [];
+      const btn = document.getElementById('btnPressureCalibrate');
+      if (btn) {
+        btn.textContent = 'اكتب ضربة…';
+        btn.classList.add('bg-amber-200');
+      }
+      updatePressureStatus('بانتظار القلم');
+    }
+
+    function percentile(sorted, q) {
+      if (!sorted.length) return 0;
+      const pos = (sorted.length - 1) * q;
+      const base = Math.floor(pos);
+      const rest = pos - base;
+      return sorted[base + 1] !== undefined
+        ? sorted[base] + rest * (sorted[base + 1] - sorted[base])
+        : sorted[base];
+    }
+
+    function finalizePressureCalibration() {
+      if (!pressureCalibrationArmed) return;
+      pressureCalibrationArmed = false;
+      const btn = document.getElementById('btnPressureCalibrate');
+      if (btn) {
+        btn.textContent = 'معايرة';
+        btn.classList.remove('bg-amber-200');
+      }
+
+      const samples = pressureCalibrationSamples.filter(v => Number.isFinite(v) && v > 0).sort((a,b) => a-b);
+      pressureCalibrationSamples = [];
+      if (samples.length < 4) {
+        updatePressureStatus('لم تُلتقط بيانات قلم');
+        return;
+      }
+
+      const p10 = percentile(samples, 0.10);
+      const p90 = percentile(samples, 0.90);
+      if (p90 - p10 < 0.08) {
+        updatePressureStatus('مدى الضغط ضيق');
+        return;
+      }
+      pressureMin = clamp(p10 - 0.03, 0, 0.82);
+      pressureMax = clamp(p90 + 0.03, pressureMin + 0.10, 1);
+      updatePressureStatus();
+    }
+
+    const BRUSH_PRESETS = {
+      naskh:  { tool:'calligraphy', size:15, angle:42, roundness:12, spacing:8, smoothing:62, opacity:100, pressure:true, pressureSensitivity:62, minWidth:70, curve:'linear', rotation:'fixed', twist:22 },
+      ruqaa:  { tool:'calligraphy', size:17, angle:50, roundness:8,  spacing:7, smoothing:48, opacity:100, pressure:true, pressureSensitivity:55, minWidth:74, curve:'firm',   rotation:'fixed', twist:18 },
+      thuluth:{ tool:'calligraphy', size:23, angle:38, roundness:6,  spacing:6, smoothing:70, opacity:100, pressure:true, pressureSensitivity:68, minWidth:62, curve:'soft',   rotation:'fixed', twist:25 },
+      kufi:   { tool:'calligraphy', size:18, angle:60, roundness:2,  spacing:5, smoothing:30, opacity:100, pressure:false,pressureSensitivity:35, minWidth:90, curve:'linear', rotation:'fixed', twist:0  },
+      soft:   { tool:'smooth',      size:12, angle:42, roundness:100,spacing:5, smoothing:74, opacity:92,  pressure:true, pressureSensitivity:72, minWidth:45, curve:'soft',   rotation:'fixed', twist:0  }
+    };
+
+    function toggleBrushSettings(show) {
+      const modal = document.getElementById('brushSettingsModal');
+      if (!modal) return;
+      modal.classList.toggle('hidden', !show);
+      modal.classList.toggle('flex', !!show);
+      if (show) syncBrushSettingsUI();
+    }
+
+    function updateBrushPreview() {
+      const tip = document.getElementById('brushTipPreview');
+      const summary = document.getElementById('brushPreviewSummary');
+      if (tip) {
+        const w = clamp(brushSize * 3.4, 28, 92);
+        const h = clamp(2 + nibRoundness * 20, 3, 23);
+        tip.style.width = `${w}px`;
+        tip.style.height = `${h}px`;
+        tip.style.opacity = String(brushOpacity);
+        tip.style.transform = `rotate(${-nibAngleDeg}deg)`;
+      }
+      if (summary) summary.textContent = `${brushSize}px • ${Math.round(nibAngleDeg)}° • استدارة ${Math.round(nibRoundness*100)}%`;
+    }
+
+    function syncBrushSettingsUI() {
+      const set = (id,v) => { const el=document.getElementById(id); if(el) el.value=v; };
+      const txt = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+      set('bsSize',brushSize); txt('bsSizeVal',`${brushSize}px`);
+      set('bsAngle',nibAngleDeg); txt('bsAngleVal',`${Math.round(nibAngleDeg)}°`);
+      set('bsRoundness',Math.round(nibRoundness*100)); txt('bsRoundnessVal',`${Math.round(nibRoundness*100)}%`);
+      set('bsSpacing',Math.round(brushSpacing*100)); txt('bsSpacingVal',`${Math.round(brushSpacing*100)}%`);
+      set('bsSmoothing',Math.round(qalamSmoothing*100)); txt('bsSmoothingVal',`${Math.round(qalamSmoothing*100)}%`);
+      set('bsOpacity',Math.round(brushOpacity*100)); txt('bsOpacityVal',`${Math.round(brushOpacity*100)}%`);
+      set('bsPressureSens',Math.round(pressureSensitivity*100)); txt('bsPressureSensVal',`${Math.round(pressureSensitivity*100)}%`);
+      set('bsMinWidth',Math.round(pressureMinWidth*100)); txt('bsMinWidthVal',`${Math.round(pressureMinWidth*100)}%`);
+      set('bsTwist',Math.round(twistInfluence*100)); txt('bsTwistVal',`${Math.round(twistInfluence*100)}%`);
+      set('bsPressureCurve',pressureCurve); set('bsRotationSource',rotationSource);
+      const chk=document.getElementById('bsPressureEnabled'); if(chk) chk.checked=pressureEnabled;
+      const pr=document.getElementById('bsPressureRange'); if(pr) pr.textContent=`النطاق: ${pressureMin.toFixed(2)}–${pressureMax.toFixed(2)}`;
+      updateBrushPreview();
+    }
+
+    function updateBrushSetting(key, value) {
+      switch(key) {
+        case 'size': updateBrushSize(value); break;
+        case 'angle': updateNibAngle(value); break;
+        case 'roundness': nibRoundness=clamp((parseFloat(value)||0)/100,0,1); break;
+        case 'spacing': brushSpacing=clamp((parseFloat(value)||1)/100,0.01,0.30); break;
+        case 'smoothing': qalamSmoothing=clamp((parseFloat(value)||0)/100,0,0.95); break;
+        case 'opacity': brushOpacity=clamp((parseFloat(value)||100)/100,0.1,1); break;
+        case 'pressureEnabled': setPressureEnabled(!!value); break;
+        case 'pressureSensitivity': updatePressureSensitivity(value); break;
+        case 'minWidth': pressureMinWidth=clamp((parseFloat(value)||70)/100,0.2,1); break;
+        case 'pressureCurve': pressureCurve=['soft','linear','firm'].includes(value)?value:'linear'; break;
+        case 'rotationSource': rotationSource=value==='twist'?'twist':'fixed'; break;
+        case 'twist': twistInfluence=clamp((parseFloat(value)||0)/100,0,1); break;
+      }
+      syncBrushSettingsUI();
+    }
+
+    function applyBrushPreset(name) {
+      const p=BRUSH_PRESETS[name]; if(!p) return;
+      setBrushType(p.tool); brushSize=p.size; nibAngleDeg=p.angle; nibRoundness=p.roundness/100;
+      brushSpacing=p.spacing/100; qalamSmoothing=p.smoothing/100; brushOpacity=p.opacity/100;
+      pressureEnabled=p.pressure; pressureSensitivity=p.pressureSensitivity/100; pressureMinWidth=p.minWidth/100;
+      pressureCurve=p.curve; rotationSource=p.rotation; twistInfluence=p.twist/100;
+      document.getElementById('brushSize').value=brushSize; document.getElementById('brushSizeVal').textContent=brushSize;
+      document.getElementById('nibAngle').value=nibAngleDeg; document.getElementById('nibAngleVal').textContent=`${nibAngleDeg}°`;
+      const pe=document.getElementById('pressureEnabled'); if(pe) pe.checked=pressureEnabled;
+      const ps=document.getElementById('pressureSensitivity'); if(ps) ps.value=Math.round(pressureSensitivity*100);
+      setPressureEnabled(pressureEnabled); syncBrushSettingsUI();
+    }
+
+    function currentBrushPresetData() {
+      return { tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,pressureMin,pressureMax };
+    }
+
+    function savePersonalBrushPreset() {
+      try { localStorage.setItem('makhtuta.personalBrush.v1', JSON.stringify(currentBrushPresetData())); }
+      catch(_) {}
+      const b=document.getElementById('btnLoadPersonalPreset'); if(b){ b.textContent='تم الحفظ ✓'; setTimeout(()=>b.textContent='تطبيق المحفوظ',1200); }
+    }
+
+    function loadPersonalBrushPreset() {
+      let p=null; try { p=JSON.parse(localStorage.getItem('makhtuta.personalBrush.v1')||'null'); } catch(_) {}
+      if(!p) return;
+      setBrushType(p.tool||'calligraphy'); brushSize=p.size??15; nibAngleDeg=p.angle??42; nibRoundness=p.roundness??0.12;
+      brushSpacing=p.spacing??0.08; qalamSmoothing=p.smoothing??0.58; brushOpacity=p.opacity??1;
+      pressureEnabled=p.pressureEnabled!==false; pressureSensitivity=p.pressureSensitivity??0.62; pressureMinWidth=p.pressureMinWidth??0.70;
+      pressureCurve=p.pressureCurve||'linear'; rotationSource=p.rotationSource||'fixed'; twistInfluence=p.twistInfluence??0.22;
+      pressureMin=p.pressureMin??pressureMin; pressureMax=p.pressureMax??pressureMax;
+      document.getElementById('brushSize').value=brushSize; document.getElementById('brushSizeVal').textContent=brushSize;
+      document.getElementById('nibAngle').value=nibAngleDeg; document.getElementById('nibAngleVal').textContent=`${Math.round(nibAngleDeg)}°`;
+      setPressureEnabled(pressureEnabled); syncBrushSettingsUI();
+    }
+
+    function resetBrushSettings() { applyBrushPreset('naskh'); }
+
+    function setReplaySpeed(val) {
+      replaySpeed = clamp(parseFloat(val) || 1, 0.5, 3);
+    }
+
+    function visibleReplayActions() {
+      let lastClear = -1;
+      for (let i = 0; i < strokeHistory.length; i++) {
+        if (strokeHistory[i].kind === 'clear') lastClear = i;
+      }
+      return strokeHistory.slice(lastClear + 1).filter(a => a.kind === 'stroke' && a.points?.length);
+    }
+
+    function updateReplayButton() {
+      const btn = document.getElementById('btnReplay');
+      if (!btn) return;
+      const icon = btn.querySelector('i');
+      const label = btn.querySelector('span');
+      if (icon) icon.className = replayActive ? 'fa-solid fa-stop' : 'fa-solid fa-play';
+      if (label) label.textContent = replayActive ? 'إيقاف' : 'إعادة الحركة';
+      btn.classList.toggle('bg-amber-100', replayActive);
+    }
+
+    function stopStrokeReplay(restore = true) {
+      replayRunToken++;
+      replayActive = false;
+      if (replayRaf) cancelAnimationFrame(replayRaf);
+      replayRaf = 0;
+      updateReplayButton();
+      if (restore) redrawAllStrokes();
+    }
+
+    async function replayOneStroke(stroke, token) {
+      if (!stroke.points?.length || token !== replayRunToken) return false;
+      if (stroke.points.length === 1) {
+        renderDot(stroke.points[0], stroke);
+        await new Promise(r => setTimeout(r, 80 / replaySpeed));
+        return token === replayRunToken;
+      }
+
+      const firstT = stroke.points[0].t ?? 0;
+      const lastT = stroke.points[stroke.points.length - 1].t ?? firstT;
+      const recordedDuration = Math.max(80, Math.min(5000, lastT - firstT));
+      const duration = recordedDuration / replaySpeed;
+      const started = performance.now();
+      let renderedUntil = 0;
+
+      return await new Promise(resolve => {
+        const frame = now => {
+          if (!replayActive || token !== replayRunToken) return resolve(false);
+          const progress = clamp((now - started) / duration, 0, 1);
+          const targetRecordedT = firstT + recordedDuration * progress;
+          let targetIndex = renderedUntil;
+          while (targetIndex + 1 < stroke.points.length && (stroke.points[targetIndex + 1].t ?? firstT) <= targetRecordedT) {
+            targetIndex++;
+          }
+          // Ensure visual progress even when timestamps are sparse.
+          targetIndex = Math.max(targetIndex, Math.floor(progress * (stroke.points.length - 1)));
+          for (let i = renderedUntil + 1; i <= targetIndex; i++) {
+            renderStrokeSegment(stroke.points[i - 1], stroke.points[i], stroke);
+            if (stroke.tool === 'calligraphy' && i >= 2) {
+              renderCalligraphyJoin(stroke.points[i - 2], stroke.points[i - 1], stroke.points[i], stroke);
+            }
+          }
+          renderedUntil = targetIndex;
+          if (progress >= 1) {
+            // Final deterministic outline removes incremental anti-alias seams.
+            renderWholeStroke(stroke);
+            return resolve(true);
+          }
+          replayRaf = requestAnimationFrame(frame);
+        };
+        renderDot(stroke.points[0], stroke);
+        replayRaf = requestAnimationFrame(frame);
+      });
+    }
+
+    async function startStrokeReplay() {
+      const actions = visibleReplayActions();
+      if (!actions.length) return;
+      stopStrokeReplay(false);
+      replayActive = true;
+      const token = ++replayRunToken;
+      updateReplayButton();
+      clearRenderedCanvas();
+
+      for (let i = 0; i < actions.length; i++) {
+        if (!replayActive || token !== replayRunToken) return;
+        const ok = await replayOneStroke(actions[i], token);
+        if (!ok) return;
+        if (i < actions.length - 1) {
+          await new Promise(r => setTimeout(r, Math.max(45, 120 / replaySpeed)));
+        }
+      }
+
+      if (token === replayRunToken) {
+        replayActive = false;
+        replayRaf = 0;
+        updateReplayButton();
+        redrawAllStrokes();
+      }
+    }
+
+    function toggleStrokeReplay() {
+      if (replayActive) stopStrokeReplay(true);
+      else startStrokeReplay();
+    }
+
+    function toggleGuidelines(show) {
+      const group = document.getElementById('svgGuidelinesGroup');
+      if (group) group.style.opacity = show ? '1' : '0';
+    }
+
+    function toggleGuidelineLabels(show) {
+      const labels = document.getElementById('svgGuideLabelsGroup');
+      if (labels) labels.style.display = show ? '' : 'none';
+    }
+
+    function toggleGhost(show) {
+      syncGhostOverlayVisibility(show);
+    }
+
+    function setGhostOpacity(val) {
+      const ghost = document.getElementById('ghostSvgText');
+      if (ghost) ghost.setAttribute('fill-opacity', val);
+    }
+
+    function saveCanvasAsImage() {
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = canvas.width;
+      exportCanvas.height = canvas.height;
+      const expCtx = exportCanvas.getContext('2d');
+
+      // 1. Parchment paper background
+      expCtx.fillStyle = '#FEFDFB';
+      expCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+      // 2. Base Line Reference
+      const baseLineY = exportCanvas.height * 0.62;
+      expCtx.strokeStyle = '#DC2626';
+      expCtx.lineWidth = 2.5;
+      expCtx.beginPath();
+      expCtx.moveTo(0, baseLineY);
+      expCtx.lineTo(exportCanvas.width, baseLineY);
+      expCtx.stroke();
+
+      // 3. User drawing
+      expCtx.drawImage(canvas, 0, 0);
+
+      // 4. Save file
+      const link = document.createElement('a');
+      const letterData = ARABIC_LETTERS[currentLetterIndex];
+      link.download = `لوحة_${letterData.name}_${currentForm}.png`;
+      link.href = exportCanvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function setLetterForm(form) {
+      currentForm = form;
+
+      document.querySelectorAll('.form-tab-btn').forEach(btn => {
+        if (btn.dataset.form === form) {
+          btn.className = 'form-tab-btn flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border border-amber-600 bg-amber-800 text-white shadow-sm flex items-center justify-center gap-1.5';
+        } else {
+          btn.className = 'form-tab-btn flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all border border-amber-200 bg-white text-stone-700 hover:bg-amber-50 flex items-center justify-center gap-1.5';
+        }
+      });
+
+      updateLetterView();
+    }
+
+
+
+
+    function renderAlphabetGrid() {
+      const grid = document.getElementById('alphabetGrid');
+      grid.innerHTML = '';
+
+      ARABIC_LETTERS.forEach((item, index) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.onclick = () => selectLetter(index);
+        btn.className = `letter-matrix-card transition-all duration-150 p-2.5 rounded-2xl border border-amber-200 flex flex-col items-center justify-center gap-0.5 ${
+          index === currentLetterIndex ? 'bg-amber-800 text-white border-amber-900 scale-105 shadow-md' : 'bg-white text-amber-950 hover:bg-amber-100'
+        }`;
+        btn.innerHTML = `
+          <span class="font-qalam text-2xl font-bold leading-tight">${item.letter}</span>
+          <span class="text-[10px] font-medium opacity-80">${item.name}</span>
+        `;
+        btn.setAttribute('data-name', item.name);
+        btn.setAttribute('data-letter', item.letter);
+        grid.appendChild(btn);
+      });
+    }
+
+    function filterLetters(query) {
+      const trimmed = query.trim();
+      const cards = document.querySelectorAll('.letter-matrix-card');
+      cards.forEach(card => {
+        const name = card.getAttribute('data-name');
+        const letter = card.getAttribute('data-letter');
+        if (!trimmed || name.includes(trimmed) || letter.includes(trimmed)) {
+          card.classList.remove('hidden');
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+    }
+
+
+
+
+    function pronounceSound(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'ar-SA';
+        utterance.rate = 0.85;
+        const voices = window.speechSynthesis.getVoices();
+        const arVoice = voices.find(v => v.lang.startsWith('ar'));
+        if (arVoice) utterance.voice = arVoice;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function toggleChallengeModal(show) {
+      const modal = document.getElementById('challengeModal');
+      if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        generateNextQuizQuestion();
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+
+
+    /* ================= إضافات: الأوضاع، الخطوط، التشكيل الذكي، الطباعة، الإرشادات ================= */
+    const FONTS = {
+      amiri:   { name: "النسخ (أميري)", css: "'Amiri',serif" },
+      scheh:   { name: "نسخ مدرسي (شهرزاد)", css: "'Scheherazade New',serif" },
+      aref:    { name: "الرقعة (عارف رقعة)", css: "'Aref Ruqaa',serif" },
+      nast:    { name: "النستعليق (نوتو)", css: "'Noto Nastaliq Urdu',serif" },
+      kufi:    { name: "الكوفي (ريم كوفي)", css: "'Reem Kufi',sans-serif" },
+      katibeh: { name: "تزييني قريب من الثلث (كتيبة)", css: "'Katibeh',serif" },
+      naskhN:  { name: "النسخ (نوتو نسخ)", css: "'Noto Naskh Arabic',serif" },
+      lateef:  { name: "نسخ خفيف (لطيف)", css: "'Lateef',serif" },
+      quran:   { name: "نسخ مصحفي (أميري قرآن)", css: "'Amiri Quran',serif" },
+      arefInk: { name: "الرقعة الحبرية (عارف رقعة إنك)", css: "'Aref Ruqaa Ink',serif" },
+      kufiN:   { name: "كوفي (نوتو كوفي)", css: "'Noto Kufi Arabic',sans-serif" },
+      kufam:   { name: "كوفي حديث (كوفام)", css: "'Kufam',sans-serif" },
+      kufiInk: { name: "كوفي حبري (ريم كوفي إنك)", css: "'Reem Kufi Ink',sans-serif" },
+      mirza:   { name: "خط كتابي (ميرزا)", css: "'Mirza',serif" },
+      cairo:   { name: "خط حديث (القاهرة)", css: "'Cairo',sans-serif" }
+    };
+    const WORD_DATA = {
+      "حيوانات": ["أَسَد","جَمَل","حِصَان","عُصْفُور","فَرَاشَة","سَمَكَة","بَقَرَة","ثَعْلَب"],
+      "طبيعة": ["شَجَرَة","نَخْلَة","وَرْدَة","قَمَر","شَمْس","سَحَاب","بَحْر","جَبَل"],
+      "أشياء": ["كِتَاب","قَلَم","بَاب","مِفْتَاح","كُرْسِيّ","سَاعَة","مِسْطَرَة","دَفْتَر"],
+      "طعام": ["خُبْز","تُفَّاح","عِنَب","عَسَل","لَبَن","بُرْتُقَال","تَمْر","زَيْتُون"]
+    };
+    const WORDS = Object.entries(WORD_DATA).flatMap(([c, a]) => a.map(t => ({ t, c })));
+    const PHRASES = ["بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ","الخَطُّ زِينَةُ اليَدِ","العِلْمُ نُورٌ","الصَّبْرُ مِفْتَاحُ الفَرَجِ","مَنْ جَدَّ وَجَدَ","الوَقْتُ كَالسَّيْفِ","خَيْرُ الكَلَامِ مَا قَلَّ وَدَلَّ","النَّظَافَةُ مِنَ الإِيمَانِ","القَنَاعَةُ كَنْزٌ لَا يَفْنَى","صَبَاحُ الخَيْرِ","السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ","الصَّدِيقُ وَقْتَ الضِّيقِ"].map(t => ({ t }));
+
+    let mode = 'letters', itemIdx = 0, wordCat = 'الكل', wordTashkeel = true, fontKey = 'amiri';
+    const stripTashkeel = t => t.replace(/[\u064B-\u0652]/g, '');
+    const curList = () => mode === 'phrases' ? PHRASES : (wordCat === 'الكل' ? WORDS : WORDS.filter(w => w.c === wordCat));
+    const curItemText = () => { const l = curList(); const it = l[itemIdx] || l[0]; return wordTashkeel ? it.t : stripTashkeel(it.t); };
+    /* --- التشكيل حسب نوع الحرف وموقعه --- */
+    function isAllowed(l, form, mark) {
+      const id = TASHKEEL_LIST.find(t => t.mark === mark).id;
+      if (l.id === 1) {
+        if (form === 'medial') return false;
+        if (form === 'final') return id === 'tfath';
+        return ['fatha', 'damma', 'kasra'].includes(id);
+      }
+      const byForm = {
+        initial: ['fatha', 'damma', 'kasra'],
+        medial: ['fatha', 'damma', 'kasra', 'sukoon', 'shadda'],
+        isolated: TASHKEEL_LIST.map(t => t.id),
+        final: TASHKEEL_LIST.map(t => t.id)
+      };
+      return byForm[form].includes(id);
+    }
+    function composeGlyph(l, form, mark) {
+      const g = l.forms[form];
+      if (!mark) return g;
+      if (l.id === 1 && (form === 'isolated' || form === 'initial') && mark === 'ِ') return 'إ';
+      const chars = Array.from(g);
+      const i = chars.findIndex(c => c !== 'ـ');
+      chars.splice(i + 1, 0, mark); // العلامة تلي الحرف نفسه لا المدّة
+      return chars.join('');
+    }
+    function tashkeelHint(l) {
+      const t = TASHKEEL_LIST.find(x => x.mark === currentTashkeel);
+      const rules = {
+        initial: 'أول الكلمة: لا يأتي السكون ولا الشدّة ولا التنوين.',
+        medial: 'وسط الكلمة: لا يأتي التنوين إلا في آخرها.',
+        isolated: 'الحرف المنفصل يقبل جميع الحركات.',
+        final: 'آخر الكلمة: يقبل جميع الحركات والتنوين.'
+      };
+      let h = rules[currentForm];
+      if (l.id === 1) h = currentForm === 'medial' ? 'الألف الساكنة (حرف مدّ) في الوسط لا تُشكَّل.' : currentForm === 'final' ? 'الألف في الآخر لا تقبل إلا تنوين الفتح (ـاً).' : 'الألف المهموزة: الفتحة والضمة فوقها، والكسرة تحوّلها إلى (إ) والهمزة تحتها.';
+      if (t) h += ` موضع ${t.name.replace(/[\u064B-\u0652]/g, '')}: ${t.pos} الحرف.`;
+      return h;
+    }
+    function renderTashkeel() {
+      const c = document.getElementById('tashkeelContainer');
+      c.innerHTML = '';
+      const l = ARABIC_LETTERS[currentLetterIndex];
+      const clean = document.createElement('button');
+      clean.className = "px-2.5 py-1 text-xs rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold border border-amber-300 transition";
+      clean.textContent = "بدون تشكيل";
+      clean.onclick = () => { currentTashkeel = ""; updateLetterView(); };
+      c.appendChild(clean);
+      TASHKEEL_LIST.forEach(item => {
+        const ok = isAllowed(l, currentForm, item.mark);
+        const b = document.createElement('button');
+        b.disabled = !ok;
+        b.className = "px-2 py-1 text-xs rounded-xl border transition flex items-center gap-1 font-qalam text-base " + (ok ? (item.mark === currentTashkeel ? "bg-amber-800 text-white border-amber-900" : "bg-parchment-100 hover:bg-amber-200 border-amber-200 text-stone-800") : "bg-stone-100 text-stone-300 border-stone-200 cursor-not-allowed");
+        b.title = ok ? `${item.name} (${item.pos} الحرف)` : 'لا تأتي مع هذا الحرف في هذا الموضع';
+        b.innerHTML = `<span class="font-bold">${item.symbol}</span> <span class="text-[10px] font-sans">${item.name}</span>`;
+        b.onclick = () => { currentTashkeel = item.mark; updateLetterView(); pronounceSound(l.letter + item.mark); };
+        c.appendChild(b);
+      });
+      const p = document.createElement('p');
+      p.className = "w-full text-[11px] text-stone-600 mt-1";
+      p.textContent = tashkeelHint(l);
+      c.appendChild(p);
+    }
+
+    /* --- العرض --- */
+    function wordHtml(word, target) {
+      const clean = target.replace(/[ـ]/g, '');
+      let found = false, out = '';
+      for (const ch of word) {
+        if (!found && ch === clean) { out += `<span class="text-amber-700 bg-amber-200/90 px-1 rounded border border-amber-400 font-bold">${ch}</span>`; found = true; }
+        else out += `<span>${ch}</span>`;
+      }
+      return out;
+    }
+    function highlightExampleWord(w, t) { document.getElementById('exampleWordContainer').innerHTML = wordHtml(w, t); }
+    function updateGuideSvgGeometry() {
+      const box = document.getElementById('canvasContainer');
+      const svg = document.getElementById('trainingGuideSvg');
+      if (!box || !svg) return;
+
+      const w = Math.max(1, box.clientWidth || 600);
+      const h = Math.max(1, box.clientHeight || 400);
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+      const ys = {
+        top: h * 0.20,
+        mid: h * 0.40,
+        base: h * 0.62,
+        bottom: h * 0.82
+      };
+      const lineMap = [
+        ['svgTopLine', ys.top],
+        ['svgMidLine', ys.mid],
+        ['svgBaseLine', ys.base],
+        ['svgBottomLine', ys.bottom]
+      ];
+      lineMap.forEach(([id, y]) => {
+        const line = document.getElementById(id);
+        if (!line) return;
+        line.setAttribute('x1', '0');
+        line.setAttribute('x2', String(w));
+        line.setAttribute('y1', String(y));
+        line.setAttribute('y2', String(y));
+      });
+
+      const badges = [
+        ['svgTopBadge', 246, 30, ys.top],
+        ['svgMidBadge', 260, 30, ys.mid],
+        ['svgBaseBadge', 278, 32, ys.base],
+        ['svgBottomBadge', 264, 30, ys.bottom]
+      ];
+      badges.forEach(([id, bw, bh, y]) => {
+        const g = document.getElementById(id);
+        if (!g) return;
+        const x = Math.max(8, w - bw - 12);
+        const gy = Math.max(4, Math.min(h - bh - 4, y - (bh / 2)));
+        g.setAttribute('transform', `translate(${x} ${gy})`);
+      });
+    }
+
+    function fitGhost(text) {
+      const box = document.getElementById('canvasContainer');
+      const t = document.getElementById('ghostSvgText');
+      if (!box || !t) return;
+
+      updateGuideSvgGeometry();
+      const w = box.clientWidth || 600;
+      const h = box.clientHeight || 400;
+      const baseY = h * 0.62;
+      const sidePadding = Math.max(20, Math.min(44, w * 0.04));
+
+      t.textContent = text;
+      t.setAttribute('y', String(baseY));
+      t.style.fontFamily = FONTS[fontKey].css;
+      t.style.fontWeight = '700';
+
+      let available, size, minSize;
+      if (mode === 'letters') {
+        t.setAttribute('x', String(w / 2));
+        t.setAttribute('text-anchor', 'middle');
+        available = w * 0.72;
+        size = Math.min(h * 0.60, 260);
+        minSize = 72;
+      } else if (mode === 'words') {
+        t.setAttribute('x', String(w / 2));
+        t.setAttribute('text-anchor', 'middle');
+        available = w * 0.88;
+        size = Math.min(h * 0.42, 170);
+        minSize = 38;
+      } else {
+        // In RTL SVG text, x is the right-side starting point when direction=rtl + text-anchor=start.
+        t.setAttribute('x', String(w - sidePadding));
+        t.setAttribute('text-anchor', 'start');
+        available = Math.max(120, w - (sidePadding * 2));
+        size = Math.min(112, h * 0.29);
+        minSize = Math.max(28, Math.min(38, h * 0.09));
+      }
+
+      t.style.fontSize = size + 'px';
+      let measured = 0;
+      try { measured = t.getComputedTextLength(); } catch (_) { measured = 0; }
+      if (measured > available && measured > 0) {
+        size = Math.max(minSize, size * (available / measured));
+        t.style.fontSize = size + 'px';
+      }
+
+      // Baseline is fixed at 62%; keep tall Arabic glyphs/diacritics inside the writing surface too.
+      // This prevents letters such as أ / ل and stacked tashkeel from being clipped at the top edge.
+      try {
+        const bb = t.getBBox();
+        const padY = 8;
+        const topNeed = Math.max(0, baseY - bb.y);
+        const bottomNeed = Math.max(0, (bb.y + bb.height) - baseY);
+        const topAvail = Math.max(1, baseY - padY);
+        const bottomAvail = Math.max(1, h - baseY - padY);
+        let vScale = 1;
+        if (topNeed > topAvail) vScale = Math.min(vScale, topAvail / topNeed);
+        if (bottomNeed > bottomAvail) vScale = Math.min(vScale, bottomAvail / bottomNeed);
+        if (vScale < 0.999) {
+          size = Math.max(minSize, size * vScale);
+          t.style.fontSize = size + 'px';
+        }
+      } catch (_) {}
+    }
+
+    function syncGhostOverlayVisibility(show = document.getElementById('toggleGhostCheckbox')?.checked !== false) {
+      const ghostGroup = document.getElementById('svgGhostGroup');
+      if (ghostGroup) ghostGroup.style.display = show ? '' : 'none';
+    }
+    function updateLetterView() {
+      const f = FONTS[fontKey].css;
+      ['ghostSvgText', 'bigHeroGlyph', 'exampleWordContainer'].forEach(id => { const el = document.getElementById(id); if (el) el.style.fontFamily = f; });
+      const hero = document.getElementById('bigHeroGlyph');
+      if (mode !== 'letters') {
+        const text = curItemText(), list = curList();
+        document.getElementById('currentLetterName').textContent = mode === 'words' ? 'تدرب على الكلمات' : 'تدرب على العبارات';
+        document.getElementById('letterOrderBadge').textContent = `${itemIdx + 1} من ${list.length}`;
+        document.getElementById('letterMakhraj').textContent = mode === 'words' ? (list[itemIdx].c) : 'عبارات وحكم';
+        document.getElementById('currentFormDescription').textContent = `الخط: ${FONTS[fontKey].name}`;
+        document.getElementById('calligraphyTip').textContent = 'ابدأ من اليمين، اكتب الحروف المتصلة بحركة واحدة دون رفع القلم، ثم ضع النقاط والتشكيل في النهاية.';
+        hero.textContent = text; hero.style.fontSize = Math.max(13, Math.min(44, 170 / Array.from(text).length)) + 'px'; hero.className = 'text-center leading-tight font-bold text-amber-200 overflow-hidden px-1';
+        document.getElementById('ghostSvgText').textContent = text;
+        document.getElementById('itemCounter').textContent = `${itemIdx + 1}/${list.length}`;
+        document.querySelectorAll('#wordChips button').forEach((b, i) => b.className = 'px-2.5 py-1 rounded-lg border text-base whitespace-nowrap ' + (i === itemIdx ? 'bg-amber-800 text-white border-amber-900' : 'bg-white border-amber-300 hover:bg-amber-100'));
+        syncGhostOverlayVisibility();
+        fitGhost(text);
+        return;
+      }
+      hero.style.fontSize = ''; hero.className = 'font-qalam text-7xl font-bold text-amber-200';
+      const letter = ARABIC_LETTERS[currentLetterIndex];
+      if (currentTashkeel && !isAllowed(letter, currentForm, currentTashkeel)) currentTashkeel = "";
+      const glyph = composeGlyph(letter, currentForm, currentTashkeel);
+      const ex = letter.examples[currentForm];
+      document.getElementById('currentLetterName').textContent = `حرف ال${letter.name}`;
+      document.getElementById('letterOrderBadge').textContent = `الحرف ${letter.id} من 28`;
+      document.getElementById('letterMakhraj').textContent = `المخرج: ${letter.makhraj}`;
+      hero.textContent = glyph;
+      document.getElementById('calligraphyTip').textContent = letter.tip;
+      ['Isolated', 'Initial', 'Medial', 'Final'].forEach(n => document.getElementById('tabGlyph' + n).textContent = letter.forms[n.toLowerCase()]);
+      const names = { isolated: "منفصل (مستقل)", initial: "في بداية الكلمة", medial: "في وسط الكلمة", final: "في نهاية الكلمة" };
+      document.getElementById('currentFormDescription').textContent = `الموضع: ${names[currentForm]}`;
+      document.getElementById('ghostSvgText').textContent = glyph;
+      highlightExampleWord(ex.word, ex.target);
+      renderTashkeel();
+      syncGhostOverlayVisibility();
+      fitGhost(glyph);
+      document.querySelectorAll('.letter-matrix-card').forEach((card, idx) => {
+        const on = idx === currentLetterIndex;
+        card.classList.toggle('bg-amber-800', on); card.classList.toggle('text-white', on); card.classList.toggle('border-amber-900', on);
+        card.classList.toggle('scale-105', on); card.classList.toggle('shadow-md', on);
+        card.classList.toggle('bg-white', !on); card.classList.toggle('text-amber-950', !on);
+      });
+    }
+    function selectLetter(index) {
+      if (mode !== 'letters') setMode('letters');
+      currentLetterIndex = index; currentTashkeel = "";
+      updateLetterView(); clearCanvas();
+    }
+    function setMode(m) {
+      mode = m; itemIdx = 0;
+      document.querySelectorAll('.mode-btn').forEach(b => b.className = 'mode-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border ' + (b.dataset.mode === m ? 'bg-amber-800 text-white border-amber-900' : 'bg-white text-stone-700 border-amber-200 hover:bg-amber-50'));
+      const letters = m === 'letters';
+      const phrases = m === 'phrases';
+      document.getElementById('formBar').classList.toggle('hidden', !letters);
+      document.getElementById('tashkeelBar').classList.toggle('hidden', !letters);
+      const wp = document.getElementById('wordsPanel');
+      wp.classList.toggle('hidden', letters); wp.classList.toggle('flex', !letters);
+      document.getElementById('catSelect').style.display = m === 'words' ? '' : 'none';
+
+      // Only phrase mode gets the full 12-column writing workspace.
+      // Letters and words keep their original 8/12 layout and side panel.
+      const practice = document.getElementById('practiceSection');
+      const side = document.getElementById('sidePanel');
+      practice.classList.toggle('lg:col-span-12', phrases);
+      practice.classList.toggle('lg:col-span-8', !phrases);
+      side.classList.toggle('hidden', phrases);
+
+      if (!letters) renderChips();
+      syncGhostOverlayVisibility();
+      updateLetterView();
+
+      // Wait for the grid to apply its new width, then resize the drawing surface and refit the phrase.
+      requestAnimationFrame(() => {
+        resizeCanvasToContainer();
+        updateLetterView();
+      });
+    }
+    function renderChips() {
+      const box = document.getElementById('wordChips'); box.innerHTML = '';
+      curList().forEach((it, i) => {
+        const b = document.createElement('button'); b.type = 'button';
+        b.className = 'px-2.5 py-1 rounded-lg border text-base whitespace-nowrap';
+        b.style.fontFamily = "'Amiri',serif";
+        b.textContent = wordTashkeel ? it.t : stripTashkeel(it.t);
+        b.onclick = () => { itemIdx = i; updateLetterView(); };
+        box.appendChild(b);
+      });
+    }
+    function stepItem(d) { const n = curList().length; itemIdx = (itemIdx + d + n) % n; updateLetterView(); }
+    function setCategory(c) { wordCat = c; itemIdx = 0; renderChips(); updateLetterView(); }
+    function toggleWordTashkeel(v) { wordTashkeel = v; renderChips(); updateLetterView(); }
+    function setFont(k) { fontKey = k; document.getElementById('fontSelect').value = k; updateLetterView(); }
+
+    /* --- ملء الشاشة --- */
+    function toggleFullscreen() {
+      const el = document.getElementById('practiceSection');
+      const on = document.fullscreenElement || el.classList.contains('pseudo-fs');
+      if (on) { if (document.fullscreenElement) document.exitFullscreen(); el.classList.remove('pseudo-fs'); afterFs(); }
+      else if (el.requestFullscreen) el.requestFullscreen().catch(() => { el.classList.add('pseudo-fs'); afterFs(); });
+      else { el.classList.add('pseudo-fs'); afterFs(); }
+    }
+    function afterFs() {
+      setTimeout(() => {
+        resizeCanvasToContainer(); updateLetterView();
+        const on = document.fullscreenElement || document.getElementById('practiceSection').classList.contains('pseudo-fs');
+        document.querySelector('#btnFs i').className = on ? 'fa-solid fa-compress' : 'fa-solid fa-expand';
+      }, 150);
+    }
+    document.addEventListener('fullscreenchange', afterFs);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('practiceSection').classList.remove('pseudo-fs'), afterFs(); });
+
+    /* --- النطق --- */
+    function pronounceCurrent() {
+      if (mode !== 'letters') return pronounceSound(curItemText());
+      const l = ARABIC_LETTERS[currentLetterIndex];
+      pronounceSound(l.letter + (currentTashkeel && currentTashkeel !== 'ّ' ? currentTashkeel : 'َ'));
+    }
+    function pronounceExampleWord() {
+      pronounceSound(mode !== 'letters' ? curItemText() : ARABIC_LETTERS[currentLetterIndex].examples[currentForm].word);
+    }
+
+    /* --- أوراق العمل --- */
+    function togglePrint(show) {
+      const m = document.getElementById('printModal');
+      m.classList.toggle('hidden', !show); m.classList.toggle('flex', show);
+      document.getElementById('printFontName').textContent = FONTS[fontKey].name;
+    }
+    function buildSheet() {
+      const scope = document.querySelector('input[name=pscope]:checked').value;
+      const trace = document.getElementById('pTrace').checked, blank = document.getElementById('pBlank').checked;
+      const fn = { isolated: 'منفصل', initial: 'أول الكلمة', medial: 'وسط الكلمة', final: 'آخر الكلمة' };
+      let rows = [], title = '';
+      if (scope === 'cur') {
+        const l = ARABIC_LETTERS[currentLetterIndex]; title = `ورقة تدريب: حرف ال${l.name}`;
+        Object.keys(fn).forEach(k => rows.push({ lb: fn[k], solid: l.forms[k], unit: l.forms[k], rep: 6 }));
+      } else if (scope === 'alpha') {
+        title = 'ورقة تدريب: الحروف الهجائية';
+        ARABIC_LETTERS.forEach(l => rows.push({ lb: l.name, solid: Object.values(l.forms).join('  '), unit: Object.values(l.forms).join('  '), rep: 1 }));
+      } else if (scope === 'words') {
+        const list = wordCat === 'الكل' ? WORDS : WORDS.filter(w => w.c === wordCat); title = `ورقة تدريب: كلمات (${wordCat})`;
+        list.forEach(w => rows.push({ lb: w.c, solid: w.t, unit: w.t, rep: 3 }));
+      } else {
+        title = 'ورقة تدريب: عبارات'; PHRASES.forEach(p => rows.push({ lb: '', solid: p.t, unit: p.t, rep: 1, small: true }));
+      }
+      const lines = '<div class="l" style="top:20%;border-top:1px dashed #D97706"></div><div class="l" style="top:40%;border-top:1px solid #7dd3fc"></div><div class="l" style="top:64%;border-top:2px solid #DC2626"></div><div class="l" style="top:82%;border-top:1px dashed #059669"></div>';
+      const row = (r, model) => `<div class="sr">${lines}<span class="lb">${r.lb}</span><div class="tx" style="font-family:${FONTS[fontKey].css};${r.small ? 'font-size:9mm;' : ''}">${model ? `<span>${r.solid}</span>` + (trace ? `<i>${Array(r.rep).fill(r.unit).join('</i><i>')}</i>` : '') : ''}</div></div>`;
+      let html = `<h2 style="font:800 18px Cairo,sans-serif;margin:0 0 4mm;text-align:center">${title} — الاسم: ....................  التاريخ: ..........</h2>`;
+      rows.forEach(r => { html += row(r, true); if (blank) html += row(r, false); });
+      return html;
+    }
+    function printSheet() {
+      document.getElementById('printArea').innerHTML = buildSheet();
+      togglePrint(false);
+      setTimeout(() => window.print(), 250);
+    }
+
+    /* --- إرشادات الخطوط --- */
+    const GUIDES = [
+      { k: 'amiri', n: 'النسخ', intro: 'أوضح الخطوط وأكثرها استعمالاً في المصاحف والكتب والمطبوعات؛ حروفه متوازنة وسهلة القراءة، وهو أنسب خط للمبتدئين.',
+        specs: ['القلم: قصبة مشطوفة (قطّة مائلة)', 'زاوية القلم: نحو 45° تقريباً', 'ارتفاع الألف: نحو 5 نقاط', 'الاستعمال: النصوص الطويلة والكتب'],
+        pts: ['الحروف تستقر على خط الأساس بتناسق، والأسنان والنقاط متساوية الحجم.', 'الحركة المستقيمة (الألف واللام) رفيعة نسبياً، والمنحنيات (النون والسين) عميقة ومتسقة.'],
+        word: 'بَيْت', steps: ['ابدأ الباء من اليمين: ضع القلم على خط الأساس واسحب أفقياً لليسار بمقدار ثلاث نقاط تقريباً.', 'ارفع رأس الباء قليلاً قبل الاتصال بالياء ثم أنزل الياء الوسطى بسنّ صغير على خط الأساس.', 'أكمل الياء الأخيرة بذيل منحنٍ ينزل إلى خط الهبوط ثم يرتدّ بلطف.', 'أضف النقاط (واحدة تحت الباء، اثنتان تحت الياء) ثم السكون والفتحة أخيراً.'] },
+      { k: 'aref', n: 'الرقعة', intro: 'خط الكتابة اليومية السريعة في الدفاتر والمراسلات؛ حروفه قصيرة ومبسّطة وأقل تشكيلاً.',
+        specs: ['القلم: قصبة أصغر من النسخ', 'ارتفاع الألف: نحو 3 نقاط', 'الاستعمال: الكتابة اليدوية اليومية', 'الميزة: السرعة وقلة الحركات'],
+        pts: ['حروفه قصيرة وحلقاتها صغيرة، وتُختصر بعض الوصلات.', 'السطر أقرب للاستقامة وأقل انحناءً من النسخ ولا يُكثر من التشكيل.'],
+        word: 'كِتَاب', steps: ['اكتب الكاف بحركة واحدة: عمود قصير ثم قاعدة صغيرة على خط الأساس.', 'صل التاء بالكاف بخط مستقيم قصير دون رفع القلم مع سنّين فوقها بنقطتين.', 'أنزل الألف عمودياً قصيراً واتصل بالباء.', 'اختم الباء بقاعدة أفقية ثم النقطة تحتها.'] },
+      { k: 'katibeh', n: 'الثلث', intro: 'سلطان الخطوط وأصعبها؛ يُستعمل في عناوين المساجد والمصاحف وزخرفة اللوحات لجمال منحنياته وتركيبه المتداخل.',
+        specs: ['القلم: قصبة عريضة مشطوفة', 'ارتفاع الألف: نحو 7 نقاط', 'الاستعمال: العناوين واللوحات والعمارة', 'الميزة: منحنيات عميقة وتراكيب متداخلة'],
+        pts: ['الحروف كبيرة القوس، والعين والسين والنون ذات أقواس واسعة.', 'يُملأ الفراغ بالتشكيل والزخارف الصغيرة لتحقيق التوازن.', 'المعروض هنا خط تزييني قريب منه وليس الثلث الكلاسيكي.'],
+        word: 'اللّه', steps: ['ارسم الألف بعمود طويل يبلغ 7 نقاط بميلان خفيف.', 'اكتب اللام الأولى بذيل مقوّس عريض يصل إلى خط الهبوط.', 'أضف اللام الثانية بالعلو نفسه مع الشدة فوقهما.', 'أنهِ الهاء بحلقة متزنة على خط الأساس.'] },
+      { k: 'kufi', n: 'الكوفي', intro: 'أقدم الخطوط العربية؛ هندسي بزوايا حادة وخطوط مستقيمة، يُستخدم في الزخرفة والعمارة والشعارات.',
+        specs: ['القلم: عريض ومربع الرأس', 'الزاوية: قائمة وأفقية غالباً', 'الاستعمال: الزخرفة والشعارات', 'الميزة: أشكال هندسية دقيقة'],
+        pts: ['تُكتب الحروف على شبكة مربعة بخطوط مستقيمة وزوايا قائمة.', 'الأشكال تتساوى في السماكة، ولا تُستعمل المنحنيات إلا قليلاً.'],
+        word: 'مَحَمَّد', steps: ['ارسم على شبكة مربعة: الميم بمربع صغير مغلق.', 'صل الحاء بخط أفقي مستقيم ثم مربع صغير.', 'كرر الميم بالمقاس نفسه ثم الدال بزاوية قائمة على خط الأساس.', 'أزل الأشكال المائلة وتحقق من تساوي السماكات.'] },
+      { k: 'nast', n: 'النستعليق', intro: 'خط الكتابة الفارسية والأردية؛ حروفه انسيابية ويميل السطر فيه من أعلى اليمين إلى أسفل اليسار.',
+        specs: ['القلم: قصبة رفيعة مشطوفة', 'الميل: تنحدر الكلمة نحو اليسار', 'الاستعمال: الفارسية والأردية والشعر', 'الميزة: انسيابية وتقوّس ظاهر'],
+        pts: ['الحروف كالحبال المتموّجة، وأسنان الكلمات مرتفعة عن السطر.', 'عرضه ضيق وارتفاعه كبير، ولذلك قد يتجاوز الحرف السطر المرسوم بالتدريب.'],
+        word: 'دَلْو', steps: ['ابدأ الدال بقوس صغير على الأساس.', 'ارسم اللام بسحبة رفيعة تصعد ثم تنحدر بانسيابية.', 'ثم الواو بحلقة صغيرة وذيل يهبط إلى الأسفل.', 'حافظ على الميل من الأعلى إلى الأسفل.'] }
+    ];
+    function toggleGuide(show) {
+      const m = document.getElementById('guideModal');
+      m.classList.toggle('hidden', !show); m.classList.toggle('flex', show);
+      if (show) showGuide(GUIDES[0].k);
+    }
+    function showGuide(k) {
+      const g = GUIDES.find(x => x.k === k);
+      document.getElementById('guideTabs').innerHTML = GUIDES.map(x => `<button onclick="showGuide('${x.k}')" class="px-3 py-1.5 rounded-xl text-xs font-bold border whitespace-nowrap ${x.k === k ? 'bg-amber-800 text-white border-amber-900' : 'bg-white border-amber-300'}">${x.n}</button>`).join('');
+      document.getElementById('guideBody').innerHTML = `
+        <h4 class="font-kufi text-xl font-black text-amber-900 mb-1">خط ${g.n}</h4>
+        <p>${g.intro}</p>
+        <div class="my-3 p-4 bg-white border-2 border-dashed border-amber-400 rounded-2xl text-center"><span style="font-family:${FONTS[g.k].css}" class="text-5xl text-amber-950">${g.word}</span></div>
+        <div class="grid sm:grid-cols-2 gap-2 my-3">${g.specs.map(x => `<div class="bg-amber-100/70 border border-amber-300 rounded-xl px-3 py-1.5 text-xs font-bold">${x}</div>`).join('')}</div>
+        <h5 class="font-bold text-amber-900 mt-3">خصائص مهمة</h5><ul class="list-disc pr-5">${g.pts.map(x => `<li>${x}</li>`).join('')}</ul>
+        <h5 class="font-bold text-amber-900 mt-3">كيف تكتب كلمة «${g.word}» خطوة بخطوة</h5><ol class="list-decimal pr-5">${g.steps.map(x => `<li>${x}</li>`).join('')}</ol>
+        <p class="text-[11px] text-stone-500 mt-3">النِّسَب تقريبية وتختلف بين المدارس والأساتذة.</p>
+        <button onclick="setFont('${g.k}');toggleGuide(false)" class="mt-3 px-4 py-2 bg-amber-800 hover:bg-amber-900 text-white text-xs font-bold rounded-xl"><i class="fa-solid fa-pen-nib ml-1"></i>تدرب بهذا الخط</button>`;
+    }
+
+    /* --- الاختبار: عرض الكلمة كاملة بعد الإجابة --- */
+    function generateNextQuizQuestion() {
+      document.getElementById('quizFeedback').textContent = '';
+      currentQuizLetter = ARABIC_LETTERS[Math.floor(Math.random() * ARABIC_LETTERS.length)];
+      const forms = ['initial', 'medial', 'final'];
+      currentQuizCorrectForm = forms[Math.floor(Math.random() * forms.length)];
+      const ex = currentQuizLetter.examples[currentQuizCorrectForm];
+      const t = ex.target.replace(/[ـ]/g, '');
+      document.getElementById('quizWordDisplay').textContent = ex.word.replace(new RegExp(t + '[\u064B-\u0652]*'), ' [ ... ] ');
+      const desc = { initial: "بداية الكلمة", medial: "وسط الكلمة", final: "نهاية الكلمة" };
+      document.getElementById('quizQuestionText').innerHTML = `ما هو الرسم السليم لحرف <strong class="text-amber-900">(${currentQuizLetter.name})</strong> ليناسب موقعه في <strong class="text-amber-800">${desc[currentQuizCorrectForm]}</strong>؟`;
+      const box = document.getElementById('quizOptionsContainer'); box.innerHTML = '';
+      const glyphs = [...new Set(['isolated', 'initial', 'medial', 'final'].map(k => currentQuizLetter.forms[k]))].sort(() => 0.5 - Math.random());
+      glyphs.forEach(gl => {
+        const b = document.createElement('button'); b.type = 'button';
+        b.className = "quiz-opt-btn p-3 bg-white hover:bg-amber-100 border-2 border-amber-300 rounded-2xl flex items-center justify-center shadow-sm transition hover:scale-105 active:scale-95";
+        b.innerHTML = `<span class="font-qalam text-4xl font-bold text-amber-950">${gl}</span>`;
+        b.onclick = () => handleQuizAnswer(gl, b);
+        box.appendChild(b);
+      });
+    }
+    function handleQuizAnswer(glyph, btn) {
+      const fb = document.getElementById('quizFeedback');
+      document.querySelectorAll('.quiz-opt-btn').forEach(b => b.disabled = true);
+      const ex = currentQuizLetter.examples[currentQuizCorrectForm];
+      const ok = glyph === currentQuizLetter.forms[currentQuizCorrectForm];
+      btn.classList.remove('bg-white', 'border-amber-300');
+      if (ok) {
+        quizScore += 10; btn.classList.add('bg-emerald-100', 'border-emerald-600');
+        fb.innerHTML = `<span class="text-emerald-700"><i class="fa-solid fa-circle-check"></i> إجابة صحيحة! الكلمة كاملة أعلاه.</span>`;
+        pronounceSound(ex.word);
+      } else {
+        btn.classList.add('bg-rose-100', 'border-rose-500');
+        fb.innerHTML = `<span class="text-rose-600"><i class="fa-solid fa-circle-xmark"></i> الصواب: (${currentQuizLetter.forms[currentQuizCorrectForm]})</span>`;
+      }
+      document.getElementById('quizWordDisplay').innerHTML = wordHtml(ex.word, ex.target); // إظهار الكلمة كاملة
+      document.getElementById('quizScoreCount').textContent = `${quizCount++}`;
+      document.getElementById('quizScorePoints').textContent = `النقاط: ${quizScore}`;
+    }
+
+    let customFontN = 0;
+    async function loadCustomFonts(files) {
+      for (const f of files) {
+        try {
+          const fam = 'UserFont' + (++customFontN);
+          const face = new FontFace(fam, await f.arrayBuffer());
+          await face.load(); document.fonts.add(face);
+          FONTS[fam] = { name: f.name.replace(/\.[^.]+$/, '') + ' (من ملفك)', css: `'${fam}',serif` };
+          const o = document.createElement('option'); o.value = fam; o.textContent = FONTS[fam].name;
+          document.getElementById('fontSelect').appendChild(o);
+          setFont(fam);
+        } catch (e) { alert('تعذّر تحميل الخط: ' + f.name); }
+      }
+    }
+    function initExtras() {
+      const sel = document.getElementById('fontSelect');
+      sel.innerHTML = Object.entries(FONTS).map(([k, f]) => `<option value="${k}">${f.name}</option>`).join('');
+      document.getElementById('catSelect').innerHTML = ['الكل', ...Object.keys(WORD_DATA)].map(c => `<option>${c}</option>`).join('');
+      window.addEventListener('resize', () => updateLetterView());
+      setMode('letters');
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => updateLetterView()).catch(() => {});
+      }
+    }
+  </script>
+
+  <!-- PWA install + update controller -->
+  <div id="pwaInstallDock" style="display:none;position:fixed;left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));z-index:80">
+    <button id="pwaInstallBtn" type="button" style="border:1px solid #d6b36b;background:#78350f;color:#fff;border-radius:14px;padding:10px 14px;font:700 13px Cairo,sans-serif;box-shadow:0 8px 24px rgba(120,53,15,.2);cursor:pointer">
+      <i class="fa-solid fa-download" style="margin-left:6px"></i>تثبيت مخطوطة
+    </button>
+  </div>
+
+  <div id="pwaUpdateBar" dir="rtl" style="display:none;position:fixed;right:14px;left:14px;bottom:max(14px,env(safe-area-inset-bottom));z-index:90;max-width:560px;margin:auto;background:#fff7ed;border:1px solid #d97706;border-radius:16px;padding:10px 12px;box-shadow:0 12px 36px rgba(0,0,0,.16);align-items:center;justify-content:space-between;gap:12px;font-family:Cairo,sans-serif">
+    <span style="font-size:12px;font-weight:700;color:#78350f">يتوفر تحديث جديد لمخطوطة.</span>
+    <button id="pwaUpdateBtn" type="button" style="border:0;background:#78350f;color:#fff;border-radius:10px;padding:8px 12px;font:700 12px Cairo,sans-serif;cursor:pointer">تحديث الآن</button>
+  </div>
+
+  <script>
+  (() => {
+    let deferredInstallPrompt = null;
+    let waitingWorker = null;
+    let refreshing = false;
+
+    const installDock = document.getElementById('pwaInstallDock');
+    const installBtn = document.getElementById('pwaInstallBtn');
+    const updateBar = document.getElementById('pwaUpdateBar');
+    const updateBtn = document.getElementById('pwaUpdateBtn');
+
+    const isStandalone = () =>
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    function showInstallIfUseful() {
+      if (!isStandalone() && (deferredInstallPrompt || isIOS)) {
+        installDock.style.display = 'block';
+      } else {
+        installDock.style.display = 'none';
+      }
+    }
+
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      showInstallIfUseful();
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      installDock.style.display = 'none';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        try { await deferredInstallPrompt.userChoice; } catch (_) {}
+        deferredInstallPrompt = null;
+        showInstallIfUseful();
+        return;
+      }
+
+      if (isIOS) {
+        alert('لتثبيت مخطوطة على iPhone أو iPad:\n1) افتح زر المشاركة في Safari.\n2) اختر «إضافة إلى الشاشة الرئيسية».\n3) اضغط «إضافة».');
+      } else {
+        alert('استخدم خيار «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية» من قائمة المتصفح.');
+      }
+    });
+
+    function showUpdate(worker) {
+      waitingWorker = worker;
+      updateBar.style.display = 'flex';
+    }
+
+    updateBtn.addEventListener('click', () => {
+      if (waitingWorker) waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+
+          if (registration.waiting) showUpdate(registration.waiting);
+
+          registration.addEventListener('updatefound', () => {
+            const worker = registration.installing;
+            if (!worker) return;
+            worker.addEventListener('statechange', () => {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                showUpdate(worker);
+              }
+            });
+          });
+
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+          });
+
+          registration.update().catch(() => {});
+        } catch (error) {
+          console.warn('PWA service worker registration failed:', error);
+        }
+      });
+    }
+
+    showInstallIfUseful();
+  })();
+  </script>
+
+</body>
+</html>
