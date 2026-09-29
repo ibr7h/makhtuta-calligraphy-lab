@@ -1,6 +1,6 @@
 # Version
 
-**Hybrid V6.6 — Ra/Waw Bottom-Turn Nib Transition**
+**Hybrid V6.10 — Optional Ra/Waw Descender Flip**
 
 - SVG guide layer
 - Canvas renderer
@@ -33,3 +33,8 @@
 - Replaced the hard baseline nib flip for ر/و with a smooth transition around the lowest point of the lower stroke.
 - The nib keeps its original cut throughout descent and rotates toward the mirrored cut around the bottom turn.
 - Transition distance is derived from qalam size and clamped to 10–34 px to avoid a visible seam.
+
+- The ر/و lower-stroke nib reversal is now opt-in and disabled by default.
+- The option is available in Brush Settings and is persisted in named brushes and app settings.
+- ي and all other letters remain outside the reversal policy.
+- The application version is now visible in the main header as V6.10.
