@@ -494,7 +494,7 @@
             <button type="button" onclick="startQalamLetterDiagnostic('غ')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">غ</button>
             <button type="button" onclick="startQalamLetterDiagnostic('م')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">م</button>
           </div>
-          <div id="qalamDiagnosticHint" class="text-[10px] text-stone-600 mt-2 leading-5">في ر و و: تبقى قطّة القصبة ثابتة خلال القوس السفلي كله. يتم تبديل اتجاه القطّة بعد أدنى نقطة على مسار الخروج، مع وصلة قصيرة تمنع الحافة المأكولة.</div>
+          <div id="qalamDiagnosticHint" class="text-[10px] text-stone-600 mt-2 leading-5">في ر و و: الانعكاس يعمل بعد القاع فقط ما دام المسار تحت خط الارتكاز. عند العودة إلى الخط أو فوقه ترجع القطّة الأصلية. نقطة التبديل موصولة هندسيًا بلا فراغ.</div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 mb-3 bg-white border border-indigo-200 rounded-2xl p-3">
@@ -1412,7 +1412,15 @@
         walked += Math.hypot((a.nx-b.nx)*canvasCssWidth, (a.ny-b.ny)*canvasCssHeight);
         endIndex = i + 1;
       }
-      return { deepestIndex, startIndex, endIndex, deepestNy };
+      let baselineReturnIndex = pts.length - 1;
+      for (let i = deepestIndex + 1; i < pts.length; i++) {
+        const ny = Number(pts[i]?.ny);
+        if (Number.isFinite(ny) && ny <= QALAM_BASELINE_NY) {
+          baselineReturnIndex = i;
+          break;
+        }
+      }
+      return { deepestIndex, startIndex, endIndex, deepestNy, baselineReturnIndex };
     }
 
     function descenderFlipMixAt(stroke, segmentIndex, t) {
@@ -1427,10 +1435,13 @@
     function qalamAngleForPoint(stroke, point, ny, segmentIndex = -1, segmentT = 0) {
       const angle = effectiveNibAngle(stroke, point);
       if (!shouldFlipNibBelowBaseline(stroke) || segmentIndex < 0) return angle;
+      // Never carry the mirrored cut onto or above the baseline.
+      if (!Number.isFinite(ny) || ny <= QALAM_BASELINE_NY) return angle;
+      const profile = stroke?._descenderFlipProfile || computeDescenderFlipProfile(stroke);
+      if (!profile) return angle;
+      const pos = segmentIndex + clamp(segmentT, 0, 1);
+      if (pos >= profile.baselineReturnIndex) return angle;
       const mix = descenderFlipMixAt(stroke, segmentIndex, segmentT);
-      // Keep each physical cut stable. A continuous 84° rotation of a broad
-      // rectangular nib produces saw-teeth. Switch on the exit and bridge the
-      // two footprints instead of rotating every dab through intermediate angles.
       return mix < 0.58 ? angle : -angle;
     }
 
@@ -1669,15 +1680,40 @@
         const bp = stroke.points[bridgeIndex];
         const p = denormalizePoint(bp);
         const w = strokeSizePx(stroke, bp);
-        const bridgeStroke = { ...stroke, roundness: Math.max(0.55, stroke.roundness ?? 0.12) };
-        drawRoundedNibFootprint(
-          layerCtx, p.x, p.y, w * 0.88, effectiveNibAngle(stroke, bp),
-          bridgeStroke, 1
-        );
-        drawRoundedNibFootprint(
-          layerCtx, p.x, p.y, w * 0.88, -effectiveNibAngle(stroke, bp),
-          bridgeStroke, 1
-        );
+        const angleA = effectiveNibAngle(stroke, bp);
+        const angleB = -angleA;
+        const major = w * 0.92;
+        const minor = qalamNibThicknessPx(stroke, major);
+        const corners = [];
+        for (const angle of [angleA, angleB]) {
+          const ca = Math.cos(angle), sa = Math.sin(angle);
+          const ux = ca * major/2, uy = sa * major/2;
+          const vx = -sa * minor/2, vy = ca * minor/2;
+          corners.push(
+            {x:p.x+ux+vx,y:p.y+uy+vy},{x:p.x+ux-vx,y:p.y+uy-vy},
+            {x:p.x-ux+vx,y:p.y-uy+vy},{x:p.x-ux-vx,y:p.y-uy-vy}
+          );
+        }
+        // Convex hull of both nib footprints guarantees a gap-free hand-off.
+        corners.sort((a,b)=>a.x===b.x?a.y-b.y:a.x-b.x);
+        const cross=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+        const lower=[];
+        for(const pt of corners){while(lower.length>=2&&cross(lower[lower.length-2],lower[lower.length-1],pt)<=0)lower.pop();lower.push(pt);}
+        const upper=[];
+        for(let ci=corners.length-1;ci>=0;ci--){const pt=corners[ci];while(upper.length>=2&&cross(upper[upper.length-2],upper[upper.length-1],pt)<=0)upper.pop();upper.push(pt);}
+        const hull=lower.slice(0,-1).concat(upper.slice(0,-1));
+        if(hull.length){
+          layerCtx.save();
+          layerCtx.globalCompositeOperation='source-over';
+          layerCtx.globalAlpha=1;
+          layerCtx.fillStyle=stroke.color;
+          layerCtx.beginPath();
+          layerCtx.moveTo(hull[0].x,hull[0].y);
+          for(let hi=1;hi<hull.length;hi++) layerCtx.lineTo(hull[hi].x,hull[hi].y);
+          layerCtx.closePath();
+          layerCtx.fill();
+          layerCtx.restore();
+        }
       }
       delete stroke._descenderFlipProfile;
 
@@ -2258,7 +2294,9 @@
             ay+(by-ay)*t,
             wa+(wb-wa)*t,
             options.flipAtBottom
-              ? (descenderFlipMixAt(stroke, j - 1, t) < 0.58
+              ? (((ay+(by-ay)*t) <= cssH*QALAM_BASELINE_NY ||
+                  (j - 1 + t) >= (stroke._descenderFlipProfile?.baselineReturnIndex ?? Infinity) ||
+                  descenderFlipMixAt(stroke, j - 1, t) < 0.58)
                   ? brushLabEffectiveAngle(stroke,point,forcedAngle)
                   : -brushLabEffectiveAngle(stroke,point,forcedAngle))
               : brushLabEffectiveAngle(stroke,point,forcedAngle),
