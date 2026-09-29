@@ -1252,41 +1252,143 @@
       ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
     }
 
+    let strokeCompositeCanvas = null;
+    let strokeCompositeCtx = null;
+
+    function prepareStrokeCompositeLayer() {
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      if (!strokeCompositeCanvas) strokeCompositeCanvas = document.createElement('canvas');
+      if (strokeCompositeCanvas.width !== canvas.width || strokeCompositeCanvas.height !== canvas.height) {
+        strokeCompositeCanvas.width = canvas.width;
+        strokeCompositeCanvas.height = canvas.height;
+        strokeCompositeCtx = null;
+      }
+      if (!strokeCompositeCtx) strokeCompositeCtx = strokeCompositeCanvas.getContext('2d', { alpha: true });
+
+      strokeCompositeCtx.save();
+      strokeCompositeCtx.setTransform(1, 0, 0, 1, 0, 0);
+      strokeCompositeCtx.clearRect(0, 0, strokeCompositeCanvas.width, strokeCompositeCanvas.height);
+      strokeCompositeCtx.restore();
+      strokeCompositeCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      strokeCompositeCtx.globalCompositeOperation = 'source-over';
+      strokeCompositeCtx.globalAlpha = 1;
+      return strokeCompositeCtx;
+    }
+
+    function renderQalamSegmentToContext(targetCtx, aNorm, bNorm, stroke) {
+      const a = denormalizePoint(aNorm);
+      const b = denormalizePoint(bNorm);
+      const sizeA = strokeSizePx(stroke, aNorm);
+      const sizeB = strokeSizePx(stroke, bNorm);
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+      const steps = Math.max(2, Math.min(32, Math.ceil(dist / 1.35)));
+      const left = [];
+      const right = [];
+
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const x = a.x + (b.x - a.x) * t;
+        const y = a.y + (b.y - a.y) * t;
+        const width = sizeA + (sizeB - sizeA) * t;
+        const interpPoint = {
+          pressure: (aNorm.pressure ?? 0.5) + ((bNorm.pressure ?? 0.5) - (aNorm.pressure ?? 0.5)) * t,
+          pointerType: bNorm.pointerType || aNorm.pointerType,
+          twist: (aNorm.twist ?? 0) + ((bNorm.twist ?? 0) - (aNorm.twist ?? 0)) * t
+        };
+        const angle = effectiveNibAngle(stroke, interpPoint);
+        const dx = Math.cos(angle) * (width / 2);
+        const dy = Math.sin(angle) * (width / 2);
+        left.push({ x: x - dx, y: y - dy });
+        right.push({ x: x + dx, y: y + dy });
+      }
+
+      targetCtx.save();
+      targetCtx.globalCompositeOperation = 'source-over';
+      targetCtx.globalAlpha = 1;
+      targetCtx.fillStyle = stroke.color;
+      targetCtx.beginPath();
+      targetCtx.moveTo(left[0].x, left[0].y);
+      for (let i = 1; i < left.length; i++) targetCtx.lineTo(left[i].x, left[i].y);
+      for (let i = right.length - 1; i >= 0; i--) targetCtx.lineTo(right[i].x, right[i].y);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.restore();
+    }
+
+    function renderQalamJoinToContext(targetCtx, prevNorm, pivotNorm, nextNorm, stroke) {
+      if (!prevNorm || !pivotNorm || !nextNorm) return;
+      const e = nibEdgesAtPoint(pivotNorm, stroke);
+      const p = denormalizePoint(prevNorm);
+      const n = denormalizePoint(nextNorm);
+      const vx = n.x - p.x, vy = n.y - p.y;
+      const len = Math.max(0.001, Math.hypot(vx, vy));
+      const ux = vx / len, uy = vy / len;
+      const overlap = Math.max(1, strokeSizePx(stroke, pivotNorm) * 0.13);
+
+      targetCtx.save();
+      targetCtx.globalCompositeOperation = 'source-over';
+      targetCtx.globalAlpha = 1;
+      targetCtx.fillStyle = stroke.color;
+      targetCtx.beginPath();
+      targetCtx.moveTo(e.left.x - ux * overlap, e.left.y - uy * overlap);
+      targetCtx.lineTo(e.left.x + ux * overlap, e.left.y + uy * overlap);
+      targetCtx.lineTo(e.right.x + ux * overlap, e.right.y + uy * overlap);
+      targetCtx.lineTo(e.right.x - ux * overlap, e.right.y - uy * overlap);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.restore();
+    }
+
     function renderCalligraphyStrokeContinuous(stroke) {
       if (!stroke.points?.length) return;
       if (stroke.points.length === 1) return renderDot(stroke.points[0], stroke);
 
-      const edges = stroke.points.map(p => nibEdgesAtPoint(p, stroke));
-      const left = edges.map(e => e.left);
-      const right = edges.map(e => e.right);
+      // Render each short qalam ribbon into an opaque per-stroke layer first.
+      // This turns self-intersections into a union of ink instead of one
+      // self-intersecting polygon whose fill rule can create apparent holes.
+      const layerCtx = prepareStrokeCompositeLayer();
 
-      ctx.save();
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = Number.isFinite(stroke.opacity) ? stroke.opacity : 1;
-      ctx.fillStyle = stroke.color;
-      ctx.beginPath();
-      traceSoftPolyline(left, false);
-      ctx.lineTo(right[right.length - 1].x, right[right.length - 1].y);
-      traceSoftPolyline(right, true, true);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+      for (let i = 1; i < stroke.points.length; i++) {
+        renderQalamSegmentToContext(layerCtx, stroke.points[i - 1], stroke.points[i], stroke);
+        if (i >= 2) {
+          renderQalamJoinToContext(
+            layerCtx,
+            stroke.points[i - 2],
+            stroke.points[i - 1],
+            stroke.points[i],
+            stroke
+          );
+        }
+      }
 
-      // Rounded-edge blend: 0 = sharp qalam cut, 1 = very rounded brush-like edge.
+      // Rounded-edge blend is also accumulated opaquely on the same layer so
+      // repeated passes do not darken self-crossings when opacity < 1.
       const roundness = clamp(Number.isFinite(stroke.roundness) ? stroke.roundness : 0.12, 0, 1);
       if (roundness > 0.01) {
-        ctx.save();
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.globalAlpha = Number.isFinite(stroke.opacity) ? stroke.opacity : 1;
-        ctx.fillStyle = stroke.color;
+        layerCtx.save();
+        layerCtx.globalCompositeOperation = 'source-over';
+        layerCtx.globalAlpha = 1;
+        layerCtx.fillStyle = stroke.color;
         const stride = Math.max(1, Math.round(5 - roundness * 3));
         for (let i = 0; i < stroke.points.length; i += stride) {
           const p = denormalizePoint(stroke.points[i]);
           const r = Math.max(0.35, strokeSizePx(stroke, stroke.points[i]) * roundness * 0.22);
-          ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
+          layerCtx.beginPath();
+          layerCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          layerCtx.fill();
         }
-        ctx.restore();
+        layerCtx.restore();
       }
+
+      // Composite the completed stroke once. Opacity therefore belongs to the
+      // whole stroke, not to each overlapping segment.
+      const opacity = clamp(Number.isFinite(stroke.opacity) ? stroke.opacity : 1, 0, 1);
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(strokeCompositeCanvas, 0, 0);
+      ctx.restore();
     }
 
     function renderCalligraphyJoin(prevNorm, pivotNorm, nextNorm, stroke) {
