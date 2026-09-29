@@ -1,0 +1,30 @@
+{
+  "id": "./",
+  "name": "مخطوطة — معمل الخط العربي",
+  "short_name": "مخطوطة",
+  "description": "معمل تفاعلي لتعلم الحروف وقواعد الخط العربي باستخدام SVG وCanvas ومحرك قصبة قابل للضبط.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#F7F3E9",
+  "theme_color": "#78350F",
+  "orientation": "any",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
