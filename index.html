@@ -494,7 +494,7 @@
             <button type="button" onclick="startQalamLetterDiagnostic('غ')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">غ</button>
             <button type="button" onclick="startQalamLetterDiagnostic('م')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">م</button>
           </div>
-          <div id="qalamDiagnosticHint" class="text-[10px] text-stone-600 mt-2 leading-5">في ر و و: زاوية القصبة تبقى كما هي فوق خط الأساس، وتنعكس تلقائيًا فقط في الجزء الهابط تحته. اللون الأحمر يحدد منطقة الانعكاس.</div>
+          <div id="qalamDiagnosticHint" class="text-[10px] text-stone-600 mt-2 leading-5">في ر و و: تستمر القصبة بالزاوية الأصلية خلال النزول. يبدأ الانعكاس تدريجيًا عند نهاية الخط السفلي/القاع، فلا يحدث فاصل عند خط الأساس.</div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 mb-3 bg-white border border-indigo-200 rounded-2xl p-3">
@@ -502,7 +502,7 @@
           <button type="button" onclick="setBrushLabAngleMode('same')" class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold hover:bg-indigo-50">B = A</button>
           <button type="button" onclick="setBrushLabAngleMode('positive')" class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold hover:bg-indigo-50">B = +θ</button>
           <button type="button" onclick="setBrushLabAngleMode('negative')" class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold hover:bg-indigo-50">B = −θ</button>
-          <button type="button" onclick="setBrushLabAngleMode('descenderFlip')" class="px-3 py-1.5 rounded-xl bg-rose-700 text-white text-xs font-bold hover:bg-rose-800">عكس تحت السطر</button>
+          <button type="button" onclick="setBrushLabAngleMode('descenderFlip')" class="px-3 py-1.5 rounded-xl bg-rose-700 text-white text-xs font-bold hover:bg-rose-800">عكس عند نهاية الخط السفلي</button>
           <button type="button" onclick="setBrushLabAngleMode('diagnostic')" class="px-3 py-1.5 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800">+θ مقابل −θ</button>
           <button type="button" onclick="setBrushLabAngleMode('mirror')" class="px-3 py-1.5 rounded-xl bg-indigo-800 text-white text-xs font-bold hover:bg-indigo-900">عكس زاوية A</button>
         </div>
@@ -1377,15 +1377,63 @@
       return stroke?.descenderFlip === true && DESCENDER_FLIP_LETTERS.has(stroke.practiceLetter);
     }
 
-    function qalamAngleForPoint(stroke, point, ny) {
-      const angle = effectiveNibAngle(stroke, point);
-      // ر / و: preserve the selected cut above the baseline, mirror only the
-      // descending part. The stroke carries its own letter policy so replay
-      // and redraw remain deterministic after the user changes letters.
-      if (shouldFlipNibBelowBaseline(stroke) && Number.isFinite(ny) && ny > QALAM_BASELINE_NY) {
-        return -angle;
+    function smoothAngleMix(a, b, t) {
+      const u = smoothstep01(t);
+      return a + (b - a) * u;
+    }
+
+    function computeDescenderFlipProfile(stroke) {
+      if (!shouldFlipNibBelowBaseline(stroke) || !stroke?.points?.length) return null;
+      const pts = stroke.points;
+      let deepestIndex = -1;
+      let deepestNy = QALAM_BASELINE_NY;
+
+      // The lowest point marks the end of the downward part / beginning of
+      // the lower exit curve. Do not flip merely because the baseline was crossed.
+      for (let i = 0; i < pts.length; i++) {
+        const ny = Number(pts[i]?.ny);
+        if (Number.isFinite(ny) && ny > deepestNy) {
+          deepestNy = ny;
+          deepestIndex = i;
+        }
       }
-      return angle;
+      if (deepestIndex < 0) return null;
+
+      // Rotate progressively around the bottom turn, over a short arc-length
+      // window. This removes the visible seam created by an instantaneous flip.
+      const shortSide = Math.max(1, Math.min(canvasCssWidth, canvasCssHeight));
+      const transitionPx = clamp((stroke.sizeNorm || 0.03) * shortSide * 1.6, 10, 34);
+      let startIndex = deepestIndex;
+      let walked = 0;
+      for (let i = deepestIndex; i > 0 && walked < transitionPx; i--) {
+        const a = pts[i], b = pts[i - 1];
+        walked += Math.hypot((a.nx-b.nx)*canvasCssWidth, (a.ny-b.ny)*canvasCssHeight);
+        startIndex = i - 1;
+      }
+      let endIndex = deepestIndex;
+      walked = 0;
+      for (let i = deepestIndex; i < pts.length - 1 && walked < transitionPx; i++) {
+        const a = pts[i], b = pts[i + 1];
+        walked += Math.hypot((a.nx-b.nx)*canvasCssWidth, (a.ny-b.ny)*canvasCssHeight);
+        endIndex = i + 1;
+      }
+      return { deepestIndex, startIndex, endIndex, deepestNy };
+    }
+
+    function descenderFlipMixAt(stroke, segmentIndex, t) {
+      const profile = stroke?._descenderFlipProfile || computeDescenderFlipProfile(stroke);
+      if (!profile) return 0;
+      const pos = segmentIndex + clamp(t, 0, 1);
+      if (pos <= profile.startIndex) return 0;
+      if (pos >= profile.endIndex) return 1;
+      return (pos - profile.startIndex) / Math.max(1e-6, profile.endIndex - profile.startIndex);
+    }
+
+    function qalamAngleForPoint(stroke, point, ny, segmentIndex = -1, segmentT = 0) {
+      const angle = effectiveNibAngle(stroke, point);
+      if (!shouldFlipNibBelowBaseline(stroke) || segmentIndex < 0) return angle;
+      const mix = descenderFlipMixAt(stroke, segmentIndex, segmentT);
+      return smoothAngleMix(angle, -angle, mix);
     }
 
     function clearRenderedCanvas() {
@@ -1446,7 +1494,7 @@
       targetCtx.restore();
     }
 
-    function renderQalamFootprintSegmentToContext(targetCtx, aNorm, bNorm, stroke, alpha = 1) {
+    function renderQalamFootprintSegmentToContext(targetCtx, aNorm, bNorm, stroke, alpha = 1, segmentIndex = -1) {
       const a = denormalizePoint(aNorm);
       const b = denormalizePoint(bNorm);
       const sizeA = strokeSizePx(stroke, aNorm);
@@ -1475,7 +1523,7 @@
           x,
           y,
           width,
-          qalamAngleForPoint(stroke, interpPoint, interpNy),
+          qalamAngleForPoint(stroke, interpPoint, interpNy, segmentIndex, t),
           stroke,
           alpha
         );
@@ -1504,7 +1552,7 @@
           p.x,
           p.y,
           size,
-          qalamAngleForPoint(stroke, point, point.ny),
+          effectiveNibAngle(stroke, point),
           stroke,
           Number.isFinite(stroke.opacity) ? stroke.opacity : 1
         );
@@ -1515,7 +1563,7 @@
     function nibEdgesAtPoint(pointNorm, stroke) {
       const p = denormalizePoint(pointNorm);
       const width = strokeSizePx(stroke, pointNorm);
-      const angle = qalamAngleForPoint(stroke, pointNorm, pointNorm.ny);
+      const angle = effectiveNibAngle(stroke, pointNorm);
       const dx = Math.cos(angle) * (width / 2);
       const dy = Math.sin(angle) * (width / 2);
       return {
@@ -1599,15 +1647,18 @@
 
       const layerCtx = prepareStrokeCompositeLayer();
 
+      stroke._descenderFlipProfile = computeDescenderFlipProfile(stroke);
       for (let i = 1; i < stroke.points.length; i++) {
         renderQalamFootprintSegmentToContext(
           layerCtx,
           stroke.points[i - 1],
           stroke.points[i],
           stroke,
-          1
+          1,
+          i - 1
         );
       }
+      delete stroke._descenderFlipProfile;
 
       const opacity = clamp(Number.isFinite(stroke.opacity) ? stroke.opacity : 1, 0, 1);
       ctx.save();
@@ -1680,7 +1731,10 @@
         return;
       }
 
-      // EXPERIMENT: live preview uses the same finite 2D nib footprint.
+      // ر / و need the completed path to locate the lower turning point.
+      // Defer their deterministic qalam render until pointerup; other letters
+      // retain immediate live rendering.
+      if (shouldFlipNibBelowBaseline(stroke)) return;
       renderQalamFootprintSegmentToContext(
         ctx,
         aNorm,
@@ -2183,8 +2237,12 @@
             ax+(bx-ax)*t,
             ay+(by-ay)*t,
             wa+(wb-wa)*t,
-            (options.flipBelowBaseline && (ay+(by-ay)*t) > cssH*0.62)
-              ? -brushLabEffectiveAngle(stroke,point,forcedAngle)
+            options.flipAtBottom
+              ? smoothAngleMix(
+                  brushLabEffectiveAngle(stroke,point,forcedAngle),
+                  -brushLabEffectiveAngle(stroke,point,forcedAngle),
+                  descenderFlipMixAt(stroke, j - 1, t)
+                )
               : brushLabEffectiveAngle(stroke,point,forcedAngle),
             thickness,
             stroke.roundness??0.12,
@@ -2226,11 +2284,13 @@
         angle: aAngle,
         thickness: stroke.nibThickness ?? 0.16
       });
+      stroke._descenderFlipProfile = computeDescenderFlipProfile(stroke);
       renderBrushLabCanvas(document.getElementById('brushLabCanvasB'), stroke, {
         angle: brushLabAngleMode === 'descenderFlip' ? recordedAngle : bAngle,
         thickness: brushLabThicknessRatio,
-        flipBelowBaseline: brushLabAngleMode === 'descenderFlip'
+        flipAtBottom: brushLabAngleMode === 'descenderFlip'
       });
+      delete stroke._descenderFlipProfile;
 
       const recordedDeg = Math.round(recordedAngle*180/Math.PI);
       const aDeg = Math.round(aAngle*180/Math.PI);
@@ -2241,10 +2301,10 @@
       const bLabel=document.getElementById('brushLabBLabel');
       if(aLabel) aLabel.textContent = `${aDeg}° • ${aThickness}%`;
       if(bLabel) bLabel.textContent = brushLabAngleMode === 'descenderFlip'
-        ? `${recordedDeg}° → ${-recordedDeg}° تحت السطر • ${bThickness}%`
+        ? `${recordedDeg}° → ${-recordedDeg}° عند نهاية الخط السفلي • ${bThickness}%`
         : `${bDeg}° • ${bThickness}%`;
       if(status) status.textContent = brushLabAngleMode === 'descenderFlip'
-        ? `${qalamDiagnosticLetter ? 'الحرف '+qalamDiagnosticLetter+' • ' : ''}A ثابتة ${recordedDeg}° • B تعكس إلى ${-recordedDeg}° فقط تحت خط الأساس`
+        ? `${qalamDiagnosticLetter ? 'الحرف '+qalamDiagnosticLetter+' • ' : ''}A ثابتة ${recordedDeg}° • B تبدأ الانعكاس تدريجيًا عند نهاية الخط السفلي إلى ${-recordedDeg}°`
         : `${qalamDiagnosticLetter ? 'الحرف '+qalamDiagnosticLetter+' • ' : ''}نفس المسار: A ${aDeg}° مقابل B ${bDeg}° • المسجلة ${recordedDeg}°`;
       const slider=document.getElementById('brushLabThickness');
       const val=document.getElementById('brushLabThicknessVal');
