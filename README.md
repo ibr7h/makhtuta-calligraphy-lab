@@ -76,3 +76,11 @@ Canvas ليس مصدر الحقيقة. كل ضربة تحفظ كبيانات م�
 - Saved replay sessions are stored locally in IndexedDB.
 - Multiple custom brush presets can be saved with user-defined names.
 - App/brush preferences can be saved locally and restored on the next launch.
+
+
+## Brush Lab A/B & Stabilizer
+
+- Brush Lab A/B re-renders the latest calligraphy stroke without changing the original drawing.
+- Compare the exact same stroke at +θ, −θ, mirrored angle, or the original angle.
+- B can use a separate qalam cut thickness for controlled experiments.
+- Optional motion Stabilizer exposes Radius and Friction controls and remains disabled by default.
