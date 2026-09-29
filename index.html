@@ -1731,10 +1731,9 @@
         return;
       }
 
-      // ر / و need the completed path to locate the lower turning point.
-      // Defer their deterministic qalam render until pointerup; other letters
-      // retain immediate live rendering.
-      if (shouldFlipNibBelowBaseline(stroke)) return;
+      // Live ink must stay under the hand. For ر/و we render immediately
+      // with the original nib angle; after pointerup redrawAllStrokes() replaces
+      // it with the completed bottom-turn transition once the lowest point is known.
       renderQalamFootprintSegmentToContext(
         ctx,
         aNorm,
@@ -1831,7 +1830,7 @@
       if (!currentStroke) return;
       const prev = currentStroke.points[currentStroke.points.length - 1];
       const rawInput = pointerPoint(e);
-      const raw = applyStrokeStabilizer(rawInput);
+      const raw = stabilizerEnabled ? applyStrokeStabilizer(rawInput) : rawInput;
       const point = smoothStrokePoint(raw, prev);
       if (prev) {
         const dx = (point.nx - prev.nx) * canvasCssWidth;
