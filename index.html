@@ -228,6 +228,10 @@
               <i class="fa-solid fa-sliders text-xs"></i>
               <span class="hidden md:inline">إعدادات القصبة</span>
             </button>
+            <button id="btnBrushLab" onclick="openBrushLab()" title="مختبر مقارنة القصبة A/B" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-indigo-800 hover:bg-indigo-50 flex items-center gap-1">
+              <i class="fa-solid fa-flask text-xs"></i>
+              <span class="hidden lg:inline">A/B</span>
+            </button>
           </div>
 
           <!-- Color palette picker -->
@@ -466,6 +470,56 @@
   </main>
 
 
+  <!-- Brush Lab A/B — diagnostic renderer; never mutates strokeHistory -->
+  <div id="brushLabModal" class="fixed inset-0 z-[75] bg-black/55 backdrop-blur-sm hidden items-center justify-center p-3" onclick="if(event.target===this)closeBrushLab()">
+    <div class="bg-parchment-50 w-full max-w-5xl max-h-[94vh] rounded-3xl border-2 border-indigo-300 shadow-2xl overflow-hidden flex flex-col">
+      <div class="bg-indigo-950 text-white px-4 py-3 flex items-center justify-between gap-3">
+        <div>
+          <h3 class="font-bold font-kufi text-base"><i class="fa-solid fa-flask text-indigo-300 ml-2"></i>مختبر القصبة A/B</h3>
+          <p class="text-[10px] text-indigo-200">نفس الضربة تُعرض مرتين دون تغيير الرسم الأصلي</p>
+        </div>
+        <button type="button" onclick="closeBrushLab()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="p-4 overflow-y-auto custom-scrollbar">
+        <div class="flex flex-wrap items-center gap-2 mb-3 bg-white border border-indigo-200 rounded-2xl p-3">
+          <span id="brushLabStatus" class="text-xs font-bold text-indigo-950 ml-auto">اكتب ضربة بالقصبة ثم افتح المختبر.</span>
+          <button type="button" onclick="setBrushLabAngleMode('same')" class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold hover:bg-indigo-50">B = A</button>
+          <button type="button" onclick="setBrushLabAngleMode('positive')" class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold hover:bg-indigo-50">B = +θ</button>
+          <button type="button" onclick="setBrushLabAngleMode('negative')" class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold hover:bg-indigo-50">B = −θ</button>
+          <button type="button" onclick="setBrushLabAngleMode('mirror')" class="px-3 py-1.5 rounded-xl bg-indigo-800 text-white text-xs font-bold hover:bg-indigo-900">عكس زاوية A</button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <section class="bg-white border border-amber-200 rounded-2xl overflow-hidden">
+            <div class="px-3 py-2 border-b border-amber-100 flex items-center justify-between">
+              <strong class="text-xs text-amber-950">A — الضربة الأصلية</strong>
+              <span id="brushLabALabel" class="text-[10px] font-mono text-stone-500">—</span>
+            </div>
+            <canvas id="brushLabCanvasA" class="block w-full h-[260px] bg-[#FEFDFB]"></canvas>
+          </section>
+
+          <section class="bg-white border border-indigo-200 rounded-2xl overflow-hidden">
+            <div class="px-3 py-2 border-b border-indigo-100 flex items-center justify-between">
+              <strong class="text-xs text-indigo-950">B — التجربة</strong>
+              <span id="brushLabBLabel" class="text-[10px] font-mono text-stone-500">—</span>
+            </div>
+            <canvas id="brushLabCanvasB" class="block w-full h-[260px] bg-[#FEFDFB]"></canvas>
+          </section>
+        </div>
+
+        <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-indigo-50/70 border border-indigo-200 rounded-2xl p-3">
+          <label class="block text-[11px] font-bold">سماكة قطّة B <span id="brushLabThicknessVal" class="float-left font-mono">16%</span>
+            <input id="brushLabThickness" type="range" min="2" max="40" value="16" oninput="updateBrushLabThickness(this.value)" class="w-full accent-indigo-700">
+          </label>
+          <div class="text-[10px] text-stone-600 leading-5">
+            اختبار <b>+θ / −θ</b> يغيّر اتجاه قطّة B فقط. النقاط والضغط والمسار تبقى نفسها، لذلك أي اختلاف واضح سببه اتجاه السن نفسه.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Brush Settings — Photoshop-inspired, adapted for Arabic qalam dynamics -->
   <div id="brushSettingsModal" class="fixed inset-0 z-[70] bg-black/45 backdrop-blur-sm hidden items-center justify-center p-3" onclick="if(event.target===this)toggleBrushSettings(false)">
     <div class="bg-parchment-50 w-full max-w-3xl max-h-[92vh] rounded-3xl border-2 border-amber-300 shadow-2xl overflow-hidden flex flex-col">
@@ -549,6 +603,15 @@
                 <option value="twist">دوران القلم الإلكتروني (Twist)</option>
               </select>
               <label class="block text-[11px] font-bold mt-2">تأثير دوران القلم <span id="bsTwistVal" class="float-left font-mono">22%</span><input id="bsTwist" type="range" min="0" max="100" value="22" oninput="updateBrushSetting('twist',this.value)" class="w-full accent-amber-800"></label>
+              <div class="mt-3 pt-3 border-t border-amber-100">
+                <label class="flex items-center justify-between gap-2 text-[11px] font-bold">
+                  <span><i class="fa-solid fa-crosshairs ml-1 text-amber-700"></i>مثبّت الحركة Stabilizer</span>
+                  <input id="bsStabilizerEnabled" type="checkbox" onchange="updateBrushSetting('stabilizerEnabled',this.checked)" class="accent-amber-800">
+                </label>
+                <label class="block text-[11px] font-bold mt-2">نطاق التثبيت <span id="bsStabilizerRadiusVal" class="float-left font-mono">12px</span><input id="bsStabilizerRadius" type="range" min="0" max="40" value="12" oninput="updateBrushSetting('stabilizerRadius',this.value)" class="w-full accent-amber-800"></label>
+                <label class="block text-[11px] font-bold mt-2">الاحتكاك <span id="bsStabilizerFrictionVal" class="float-left font-mono">45%</span><input id="bsStabilizerFriction" type="range" min="0" max="95" value="45" oninput="updateBrushSetting('stabilizerFriction',this.value)" class="w-full accent-amber-800"></label>
+                <p class="text-[9px] text-stone-500 mt-1 leading-4">كلما زاد النطاق والاحتكاك زاد تثبيت اليد وتأخر رأس القصبة قليلًا عن المؤشر.</p>
+              </div>
             </section>
 
             <section class="bg-white border border-amber-200 rounded-2xl p-3 sm:col-span-2">
@@ -1038,6 +1101,10 @@
     let brushSize = 15;
     let nibAngleDeg = 42;
     let qalamSmoothing = 0.58; // adjustable from Brush Settings
+    let stabilizerEnabled = false;
+    let stabilizerRadiusPx = 12;
+    let stabilizerFriction = 0.45;
+    let stabilizerState = null;
 
     // Qalam Engine V3 pressure profile. Stored per stroke so replay/redraw is deterministic.
     let pressureEnabled = true;
@@ -1153,6 +1220,55 @@
         azimuthAngle: Number.isFinite(e.azimuthAngle) ? e.azimuthAngle : null,
         pointerType: e.pointerType || 'unknown',
         t: Number.isFinite(e.timeStamp) ? e.timeStamp : performance.now()
+      };
+    }
+
+    function resetStrokeStabilizer(point = null) {
+      stabilizerState = point ? {
+        nx: point.rawNx ?? point.nx,
+        ny: point.rawNy ?? point.ny
+      } : null;
+    }
+
+    function applyStrokeStabilizer(raw) {
+      if (!stabilizerEnabled || stabilizerRadiusPx <= 0) return raw;
+      const rawNx = raw.rawNx ?? raw.nx;
+      const rawNy = raw.rawNy ?? raw.ny;
+
+      if (!stabilizerState) {
+        stabilizerState = { nx: rawNx, ny: rawNy };
+        return raw;
+      }
+
+      const dxPx = (rawNx - stabilizerState.nx) * canvasCssWidth;
+      const dyPx = (rawNy - stabilizerState.ny) * canvasCssHeight;
+      const dist = Math.hypot(dxPx, dyPx);
+
+      let nextNx = stabilizerState.nx;
+      let nextNy = stabilizerState.ny;
+
+      if (dist > stabilizerRadiusPx) {
+        const ux = dxPx / dist;
+        const uy = dyPx / dist;
+        const targetXPx = rawNx * canvasCssWidth - ux * stabilizerRadiusPx;
+        const targetYPx = rawNy * canvasCssHeight - uy * stabilizerRadiusPx;
+        const currentXPx = stabilizerState.nx * canvasCssWidth;
+        const currentYPx = stabilizerState.ny * canvasCssHeight;
+        const follow = clamp(1 - stabilizerFriction * 0.88, 0.12, 1);
+
+        nextNx = (currentXPx + (targetXPx - currentXPx) * follow) / canvasCssWidth;
+        nextNy = (currentYPx + (targetYPx - currentYPx) * follow) / canvasCssHeight;
+      }
+
+      stabilizerState = { nx: nextNx, ny: nextNy };
+      return {
+        ...raw,
+        deviceRawNx: rawNx,
+        deviceRawNy: rawNy,
+        nx: nextNx,
+        ny: nextNy,
+        rawNx: nextNx,
+        rawNy: nextNy
       };
     }
 
@@ -1576,7 +1692,9 @@
     }
 
     function beginStrokeFromEvent(e) {
-      const point = pointerPoint(e);
+      const rawPoint = pointerPoint(e);
+      resetStrokeStabilizer(rawPoint);
+      const point = stabilizerEnabled ? applyStrokeStabilizer(rawPoint) : rawPoint;
       currentStroke = {
         kind: 'stroke',
         tool: brushType,
@@ -1594,6 +1712,9 @@
         spacing: brushSpacing,
         opacity: brushOpacity,
         smoothing: qalamSmoothing,
+        stabilizerEnabled,
+        stabilizerRadiusPx,
+        stabilizerFriction,
         rotationSource,
         twistInfluence,
         startedAt: point.t,
@@ -1606,7 +1727,8 @@
     function appendPointFromEvent(e) {
       if (!currentStroke) return;
       const prev = currentStroke.points[currentStroke.points.length - 1];
-      const raw = pointerPoint(e);
+      const rawInput = pointerPoint(e);
+      const raw = applyStrokeStabilizer(rawInput);
       const point = smoothStrokePoint(raw, prev);
       if (prev) {
         const dx = (point.nx - prev.nx) * canvasCssWidth;
@@ -1664,6 +1786,7 @@
         }
       } catch (_) {}
 
+      resetStrokeStabilizer();
       currentStroke = null;
       activePointerId = null;
       isDrawing = false;
@@ -1775,11 +1898,11 @@
     }
 
     const BRUSH_PRESETS = {
-      naskh:  { tool:'calligraphy', size:15, angle:42, roundness:12, nibThickness:16, spacing:8, smoothing:62, opacity:100, pressure:true, pressureSensitivity:62, minWidth:70, curve:'linear', rotation:'fixed', twist:22 },
-      ruqaa:  { tool:'calligraphy', size:17, angle:50, roundness:8,  nibThickness:14, spacing:7, smoothing:48, opacity:100, pressure:true, pressureSensitivity:55, minWidth:74, curve:'firm',   rotation:'fixed', twist:18 },
-      thuluth:{ tool:'calligraphy', size:23, angle:38, roundness:6,  nibThickness:18, spacing:6, smoothing:70, opacity:100, pressure:true, pressureSensitivity:68, minWidth:62, curve:'soft',   rotation:'fixed', twist:25 },
-      kufi:   { tool:'calligraphy', size:18, angle:60, roundness:2,  nibThickness:10, spacing:5, smoothing:30, opacity:100, pressure:false,pressureSensitivity:35, minWidth:90, curve:'linear', rotation:'fixed', twist:0  },
-      soft:   { tool:'smooth',      size:12, angle:42, roundness:100,nibThickness:100,spacing:5, smoothing:74, opacity:92,  pressure:true, pressureSensitivity:72, minWidth:45, curve:'soft',   rotation:'fixed', twist:0  }
+      naskh:  { tool:'calligraphy', size:15, angle:42, roundness:12, nibThickness:16, spacing:8, smoothing:62, opacity:100, pressure:true, pressureSensitivity:62, minWidth:70, curve:'linear', rotation:'fixed', twist:22, stabilizer:false, stabilizerRadius:12, stabilizerFriction:45 },
+      ruqaa:  { tool:'calligraphy', size:17, angle:50, roundness:8,  nibThickness:14, spacing:7, smoothing:48, opacity:100, pressure:true, pressureSensitivity:55, minWidth:74, curve:'firm',   rotation:'fixed', twist:18, stabilizer:false, stabilizerRadius:10, stabilizerFriction:35 },
+      thuluth:{ tool:'calligraphy', size:23, angle:38, roundness:6,  nibThickness:18, spacing:6, smoothing:70, opacity:100, pressure:true, pressureSensitivity:68, minWidth:62, curve:'soft',   rotation:'fixed', twist:25, stabilizer:false, stabilizerRadius:14, stabilizerFriction:50 },
+      kufi:   { tool:'calligraphy', size:18, angle:60, roundness:2,  nibThickness:10, spacing:5, smoothing:30, opacity:100, pressure:false,pressureSensitivity:35, minWidth:90, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:8, stabilizerFriction:30},
+      soft:   { tool:'smooth',      size:12, angle:42, roundness:100,nibThickness:100,spacing:5, smoothing:74, opacity:92,  pressure:true, pressureSensitivity:72, minWidth:45, curve:'soft',   rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:12, stabilizerFriction:45}
     };
 
     function toggleBrushSettings(show) {
@@ -1818,6 +1941,9 @@
       set('bsPressureSens',Math.round(pressureSensitivity*100)); txt('bsPressureSensVal',`${Math.round(pressureSensitivity*100)}%`);
       set('bsMinWidth',Math.round(pressureMinWidth*100)); txt('bsMinWidthVal',`${Math.round(pressureMinWidth*100)}%`);
       set('bsTwist',Math.round(twistInfluence*100)); txt('bsTwistVal',`${Math.round(twistInfluence*100)}%`);
+      set('bsStabilizerRadius',Math.round(stabilizerRadiusPx)); txt('bsStabilizerRadiusVal',`${Math.round(stabilizerRadiusPx)}px`);
+      set('bsStabilizerFriction',Math.round(stabilizerFriction*100)); txt('bsStabilizerFrictionVal',`${Math.round(stabilizerFriction*100)}%`);
+      const stab=document.getElementById('bsStabilizerEnabled'); if(stab) stab.checked=stabilizerEnabled;
       set('bsPressureCurve',pressureCurve); set('bsRotationSource',rotationSource);
       const chk=document.getElementById('bsPressureEnabled'); if(chk) chk.checked=pressureEnabled;
       const pr=document.getElementById('bsPressureRange'); if(pr) pr.textContent=`النطاق: ${pressureMin.toFixed(2)}–${pressureMax.toFixed(2)}`;
@@ -1839,6 +1965,9 @@
         case 'pressureCurve': pressureCurve=['soft','linear','firm'].includes(value)?value:'linear'; break;
         case 'rotationSource': rotationSource=value==='twist'?'twist':'fixed'; break;
         case 'twist': twistInfluence=clamp((parseFloat(value)||0)/100,0,1); break;
+        case 'stabilizerEnabled': stabilizerEnabled=!!value; resetStrokeStabilizer(); break;
+        case 'stabilizerRadius': stabilizerRadiusPx=clamp(parseFloat(value)||0,0,40); resetStrokeStabilizer(); break;
+        case 'stabilizerFriction': stabilizerFriction=clamp((parseFloat(value)||0)/100,0,0.95); resetStrokeStabilizer(); break;
       }
       syncBrushSettingsUI();
     }
@@ -1854,6 +1983,7 @@
       brushSpacing=p.spacing/100; qalamSmoothing=p.smoothing/100; brushOpacity=p.opacity/100;
       pressureEnabled=p.pressure; pressureSensitivity=p.pressureSensitivity/100; pressureMinWidth=p.minWidth/100;
       pressureCurve=p.curve; rotationSource=p.rotation; twistInfluence=p.twist/100;
+      stabilizerEnabled=!!p.stabilizer; stabilizerRadiusPx=p.stabilizerRadius??12; stabilizerFriction=(p.stabilizerFriction??45)/100; resetStrokeStabilizer();
       document.getElementById('brushSize').value=brushSize; document.getElementById('brushSizeVal').textContent=brushSize;
       document.getElementById('nibAngle').value=nibAngleDeg; document.getElementById('nibAngleVal').textContent=`${nibAngleDeg}°`;
       const pe=document.getElementById('pressureEnabled'); if(pe) pe.checked=pressureEnabled;
@@ -1862,7 +1992,211 @@
     }
 
     function currentBrushPresetData() {
-      return { tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,pressureMin,pressureMax };
+      return { tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,pressureMin,pressureMax };
+    }
+
+    let brushLabAngleMode = 'mirror';
+    let brushLabThicknessRatio = 0.16;
+
+    function latestCalligraphyStroke() {
+      const actions = visibleReplayActions();
+      for (let i = actions.length - 1; i >= 0; i--) {
+        if (actions[i]?.tool === 'calligraphy' && actions[i].points?.length) return actions[i];
+      }
+      return null;
+    }
+
+    function brushLabPressureWidth(stroke, point, shortSide) {
+      const base = (stroke.sizeNorm || 0.03) * shortSide;
+      if (!point || point.pointerType !== 'pen' || stroke.pressureEnabled === false) return Math.max(1, base);
+      const minP = Number.isFinite(stroke.pressureMin) ? stroke.pressureMin : 0.08;
+      const maxP = Number.isFinite(stroke.pressureMax) ? stroke.pressureMax : 0.95;
+      const sens = clamp(Number.isFinite(stroke.pressureSensitivity) ? stroke.pressureSensitivity : 0.62, 0, 1);
+      let normalized = smoothstep01(((point.pressure ?? 0.5) - minP) / Math.max(0.08, maxP - minP));
+      if (stroke.pressureCurve === 'soft') normalized = Math.sqrt(normalized);
+      else if (stroke.pressureCurve === 'firm') normalized *= normalized;
+      const minFactor = clamp(Number.isFinite(stroke.pressureMinWidth) ? stroke.pressureMinWidth : 0.70, 0.2, 1);
+      const maxFactor = 1 + 0.38 * sens;
+      return Math.max(1, base * (minFactor + (maxFactor - minFactor) * normalized));
+    }
+
+    function brushLabEffectiveAngle(stroke, point, forcedAngle) {
+      if (Number.isFinite(forcedAngle)) return forcedAngle;
+      let angle = Number.isFinite(stroke.angle) ? stroke.angle : -(42 * Math.PI / 180);
+      if ((stroke.rotationSource || 'fixed') === 'twist' && point?.pointerType === 'pen' && Number.isFinite(point.twist) && Math.abs(point.twist) > 0.01) {
+        const twistRad = -(point.twist * Math.PI / 180);
+        const mix = clamp(Number.isFinite(stroke.twistInfluence) ? stroke.twistInfluence : 0.22, 0, 1);
+        angle = angle * (1 - mix) + twistRad * mix;
+      }
+      return angle;
+    }
+
+    function drawBrushLabNib(ctxLab, x, y, major, angle, thickness, roundness, color) {
+      const minor = Math.max(0.8, major * clamp(thickness, 0.02, 0.40));
+      const radius = Math.min(major, minor) * 0.5 * clamp(roundness, 0, 1);
+      const hw = major / 2, hh = minor / 2;
+      ctxLab.save();
+      ctxLab.translate(x, y);
+      ctxLab.rotate(angle);
+      ctxLab.fillStyle = color || '#1A1817';
+      ctxLab.beginPath();
+      if (radius < 0.01) {
+        ctxLab.rect(-hw, -hh, major, minor);
+      } else {
+        ctxLab.moveTo(-hw + radius, -hh);
+        ctxLab.lineTo(hw - radius, -hh);
+        ctxLab.quadraticCurveTo(hw, -hh, hw, -hh + radius);
+        ctxLab.lineTo(hw, hh - radius);
+        ctxLab.quadraticCurveTo(hw, hh, hw - radius, hh);
+        ctxLab.lineTo(-hw + radius, hh);
+        ctxLab.quadraticCurveTo(-hw, hh, -hw, hh - radius);
+        ctxLab.lineTo(-hw, -hh + radius);
+        ctxLab.quadraticCurveTo(-hw, -hh, -hw + radius, -hh);
+      }
+      ctxLab.closePath();
+      ctxLab.fill();
+      ctxLab.restore();
+    }
+
+    function renderBrushLabCanvas(canvasEl, stroke, options = {}) {
+      if (!canvasEl || !stroke?.points?.length) return;
+      const rect = canvasEl.getBoundingClientRect();
+      const cssW = Math.max(300, rect.width || 460);
+      const cssH = Math.max(180, rect.height || 260);
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      canvasEl.width = Math.round(cssW * dpr);
+      canvasEl.height = Math.round(cssH * dpr);
+      const c = canvasEl.getContext('2d');
+      c.setTransform(dpr,0,0,dpr,0,0);
+      c.clearRect(0,0,cssW,cssH);
+      c.fillStyle = '#FEFDFB';
+      c.fillRect(0,0,cssW,cssH);
+
+      // Reference baseline to make descending strokes easy to compare.
+      c.strokeStyle = '#DC2626';
+      c.globalAlpha = 0.32;
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(0, cssH * 0.62);
+      c.lineTo(cssW, cssH * 0.62);
+      c.stroke();
+      c.globalAlpha = 1;
+
+      const points = stroke.points;
+      const thickness = Number.isFinite(options.thickness) ? options.thickness : (stroke.nibThickness ?? 0.16);
+      const forcedAngle = Number.isFinite(options.angle) ? options.angle : null;
+      const shortSide = Math.min(cssW, cssH);
+
+      if (points.length === 1) {
+        const p = points[0];
+        drawBrushLabNib(c,p.nx*cssW,p.ny*cssH,brushLabPressureWidth(stroke,p,shortSide),brushLabEffectiveAngle(stroke,p,forcedAngle),thickness,stroke.roundness??0.12,stroke.color);
+        return;
+      }
+
+      for (let j = 1; j < points.length; j++) {
+        const a = points[j-1], b = points[j];
+        const ax=a.nx*cssW, ay=a.ny*cssH, bx=b.nx*cssW, by=b.ny*cssH;
+        const dist=Math.hypot(bx-ax,by-ay);
+        const wa=brushLabPressureWidth(stroke,a,shortSide), wb=brushLabPressureWidth(stroke,b,shortSide);
+        const minor=Math.max(0.8,Math.min(wa,wb)*clamp(thickness,0.02,0.40));
+        const steps=Math.max(1,Math.min(220,Math.ceil(dist/clamp(minor*0.42,0.45,1.6))));
+        for(let k=0;k<=steps;k++){
+          const t=k/steps;
+          const point={
+            pressure:(a.pressure??0.5)+((b.pressure??0.5)-(a.pressure??0.5))*t,
+            pointerType:b.pointerType||a.pointerType,
+            twist:(a.twist??0)+((b.twist??0)-(a.twist??0))*t
+          };
+          drawBrushLabNib(
+            c,
+            ax+(bx-ax)*t,
+            ay+(by-ay)*t,
+            wa+(wb-wa)*t,
+            brushLabEffectiveAngle(stroke,point,forcedAngle),
+            thickness,
+            stroke.roundness??0.12,
+            stroke.color
+          );
+        }
+      }
+    }
+
+    function resolveBrushLabBAngle(stroke) {
+      const a = Number.isFinite(stroke?.angle) ? stroke.angle : -(42*Math.PI/180);
+      const magnitude = Math.abs(a);
+      if (brushLabAngleMode === 'same') return a;
+      if (brushLabAngleMode === 'positive') return magnitude;
+      if (brushLabAngleMode === 'negative') return -magnitude;
+      return -a;
+    }
+
+    function refreshBrushLab() {
+      const stroke = latestCalligraphyStroke();
+      const status = document.getElementById('brushLabStatus');
+      if (!stroke) {
+        if (status) status.textContent = 'لا توجد ضربة قصبة للمقارنة. اكتب ضربة أولًا.';
+        const a=document.getElementById('brushLabCanvasA'), b=document.getElementById('brushLabCanvasB');
+        [a,b].forEach(cv => {
+          if(!cv) return;
+          const c=cv.getContext('2d'); c.clearRect(0,0,cv.width,cv.height);
+        });
+        return;
+      }
+
+      brushLabThicknessRatio = clamp(Number(brushLabThicknessRatio || stroke.nibThickness || 0.16),0.02,0.40);
+      const bAngle = resolveBrushLabBAngle(stroke);
+      renderBrushLabCanvas(document.getElementById('brushLabCanvasA'), stroke, {
+        angle: Number.isFinite(stroke.angle) ? stroke.angle : null,
+        thickness: stroke.nibThickness ?? 0.16
+      });
+      renderBrushLabCanvas(document.getElementById('brushLabCanvasB'), stroke, {
+        angle: bAngle,
+        thickness: brushLabThicknessRatio
+      });
+
+      const aDeg = Math.round(((stroke.angle ?? -(42*Math.PI/180))*180/Math.PI));
+      const bDeg = Math.round(bAngle*180/Math.PI);
+      const aThickness = Math.round((stroke.nibThickness ?? 0.16)*100);
+      const bThickness = Math.round(brushLabThicknessRatio*100);
+      const aLabel=document.getElementById('brushLabALabel');
+      const bLabel=document.getElementById('brushLabBLabel');
+      if(aLabel) aLabel.textContent = `${aDeg}° • ${aThickness}%`;
+      if(bLabel) bLabel.textContent = `${bDeg}° • ${bThickness}%`;
+      if(status) status.textContent = `اختبار نفس المسار: A ${aDeg}° مقابل B ${bDeg}°`;
+      const slider=document.getElementById('brushLabThickness');
+      const val=document.getElementById('brushLabThicknessVal');
+      if(slider) slider.value=Math.round(brushLabThicknessRatio*100);
+      if(val) val.textContent=`${Math.round(brushLabThicknessRatio*100)}%`;
+    }
+
+    function openBrushLab() {
+      const modal=document.getElementById('brushLabModal');
+      if(!modal) return;
+      const stroke=latestCalligraphyStroke();
+      if(stroke) brushLabThicknessRatio=stroke.nibThickness??0.16;
+      brushLabAngleMode='mirror';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      requestAnimationFrame(refreshBrushLab);
+    }
+
+    function closeBrushLab() {
+      const modal=document.getElementById('brushLabModal');
+      if(!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function setBrushLabAngleMode(mode) {
+      brushLabAngleMode=['same','positive','negative','mirror'].includes(mode)?mode:'mirror';
+      refreshBrushLab();
+    }
+
+    function updateBrushLabThickness(value) {
+      brushLabThicknessRatio=clamp((parseFloat(value)||16)/100,0.02,0.40);
+      const val=document.getElementById('brushLabThicknessVal');
+      if(val) val.textContent=`${Math.round(brushLabThicknessRatio*100)}%`;
+      refreshBrushLab();
     }
 
     const NAMED_BRUSH_PRESETS_KEY = 'makhtuta.namedBrushPresets.v1';
@@ -1884,6 +2218,10 @@
       pressureCurve = ['soft','linear','firm'].includes(p.pressureCurve) ? p.pressureCurve : 'linear';
       rotationSource = p.rotationSource === 'twist' ? 'twist' : 'fixed';
       twistInfluence = clamp(Number(p.twistInfluence ?? 0.22), 0, 1);
+      stabilizerEnabled = p.stabilizerEnabled === true;
+      stabilizerRadiusPx = clamp(Number(p.stabilizerRadiusPx ?? 12), 0, 40);
+      stabilizerFriction = clamp(Number(p.stabilizerFriction ?? 0.45), 0, 0.95);
+      resetStrokeStabilizer();
       if (Number.isFinite(Number(p.pressureMin))) pressureMin = clamp(Number(p.pressureMin), 0, 0.82);
       if (Number.isFinite(Number(p.pressureMax))) pressureMax = clamp(Number(p.pressureMax), pressureMin + 0.10, 1);
 
