@@ -1,6 +1,6 @@
 # Version
 
-**Hybrid V6.5 — Ra/Waw Descender Nib Flip**
+**Hybrid V6.6 — Ra/Waw Bottom-Turn Nib Transition**
 
 - SVG guide layer
 - Canvas renderer
@@ -29,3 +29,7 @@
 - ر and و now preserve the selected nib angle above the 62% baseline and mirror the nib cut only below it.
 - The per-stroke letter policy is stored with Stroke Data so redraw and replay remain deterministic.
 - Brush Lab includes a dedicated «عكس تحت السطر» comparison mode.
+
+- Replaced the hard baseline nib flip for ر/و with a smooth transition around the lowest point of the lower stroke.
+- The nib keeps its original cut throughout descent and rotates toward the mirrored cut around the bottom turn.
+- Transition distance is derived from qalam size and clamped to 10–34 px to avoid a visible seam.
