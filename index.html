@@ -482,11 +482,25 @@
       </div>
 
       <div class="p-4 overflow-y-auto custom-scrollbar">
+        <div id="brushLabLetterTests" class="mb-3 bg-amber-50 border border-amber-200 rounded-2xl p-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-[11px] font-black text-amber-950 ml-auto"><i class="fa-solid fa-vial-circle-check ml-1"></i>اختبار اتجاه القطّة:</span>
+            <button type="button" onclick="startQalamLetterDiagnostic('ج')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">ج</button>
+            <button type="button" onclick="startQalamLetterDiagnostic('ح')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">ح</button>
+            <button type="button" onclick="startQalamLetterDiagnostic('خ')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">خ</button>
+            <button type="button" onclick="startQalamLetterDiagnostic('ع')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">ع</button>
+            <button type="button" onclick="startQalamLetterDiagnostic('غ')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">غ</button>
+            <button type="button" onclick="startQalamLetterDiagnostic('م')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">م</button>
+          </div>
+          <div id="qalamDiagnosticHint" class="text-[10px] text-stone-600 mt-2 leading-5">اختر حرفًا، سيغلق المختبر ويعرض الحرف الإرشادي. اكتب الضربة التي تريد اختبارها مرة واحدة، ثم افتح A/B؛ سيظهر +θ و−θ لنفس المسار.</div>
+        </div>
+
         <div class="flex flex-wrap items-center gap-2 mb-3 bg-white border border-indigo-200 rounded-2xl p-3">
           <span id="brushLabStatus" class="text-xs font-bold text-indigo-950 ml-auto">اكتب ضربة بالقصبة ثم افتح المختبر.</span>
           <button type="button" onclick="setBrushLabAngleMode('same')" class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold hover:bg-indigo-50">B = A</button>
           <button type="button" onclick="setBrushLabAngleMode('positive')" class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold hover:bg-indigo-50">B = +θ</button>
           <button type="button" onclick="setBrushLabAngleMode('negative')" class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold hover:bg-indigo-50">B = −θ</button>
+          <button type="button" onclick="setBrushLabAngleMode('diagnostic')" class="px-3 py-1.5 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800">+θ مقابل −θ</button>
           <button type="button" onclick="setBrushLabAngleMode('mirror')" class="px-3 py-1.5 rounded-xl bg-indigo-800 text-white text-xs font-bold hover:bg-indigo-900">عكس زاوية A</button>
         </div>
 
@@ -1995,6 +2009,28 @@
       return { tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,pressureMin,pressureMax };
     }
 
+    let qalamDiagnosticLetter = '';
+
+    function findArabicLetterIndex(letter) {
+      return ARABIC_LETTERS.findIndex(item => item.letter === letter || Object.values(item.forms || {}).includes(letter));
+    }
+
+    function startQalamLetterDiagnostic(letter) {
+      const idx = findArabicLetterIndex(letter);
+      if (idx < 0) return;
+      qalamDiagnosticLetter = letter;
+      closeBrushLab();
+      selectLetter(idx);
+      setLetterForm('isolated');
+      const ghostToggle = document.getElementById('toggleGhostCheckbox');
+      if (ghostToggle) {
+        ghostToggle.checked = true;
+        toggleGhost(true);
+      }
+      const hint = document.getElementById('qalamDiagnosticHint');
+      if (hint) hint.textContent = `الاختبار الحالي: ${letter} — اكتب الضربة المطلوبة مرة واحدة، ثم افتح A/B للمقارنة.`;
+    }
+
     let brushLabAngleMode = 'mirror';
     let brushLabThicknessRatio = 0.16;
 
@@ -2144,9 +2180,12 @@
       }
 
       brushLabThicknessRatio = clamp(Number(brushLabThicknessRatio || stroke.nibThickness || 0.16),0.02,0.40);
-      const bAngle = resolveBrushLabBAngle(stroke);
+      const recordedAngle = Number.isFinite(stroke.angle) ? stroke.angle : -(42*Math.PI/180);
+      const diagnosticMagnitude = Math.abs(recordedAngle);
+      const aAngle = brushLabAngleMode === 'diagnostic' ? diagnosticMagnitude : recordedAngle;
+      const bAngle = brushLabAngleMode === 'diagnostic' ? -diagnosticMagnitude : resolveBrushLabBAngle(stroke);
       renderBrushLabCanvas(document.getElementById('brushLabCanvasA'), stroke, {
-        angle: Number.isFinite(stroke.angle) ? stroke.angle : null,
+        angle: aAngle,
         thickness: stroke.nibThickness ?? 0.16
       });
       renderBrushLabCanvas(document.getElementById('brushLabCanvasB'), stroke, {
@@ -2154,7 +2193,8 @@
         thickness: brushLabThicknessRatio
       });
 
-      const aDeg = Math.round(((stroke.angle ?? -(42*Math.PI/180))*180/Math.PI));
+      const recordedDeg = Math.round(recordedAngle*180/Math.PI);
+      const aDeg = Math.round(aAngle*180/Math.PI);
       const bDeg = Math.round(bAngle*180/Math.PI);
       const aThickness = Math.round((stroke.nibThickness ?? 0.16)*100);
       const bThickness = Math.round(brushLabThicknessRatio*100);
@@ -2162,7 +2202,7 @@
       const bLabel=document.getElementById('brushLabBLabel');
       if(aLabel) aLabel.textContent = `${aDeg}° • ${aThickness}%`;
       if(bLabel) bLabel.textContent = `${bDeg}° • ${bThickness}%`;
-      if(status) status.textContent = `اختبار نفس المسار: A ${aDeg}° مقابل B ${bDeg}°`;
+      if(status) status.textContent = `${qalamDiagnosticLetter ? 'الحرف '+qalamDiagnosticLetter+' • ' : ''}نفس المسار: A ${aDeg}° مقابل B ${bDeg}° • المسجلة ${recordedDeg}°`;
       const slider=document.getElementById('brushLabThickness');
       const val=document.getElementById('brushLabThicknessVal');
       if(slider) slider.value=Math.round(brushLabThicknessRatio*100);
@@ -2174,7 +2214,7 @@
       if(!modal) return;
       const stroke=latestCalligraphyStroke();
       if(stroke) brushLabThicknessRatio=stroke.nibThickness??0.16;
-      brushLabAngleMode='mirror';
+      brushLabAngleMode='diagnostic';
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       requestAnimationFrame(refreshBrushLab);
@@ -2188,7 +2228,7 @@
     }
 
     function setBrushLabAngleMode(mode) {
-      brushLabAngleMode=['same','positive','negative','mirror'].includes(mode)?mode:'mirror';
+      brushLabAngleMode=['diagnostic','same','positive','negative','mirror'].includes(mode)?mode:'diagnostic';
       refreshBrushLab();
     }
 
