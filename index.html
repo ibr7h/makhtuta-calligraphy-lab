@@ -121,7 +121,10 @@
         </div>
         <div>
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
-          <p class="text-xs text-stone-600">تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</p>
+          <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
+            <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.10</span>
+          </p>
         </div>
       </div>
 
@@ -633,6 +636,13 @@
                 <label class="block text-[11px] font-bold mt-2">الاحتكاك <span id="bsStabilizerFrictionVal" class="float-left font-mono">45%</span><input id="bsStabilizerFriction" type="range" min="0" max="95" value="45" oninput="updateBrushSetting('stabilizerFriction',this.value)" class="w-full accent-amber-800"></label>
                 <p class="text-[9px] text-stone-500 mt-1 leading-4">كلما زاد النطاق والاحتكاك زاد تثبيت اليد وتأخر رأس القصبة قليلًا عن المؤشر.</p>
               </div>
+              <div class="mt-3 pt-3 border-t border-amber-100">
+                <label class="flex items-center justify-between gap-2 text-[11px] font-bold">
+                  <span><i class="fa-solid fa-arrows-rotate ml-1 text-amber-700"></i>انعكاس قطّة ر/و في المسار السفلي</span>
+                  <input id="bsDescenderFlipEnabled" type="checkbox" onchange="updateBrushSetting('descenderFlipEnabled',this.checked)" class="accent-amber-800">
+                </label>
+                <p class="text-[9px] text-stone-500 mt-1 leading-4">اختياري — مغلق افتراضيًا. عند تفعيله يطبّق الانعكاس على ر و و فقط، وتبقى الياء وبقية الحروف دون هذا التصحيح.</p>
+              </div>
             </section>
 
             <section class="bg-white border border-amber-200 rounded-2xl p-3 sm:col-span-2">
@@ -1126,6 +1136,8 @@
     let stabilizerRadiusPx = 12;
     let stabilizerFriction = 0.45;
     let stabilizerState = null;
+    // Experimental correction for ر/و only. Opt-in by design.
+    let qalamDescenderFlipEnabled = false;
 
     // Qalam Engine V3 pressure profile. Stored per stroke so replay/redraw is deterministic.
     let pressureEnabled = true;
@@ -1876,7 +1888,7 @@
         tool: brushType,
         color: inkColor,
         practiceLetter: currentPracticeLetter(),
-        descenderFlip: (currentPracticeLetter() === 'ر' || currentPracticeLetter() === 'و'),
+        descenderFlip: qalamDescenderFlipEnabled && (currentPracticeLetter() === 'ر' || currentPracticeLetter() === 'و'),
         sizeNorm: brushSize / Math.max(1, Math.min(canvasCssWidth, canvasCssHeight)),
         angle: -(nibAngleDeg * Math.PI / 180),
         pressureEnabled,
@@ -2076,11 +2088,11 @@
     }
 
     const BRUSH_PRESETS = {
-      naskh:  { tool:'calligraphy', size:15, angle:42, roundness:12, nibThickness:16, spacing:8, smoothing:62, opacity:100, pressure:true, pressureSensitivity:62, minWidth:70, curve:'linear', rotation:'fixed', twist:22, stabilizer:false, stabilizerRadius:12, stabilizerFriction:45 },
-      ruqaa:  { tool:'calligraphy', size:17, angle:50, roundness:8,  nibThickness:14, spacing:7, smoothing:48, opacity:100, pressure:true, pressureSensitivity:55, minWidth:74, curve:'firm',   rotation:'fixed', twist:18, stabilizer:false, stabilizerRadius:10, stabilizerFriction:35 },
-      thuluth:{ tool:'calligraphy', size:23, angle:38, roundness:6,  nibThickness:18, spacing:6, smoothing:70, opacity:100, pressure:true, pressureSensitivity:68, minWidth:62, curve:'soft',   rotation:'fixed', twist:25, stabilizer:false, stabilizerRadius:14, stabilizerFriction:50 },
-      kufi:   { tool:'calligraphy', size:18, angle:60, roundness:2,  nibThickness:10, spacing:5, smoothing:30, opacity:100, pressure:false,pressureSensitivity:35, minWidth:90, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:8, stabilizerFriction:30},
-      soft:   { tool:'smooth',      size:12, angle:42, roundness:100,nibThickness:100,spacing:5, smoothing:74, opacity:92,  pressure:true, pressureSensitivity:72, minWidth:45, curve:'soft',   rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:12, stabilizerFriction:45}
+      naskh:  { tool:'calligraphy', size:15, angle:42, roundness:12, nibThickness:16, spacing:8, smoothing:62, opacity:100, pressure:true, pressureSensitivity:62, minWidth:70, curve:'linear', rotation:'fixed', twist:22, stabilizer:false, stabilizerRadius:12, stabilizerFriction:45, descenderFlip:false },
+      ruqaa:  { tool:'calligraphy', size:17, angle:50, roundness:8,  nibThickness:14, spacing:7, smoothing:48, opacity:100, pressure:true, pressureSensitivity:55, minWidth:74, curve:'firm',   rotation:'fixed', twist:18, stabilizer:false, stabilizerRadius:10, stabilizerFriction:35, descenderFlip:false },
+      thuluth:{ tool:'calligraphy', size:23, angle:38, roundness:6,  nibThickness:18, spacing:6, smoothing:70, opacity:100, pressure:true, pressureSensitivity:68, minWidth:62, curve:'soft',   rotation:'fixed', twist:25, stabilizer:false, stabilizerRadius:14, stabilizerFriction:50, descenderFlip:false },
+      kufi:   { tool:'calligraphy', size:18, angle:60, roundness:2,  nibThickness:10, spacing:5, smoothing:30, opacity:100, pressure:false,pressureSensitivity:35, minWidth:90, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:8, stabilizerFriction:30, descenderFlip:false},
+      soft:   { tool:'smooth',      size:12, angle:42, roundness:100,nibThickness:100,spacing:5, smoothing:74, opacity:92,  pressure:true, pressureSensitivity:72, minWidth:45, curve:'soft',   rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:12, stabilizerFriction:45, descenderFlip:false}
     };
 
     function toggleBrushSettings(show) {
@@ -2122,6 +2134,7 @@
       set('bsStabilizerRadius',Math.round(stabilizerRadiusPx)); txt('bsStabilizerRadiusVal',`${Math.round(stabilizerRadiusPx)}px`);
       set('bsStabilizerFriction',Math.round(stabilizerFriction*100)); txt('bsStabilizerFrictionVal',`${Math.round(stabilizerFriction*100)}%`);
       const stab=document.getElementById('bsStabilizerEnabled'); if(stab) stab.checked=stabilizerEnabled;
+      const flip=document.getElementById('bsDescenderFlipEnabled'); if(flip) flip.checked=qalamDescenderFlipEnabled;
       set('bsPressureCurve',pressureCurve); set('bsRotationSource',rotationSource);
       const chk=document.getElementById('bsPressureEnabled'); if(chk) chk.checked=pressureEnabled;
       const pr=document.getElementById('bsPressureRange'); if(pr) pr.textContent=`النطاق: ${pressureMin.toFixed(2)}–${pressureMax.toFixed(2)}`;
@@ -2146,6 +2159,7 @@
         case 'stabilizerEnabled': stabilizerEnabled=!!value; resetStrokeStabilizer(); break;
         case 'stabilizerRadius': stabilizerRadiusPx=clamp(parseFloat(value)||0,0,40); resetStrokeStabilizer(); break;
         case 'stabilizerFriction': stabilizerFriction=clamp((parseFloat(value)||0)/100,0,0.95); resetStrokeStabilizer(); break;
+        case 'descenderFlipEnabled': qalamDescenderFlipEnabled=!!value; break;
       }
       syncBrushSettingsUI();
     }
@@ -2162,6 +2176,7 @@
       pressureEnabled=p.pressure; pressureSensitivity=p.pressureSensitivity/100; pressureMinWidth=p.minWidth/100;
       pressureCurve=p.curve; rotationSource=p.rotation; twistInfluence=p.twist/100;
       stabilizerEnabled=!!p.stabilizer; stabilizerRadiusPx=p.stabilizerRadius??12; stabilizerFriction=(p.stabilizerFriction??45)/100; resetStrokeStabilizer();
+      qalamDescenderFlipEnabled=!!p.descenderFlip;
       document.getElementById('brushSize').value=brushSize; document.getElementById('brushSizeVal').textContent=brushSize;
       document.getElementById('nibAngle').value=nibAngleDeg; document.getElementById('nibAngleVal').textContent=`${nibAngleDeg}°`;
       const pe=document.getElementById('pressureEnabled'); if(pe) pe.checked=pressureEnabled;
@@ -2170,7 +2185,7 @@
     }
 
     function currentBrushPresetData() {
-      return { tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,pressureMin,pressureMax };
+      return { tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,descenderFlipEnabled:qalamDescenderFlipEnabled,pressureMin,pressureMax };
     }
 
     let qalamDiagnosticLetter = '';
@@ -2441,6 +2456,7 @@
       stabilizerEnabled = p.stabilizerEnabled === true;
       stabilizerRadiusPx = clamp(Number(p.stabilizerRadiusPx ?? 12), 0, 40);
       stabilizerFriction = clamp(Number(p.stabilizerFriction ?? 0.45), 0, 0.95);
+      qalamDescenderFlipEnabled = p.descenderFlipEnabled === true;
       resetStrokeStabilizer();
       if (Number.isFinite(Number(p.pressureMin))) pressureMin = clamp(Number(p.pressureMin), 0, 0.82);
       if (Number.isFinite(Number(p.pressureMax))) pressureMax = clamp(Number(p.pressureMax), pressureMin + 0.10, 1);
