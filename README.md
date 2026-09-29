@@ -41,3 +41,30 @@ Canvas ليس مصدر الحقيقة. كل ضربة تحفظ كبيانات م�
 4. مقارنة مسار الطالب بالنموذج الإرشادي.
 5. Preset Manager متعدد مع استيراد/تصدير JSON.
 6. PWA وOffline assets.
+
+## PWA
+
+مخطوطة مجهزة كتطبيق ويب تقدمي قابل للتثبيت.
+
+### الملفات
+- `manifest.webmanifest`
+- `service-worker.js`
+- `offline.html`
+- `icons/icon.svg`
+- `icons/icon-maskable.svg`
+
+### GitHub Pages
+فعّل النشر من:
+`Settings → Pages → Deploy from a branch → main / root`
+
+بعد التفعيل يكون الرابط:
+`https://ibr7h.github.io/makhtuta-calligraphy-lab/`
+
+### التثبيت
+- Android / Chrome: استخدم زر **تثبيت مخطوطة** أو أمر التثبيت في المتصفح.
+- iPhone / iPad: افتح الموقع في Safari ثم **مشاركة → إضافة إلى الشاشة الرئيسية**.
+
+### Offline والتحديث
+بعد أول تحميل ناجح، يحتفظ Service Worker بملفات التطبيق الأساسية ويستخدم Runtime Cache للموارد الخارجية. عند توفر Service Worker جديد، يظهر إشعار **تحديث الآن** داخل التطبيق.
+
+> ملاحظة: بعض الخطوط وTailwind وFont Awesome ما زالت تأتي من CDN. للحصول على Offline كامل من أول تشغيل يجب نقل هذه الموارد إلى المشروع محليًا.
