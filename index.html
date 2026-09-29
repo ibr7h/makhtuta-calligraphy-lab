@@ -113,7 +113,6 @@
   </style>
 </head>
 <body class="font-sans text-stone-800 min-h-screen flex flex-col justify-between selection:bg-amber-200">
-
   <header class="border-b border-amber-200/80 bg-parchment-50/95 sticky top-0 z-30 shadow-sm backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center space-x-reverse space-x-3">
@@ -513,6 +512,12 @@
               <label class="block text-[11px] font-bold mb-2">الحجم <span id="bsSizeVal" class="float-left font-mono">15px</span><input id="bsSize" type="range" min="4" max="48" value="15" oninput="updateBrushSetting('size',this.value)" class="w-full accent-amber-800"></label>
               <label class="block text-[11px] font-bold mb-2">الزاوية <span id="bsAngleVal" class="float-left font-mono">42°</span><input id="bsAngle" type="range" min="0" max="90" value="42" oninput="updateBrushSetting('angle',this.value)" class="w-full accent-amber-800"></label>
               <label class="block text-[11px] font-bold mb-2">استدارة السن <span id="bsRoundnessVal" class="float-left font-mono">12%</span><input id="bsRoundness" type="range" min="0" max="100" value="12" oninput="updateBrushSetting('roundness',this.value)" class="w-full accent-amber-800"></label>
+              <label class="block text-[11px] font-bold mb-2" title="السماكة الفعلية لقطّة القصبة عموديًا على عرض السن">سماكة قطّة السن <span id="bsNibThicknessVal" class="float-left font-mono">16%</span><input id="bsNibThickness" type="range" min="2" max="40" value="16" oninput="updateBrushSetting('nibThickness',this.value)" class="w-full accent-amber-800"></label>
+              <div class="grid grid-cols-3 gap-1 mb-2" aria-label="إعدادات مسبقة لسماكة قطّة السن">
+                <button type="button" onclick="applyNibThicknessPreset(6)" class="px-2 py-1.5 rounded-lg border border-amber-200 bg-white hover:bg-amber-50 text-[10px] font-bold" title="قطّة رفيعة">رفيعة 6%</button>
+                <button type="button" onclick="applyNibThicknessPreset(16)" class="px-2 py-1.5 rounded-lg border border-amber-300 bg-amber-50 hover:bg-amber-100 text-[10px] font-bold" title="إعداد متوازن">متوازنة 16%</button>
+                <button type="button" onclick="applyNibThicknessPreset(24)" class="px-2 py-1.5 rounded-lg border border-amber-200 bg-white hover:bg-amber-50 text-[10px] font-bold" title="قطّة أكثر سماكة">عريضة 24%</button>
+              </div>
               <label class="block text-[11px] font-bold">التباعد <span id="bsSpacingVal" class="float-left font-mono">8%</span><input id="bsSpacing" type="range" min="1" max="30" value="8" oninput="updateBrushSetting('spacing',this.value)" class="w-full accent-amber-800"></label>
             </section>
 
@@ -1004,6 +1009,7 @@
     let pressureMax = 0.95;
     // Photoshop-inspired qalam settings. Stored per stroke for deterministic replay/redraw.
     let nibRoundness = 0.12;
+    let nibThicknessRatio = 0.16; // EXPERIMENT: physical thickness of the cut nib footprint
     let brushSpacing = 0.08;
     let brushOpacity = 1;
     let pressureMinWidth = 0.70;
@@ -1189,6 +1195,90 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
 
+    // ===== EXPERIMENT: real 2D qalam nib footprint =====
+    // The previous renderer modeled the nib as an infinitely thin line segment.
+    // When pen motion became parallel to that segment, the swept polygon could
+    // collapse toward zero area. A physical qalam has a finite cut thickness,
+    // so we model the tip as a thin oriented rounded rectangle (major x minor).
+
+    function qalamNibThicknessPx(stroke, majorWidth) {
+      const ratio = clamp(
+        Number.isFinite(stroke.nibThickness) ? stroke.nibThickness : 0.16,
+        0.02,
+        0.40
+      );
+      return Math.max(0.9, majorWidth * ratio);
+    }
+
+    function drawRoundedNibFootprint(targetCtx, x, y, majorWidth, angle, stroke, alpha = 1) {
+      const minorWidth = qalamNibThicknessPx(stroke, majorWidth);
+      const roundness = clamp(Number.isFinite(stroke.roundness) ? stroke.roundness : 0.12, 0, 1);
+      const radius = Math.min(minorWidth / 2, majorWidth / 2) * roundness;
+      const hw = majorWidth / 2;
+      const hh = minorWidth / 2;
+
+      targetCtx.save();
+      targetCtx.translate(x, y);
+      targetCtx.rotate(angle);
+      targetCtx.globalCompositeOperation = 'source-over';
+      targetCtx.globalAlpha = alpha;
+      targetCtx.fillStyle = stroke.color;
+      targetCtx.beginPath();
+
+      if (radius <= 0.01) {
+        targetCtx.rect(-hw, -hh, majorWidth, minorWidth);
+      } else {
+        targetCtx.moveTo(-hw + radius, -hh);
+        targetCtx.lineTo(hw - radius, -hh);
+        targetCtx.quadraticCurveTo(hw, -hh, hw, -hh + radius);
+        targetCtx.lineTo(hw, hh - radius);
+        targetCtx.quadraticCurveTo(hw, hh, hw - radius, hh);
+        targetCtx.lineTo(-hw + radius, hh);
+        targetCtx.quadraticCurveTo(-hw, hh, -hw, hh - radius);
+        targetCtx.lineTo(-hw, -hh + radius);
+        targetCtx.quadraticCurveTo(-hw, -hh, -hw + radius, -hh);
+      }
+
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.restore();
+    }
+
+    function renderQalamFootprintSegmentToContext(targetCtx, aNorm, bNorm, stroke, alpha = 1) {
+      const a = denormalizePoint(aNorm);
+      const b = denormalizePoint(bNorm);
+      const sizeA = strokeSizePx(stroke, aNorm);
+      const sizeB = strokeSizePx(stroke, bNorm);
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+
+      // Dense dabs guarantee a union even when movement is parallel to the nib.
+      const minorA = qalamNibThicknessPx(stroke, sizeA);
+      const minorB = qalamNibThicknessPx(stroke, sizeB);
+      const stepPx = clamp(Math.min(minorA, minorB) * 0.42, 0.45, 1.6);
+      const steps = Math.max(1, Math.min(220, Math.ceil(dist / stepPx)));
+
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const x = a.x + (b.x - a.x) * t;
+        const y = a.y + (b.y - a.y) * t;
+        const width = sizeA + (sizeB - sizeA) * t;
+        const interpPoint = {
+          pressure: (aNorm.pressure ?? 0.5) + ((bNorm.pressure ?? 0.5) - (aNorm.pressure ?? 0.5)) * t,
+          pointerType: bNorm.pointerType || aNorm.pointerType,
+          twist: (aNorm.twist ?? 0) + ((bNorm.twist ?? 0) - (aNorm.twist ?? 0)) * t
+        };
+        drawRoundedNibFootprint(
+          targetCtx,
+          x,
+          y,
+          width,
+          effectiveNibAngle(stroke, interpPoint),
+          stroke,
+          alpha
+        );
+      }
+    }
+
     function renderDot(point, stroke) {
       const p = denormalizePoint(point);
       const size = strokeSizePx(stroke, point);
@@ -1206,18 +1296,15 @@
         ctx.arc(p.x, p.y, size / 2, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.globalAlpha = Number.isFinite(stroke.opacity) ? stroke.opacity : 1;
-        ctx.strokeStyle = stroke.color;
-        ctx.lineWidth = Math.max(1.5, size * 0.16);
-        ctx.lineCap = 'round';
-        const angle = effectiveNibAngle(stroke, point);
-        const dx = Math.cos(angle) * (size / 2);
-        const dy = Math.sin(angle) * (size / 2);
-        ctx.beginPath();
-        ctx.moveTo(p.x - dx, p.y - dy);
-        ctx.lineTo(p.x + dx, p.y + dy);
-        ctx.stroke();
+        drawRoundedNibFootprint(
+          ctx,
+          p.x,
+          p.y,
+          size,
+          effectiveNibAngle(stroke, point),
+          stroke,
+          Number.isFinite(stroke.opacity) ? stroke.opacity : 1
+        );
       }
       ctx.restore();
     }
@@ -1276,43 +1363,7 @@
     }
 
     function renderQalamSegmentToContext(targetCtx, aNorm, bNorm, stroke) {
-      const a = denormalizePoint(aNorm);
-      const b = denormalizePoint(bNorm);
-      const sizeA = strokeSizePx(stroke, aNorm);
-      const sizeB = strokeSizePx(stroke, bNorm);
-      const dist = Math.hypot(b.x - a.x, b.y - a.y);
-      const steps = Math.max(2, Math.min(32, Math.ceil(dist / 1.35)));
-      const left = [];
-      const right = [];
-
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const x = a.x + (b.x - a.x) * t;
-        const y = a.y + (b.y - a.y) * t;
-        const width = sizeA + (sizeB - sizeA) * t;
-        const interpPoint = {
-          pressure: (aNorm.pressure ?? 0.5) + ((bNorm.pressure ?? 0.5) - (aNorm.pressure ?? 0.5)) * t,
-          pointerType: bNorm.pointerType || aNorm.pointerType,
-          twist: (aNorm.twist ?? 0) + ((bNorm.twist ?? 0) - (aNorm.twist ?? 0)) * t
-        };
-        const angle = effectiveNibAngle(stroke, interpPoint);
-        const dx = Math.cos(angle) * (width / 2);
-        const dy = Math.sin(angle) * (width / 2);
-        left.push({ x: x - dx, y: y - dy });
-        right.push({ x: x + dx, y: y + dy });
-      }
-
-      targetCtx.save();
-      targetCtx.globalCompositeOperation = 'source-over';
-      targetCtx.globalAlpha = 1;
-      targetCtx.fillStyle = stroke.color;
-      targetCtx.beginPath();
-      targetCtx.moveTo(left[0].x, left[0].y);
-      for (let i = 1; i < left.length; i++) targetCtx.lineTo(left[i].x, left[i].y);
-      for (let i = right.length - 1; i >= 0; i--) targetCtx.lineTo(right[i].x, right[i].y);
-      targetCtx.closePath();
-      targetCtx.fill();
-      targetCtx.restore();
+      renderQalamFootprintSegmentToContext(targetCtx, aNorm, bNorm, stroke, 1);
     }
 
     function renderQalamJoinToContext(targetCtx, prevNorm, pivotNorm, nextNorm, stroke) {
@@ -1343,45 +1394,18 @@
       if (!stroke.points?.length) return;
       if (stroke.points.length === 1) return renderDot(stroke.points[0], stroke);
 
-      // Render each short qalam ribbon into an opaque per-stroke layer first.
-      // This turns self-intersections into a union of ink instead of one
-      // self-intersecting polygon whose fill rule can create apparent holes.
       const layerCtx = prepareStrokeCompositeLayer();
 
       for (let i = 1; i < stroke.points.length; i++) {
-        renderQalamSegmentToContext(layerCtx, stroke.points[i - 1], stroke.points[i], stroke);
-        if (i >= 2) {
-          renderQalamJoinToContext(
-            layerCtx,
-            stroke.points[i - 2],
-            stroke.points[i - 1],
-            stroke.points[i],
-            stroke
-          );
-        }
+        renderQalamFootprintSegmentToContext(
+          layerCtx,
+          stroke.points[i - 1],
+          stroke.points[i],
+          stroke,
+          1
+        );
       }
 
-      // Rounded-edge blend is also accumulated opaquely on the same layer so
-      // repeated passes do not darken self-crossings when opacity < 1.
-      const roundness = clamp(Number.isFinite(stroke.roundness) ? stroke.roundness : 0.12, 0, 1);
-      if (roundness > 0.01) {
-        layerCtx.save();
-        layerCtx.globalCompositeOperation = 'source-over';
-        layerCtx.globalAlpha = 1;
-        layerCtx.fillStyle = stroke.color;
-        const stride = Math.max(1, Math.round(5 - roundness * 3));
-        for (let i = 0; i < stroke.points.length; i += stride) {
-          const p = denormalizePoint(stroke.points[i]);
-          const r = Math.max(0.35, strokeSizePx(stroke, stroke.points[i]) * roundness * 0.22);
-          layerCtx.beginPath();
-          layerCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
-          layerCtx.fill();
-        }
-        layerCtx.restore();
-      }
-
-      // Composite the completed stroke once. Opacity therefore belongs to the
-      // whole stroke, not to each overlapping segment.
       const opacity = clamp(Number.isFinite(stroke.opacity) ? stroke.opacity : 1, 0, 1);
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1453,38 +1477,14 @@
         return;
       }
 
-      // Qalam Engine V2: sweep the chisel nib as one continuous ribbon instead of disconnected stamps.
-      const steps = Math.max(2, Math.min(28, Math.ceil(dist / 1.6)));
-      const left = [];
-      const right = [];
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const x = a.x + (b.x - a.x) * t;
-        const y = a.y + (b.y - a.y) * t;
-        const width = sizeA + (sizeB - sizeA) * t;
-        const interpPoint = {
-          pressure: (aNorm.pressure ?? 0.5) + ((bNorm.pressure ?? 0.5) - (aNorm.pressure ?? 0.5)) * t,
-          pointerType: bNorm.pointerType || aNorm.pointerType,
-          twist: (aNorm.twist ?? 0) + ((bNorm.twist ?? 0) - (aNorm.twist ?? 0)) * t
-        };
-        const angle = effectiveNibAngle(stroke, interpPoint);
-        const dx = Math.cos(angle) * (width / 2);
-        const dy = Math.sin(angle) * (width / 2);
-        left.push({ x: x - dx, y: y - dy });
-        right.push({ x: x + dx, y: y + dy });
-      }
-
-      ctx.save();
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.globalAlpha = Number.isFinite(stroke.opacity) ? stroke.opacity : 1;
-      ctx.fillStyle = stroke.color;
-      ctx.beginPath();
-      ctx.moveTo(left[0].x, left[0].y);
-      for (let i = 1; i < left.length; i++) ctx.lineTo(left[i].x, left[i].y);
-      for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+      // EXPERIMENT: live preview uses the same finite 2D nib footprint.
+      renderQalamFootprintSegmentToContext(
+        ctx,
+        aNorm,
+        bNorm,
+        stroke,
+        Number.isFinite(stroke.opacity) ? stroke.opacity : 1
+      );
     }
 
     function renderWholeStroke(stroke) {
@@ -1550,6 +1550,7 @@
         pressureMinWidth,
         pressureCurve,
         roundness: nibRoundness,
+        nibThickness: nibThicknessRatio,
         spacing: brushSpacing,
         opacity: brushOpacity,
         smoothing: qalamSmoothing,
@@ -1573,10 +1574,7 @@
         const spacingPx = Math.max(0.28, brushSize * brushSpacing);
         if (Math.hypot(dx, dy) < spacingPx) return;
         renderStrokeSegment(prev, point, currentStroke);
-        if (currentStroke.tool === 'calligraphy' && currentStroke.points.length >= 2) {
-          const beforePrev = currentStroke.points[currentStroke.points.length - 2];
-          renderCalligraphyJoin(beforePrev, prev, point, currentStroke);
-        }
+        // 2D footprint dabs overlap continuously; no legacy line-edge join needed.
       } else {
         renderDot(point, currentStroke);
       }
@@ -1737,11 +1735,11 @@
     }
 
     const BRUSH_PRESETS = {
-      naskh:  { tool:'calligraphy', size:15, angle:42, roundness:12, spacing:8, smoothing:62, opacity:100, pressure:true, pressureSensitivity:62, minWidth:70, curve:'linear', rotation:'fixed', twist:22 },
-      ruqaa:  { tool:'calligraphy', size:17, angle:50, roundness:8,  spacing:7, smoothing:48, opacity:100, pressure:true, pressureSensitivity:55, minWidth:74, curve:'firm',   rotation:'fixed', twist:18 },
-      thuluth:{ tool:'calligraphy', size:23, angle:38, roundness:6,  spacing:6, smoothing:70, opacity:100, pressure:true, pressureSensitivity:68, minWidth:62, curve:'soft',   rotation:'fixed', twist:25 },
-      kufi:   { tool:'calligraphy', size:18, angle:60, roundness:2,  spacing:5, smoothing:30, opacity:100, pressure:false,pressureSensitivity:35, minWidth:90, curve:'linear', rotation:'fixed', twist:0  },
-      soft:   { tool:'smooth',      size:12, angle:42, roundness:100,spacing:5, smoothing:74, opacity:92,  pressure:true, pressureSensitivity:72, minWidth:45, curve:'soft',   rotation:'fixed', twist:0  }
+      naskh:  { tool:'calligraphy', size:15, angle:42, roundness:12, nibThickness:16, spacing:8, smoothing:62, opacity:100, pressure:true, pressureSensitivity:62, minWidth:70, curve:'linear', rotation:'fixed', twist:22 },
+      ruqaa:  { tool:'calligraphy', size:17, angle:50, roundness:8,  nibThickness:14, spacing:7, smoothing:48, opacity:100, pressure:true, pressureSensitivity:55, minWidth:74, curve:'firm',   rotation:'fixed', twist:18 },
+      thuluth:{ tool:'calligraphy', size:23, angle:38, roundness:6,  nibThickness:18, spacing:6, smoothing:70, opacity:100, pressure:true, pressureSensitivity:68, minWidth:62, curve:'soft',   rotation:'fixed', twist:25 },
+      kufi:   { tool:'calligraphy', size:18, angle:60, roundness:2,  nibThickness:10, spacing:5, smoothing:30, opacity:100, pressure:false,pressureSensitivity:35, minWidth:90, curve:'linear', rotation:'fixed', twist:0  },
+      soft:   { tool:'smooth',      size:12, angle:42, roundness:100,nibThickness:100,spacing:5, smoothing:74, opacity:92,  pressure:true, pressureSensitivity:72, minWidth:45, curve:'soft',   rotation:'fixed', twist:0  }
     };
 
     function toggleBrushSettings(show) {
@@ -1757,13 +1755,14 @@
       const summary = document.getElementById('brushPreviewSummary');
       if (tip) {
         const w = clamp(brushSize * 3.4, 28, 92);
-        const h = clamp(2 + nibRoundness * 20, 3, 23);
+        const h = clamp(w * nibThicknessRatio, 2, 36);
         tip.style.width = `${w}px`;
         tip.style.height = `${h}px`;
+        tip.style.borderRadius = `${Math.round(nibRoundness * 50)}%`;
         tip.style.opacity = String(brushOpacity);
         tip.style.transform = `rotate(${-nibAngleDeg}deg)`;
       }
-      if (summary) summary.textContent = `${brushSize}px • ${Math.round(nibAngleDeg)}° • استدارة ${Math.round(nibRoundness*100)}%`;
+      if (summary) summary.textContent = `${brushSize}px • ${Math.round(nibAngleDeg)}° • سماكة القطّة ${Math.round(nibThicknessRatio*100)}% • استدارة ${Math.round(nibRoundness*100)}%`;
     }
 
     function syncBrushSettingsUI() {
@@ -1772,6 +1771,7 @@
       set('bsSize',brushSize); txt('bsSizeVal',`${brushSize}px`);
       set('bsAngle',nibAngleDeg); txt('bsAngleVal',`${Math.round(nibAngleDeg)}°`);
       set('bsRoundness',Math.round(nibRoundness*100)); txt('bsRoundnessVal',`${Math.round(nibRoundness*100)}%`);
+      set('bsNibThickness',Math.round(nibThicknessRatio*100)); txt('bsNibThicknessVal',`${Math.round(nibThicknessRatio*100)}%`);
       set('bsSpacing',Math.round(brushSpacing*100)); txt('bsSpacingVal',`${Math.round(brushSpacing*100)}%`);
       set('bsSmoothing',Math.round(qalamSmoothing*100)); txt('bsSmoothingVal',`${Math.round(qalamSmoothing*100)}%`);
       set('bsOpacity',Math.round(brushOpacity*100)); txt('bsOpacityVal',`${Math.round(brushOpacity*100)}%`);
@@ -1789,6 +1789,7 @@
         case 'size': updateBrushSize(value); break;
         case 'angle': updateNibAngle(value); break;
         case 'roundness': nibRoundness=clamp((parseFloat(value)||0)/100,0,1); break;
+        case 'nibThickness': nibThicknessRatio=clamp((parseFloat(value)||16)/100,0.02,0.40); break;
         case 'spacing': brushSpacing=clamp((parseFloat(value)||1)/100,0.01,0.30); break;
         case 'smoothing': qalamSmoothing=clamp((parseFloat(value)||0)/100,0,0.95); break;
         case 'opacity': brushOpacity=clamp((parseFloat(value)||100)/100,0.1,1); break;
@@ -1802,9 +1803,14 @@
       syncBrushSettingsUI();
     }
 
+    function applyNibThicknessPreset(percent) {
+      nibThicknessRatio = clamp((parseFloat(percent) || 16) / 100, 0.02, 0.40);
+      syncBrushSettingsUI();
+    }
+
     function applyBrushPreset(name) {
       const p=BRUSH_PRESETS[name]; if(!p) return;
-      setBrushType(p.tool); brushSize=p.size; nibAngleDeg=p.angle; nibRoundness=p.roundness/100;
+      setBrushType(p.tool); brushSize=p.size; nibAngleDeg=p.angle; nibRoundness=p.roundness/100; nibThicknessRatio=(p.nibThickness??16)/100;
       brushSpacing=p.spacing/100; qalamSmoothing=p.smoothing/100; brushOpacity=p.opacity/100;
       pressureEnabled=p.pressure; pressureSensitivity=p.pressureSensitivity/100; pressureMinWidth=p.minWidth/100;
       pressureCurve=p.curve; rotationSource=p.rotation; twistInfluence=p.twist/100;
@@ -1816,7 +1822,7 @@
     }
 
     function currentBrushPresetData() {
-      return { tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,pressureMin,pressureMax };
+      return { tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,pressureMin,pressureMax };
     }
 
     function savePersonalBrushPreset() {
@@ -1828,7 +1834,7 @@
     function loadPersonalBrushPreset() {
       let p=null; try { p=JSON.parse(localStorage.getItem('makhtuta.personalBrush.v1')||'null'); } catch(_) {}
       if(!p) return;
-      setBrushType(p.tool||'calligraphy'); brushSize=p.size??15; nibAngleDeg=p.angle??42; nibRoundness=p.roundness??0.12;
+      setBrushType(p.tool||'calligraphy'); brushSize=p.size??15; nibAngleDeg=p.angle??42; nibRoundness=p.roundness??0.12; nibThicknessRatio=p.nibThickness??0.16;
       brushSpacing=p.spacing??0.08; qalamSmoothing=p.smoothing??0.58; brushOpacity=p.opacity??1;
       pressureEnabled=p.pressureEnabled!==false; pressureSensitivity=p.pressureSensitivity??0.62; pressureMinWidth=p.pressureMinWidth??0.70;
       pressureCurve=p.pressureCurve||'linear'; rotationSource=p.rotationSource||'fixed'; twistInfluence=p.twistInfluence??0.22;
