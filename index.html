@@ -1432,11 +1432,26 @@
       return (pos - profile.startIndex) / Math.max(1e-6, profile.endIndex - profile.startIndex);
     }
 
-    function qalamAngleForPoint(stroke, point, ny, segmentIndex = -1, segmentT = 0) {
+    function mirroredNibFitsBelowBaseline(stroke, point, ny, majorWidth) {
+      if (!Number.isFinite(ny) || !Number.isFinite(majorWidth)) return false;
+      const centerY = ny * canvasCssHeight;
+      const baselineY = QALAM_BASELINE_NY * canvasCssHeight;
+      const angle = -effectiveNibAngle(stroke, point);
+      const minor = qalamNibThicknessPx(stroke, majorWidth);
+      // Vertical half-extent of an oriented rectangle. Require the complete
+      // mirrored nib footprint to remain below the baseline, not only its center.
+      const halfVertical = Math.abs(Math.sin(angle)) * majorWidth * 0.5 +
+                           Math.abs(Math.cos(angle)) * minor * 0.5;
+      return centerY - halfVertical >= baselineY + 0.75;
+    }
+
+    function qalamAngleForPoint(stroke, point, ny, segmentIndex = -1, segmentT = 0, majorWidth = NaN) {
       const angle = effectiveNibAngle(stroke, point);
       if (!shouldFlipNibBelowBaseline(stroke) || segmentIndex < 0) return angle;
-      // Never carry the mirrored cut onto or above the baseline.
+      // Never carry the mirrored cut onto/above the baseline. The whole
+      // nib footprint—not just its center—must fit below the baseline.
       if (!Number.isFinite(ny) || ny <= QALAM_BASELINE_NY) return angle;
+      if (!mirroredNibFitsBelowBaseline(stroke, point, ny, majorWidth)) return angle;
       const profile = stroke?._descenderFlipProfile || computeDescenderFlipProfile(stroke);
       if (!profile) return angle;
       const pos = segmentIndex + clamp(segmentT, 0, 1);
@@ -1532,7 +1547,7 @@
           x,
           y,
           width,
-          qalamAngleForPoint(stroke, interpPoint, interpNy, segmentIndex, t),
+          qalamAngleForPoint(stroke, interpPoint, interpNy, segmentIndex, t, width),
           stroke,
           alpha
         );
@@ -1680,6 +1695,9 @@
         const bp = stroke.points[bridgeIndex];
         const p = denormalizePoint(bp);
         const w = strokeSizePx(stroke, bp);
+        if (!mirroredNibFitsBelowBaseline(stroke, bp, bp.ny, w)) {
+          delete stroke._descenderFlipProfile;
+        } else {
         const angleA = effectiveNibAngle(stroke, bp);
         const angleB = -angleA;
         const major = w * 0.92;
@@ -1713,6 +1731,7 @@
           layerCtx.closePath();
           layerCtx.fill();
           layerCtx.restore();
+        }
         }
       }
       delete stroke._descenderFlipProfile;
@@ -1857,7 +1876,7 @@
         tool: brushType,
         color: inkColor,
         practiceLetter: currentPracticeLetter(),
-        descenderFlip: DESCENDER_FLIP_LETTERS.has(currentPracticeLetter()),
+        descenderFlip: (currentPracticeLetter() === 'ر' || currentPracticeLetter() === 'و'),
         sizeNorm: brushSize / Math.max(1, Math.min(canvasCssWidth, canvasCssHeight)),
         angle: -(nibAngleDeg * Math.PI / 180),
         pressureEnabled,
