@@ -2,8 +2,18 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مخطوطة — Hybrid V4 Qalam Replay</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>مخطوطة — معمل الخط العربي</title>
+  <meta name="theme-color" content="#78350F">
+  <meta name="application-name" content="مخطوطة">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="مخطوطة">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon.svg">
   
   <!-- Google Fonts: Cairo, Amiri, Reem Kufi -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2449,5 +2459,113 @@
       }
     }
   </script>
+
+  <!-- PWA install + update controller -->
+  <div id="pwaInstallDock" style="display:none;position:fixed;left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));z-index:80">
+    <button id="pwaInstallBtn" type="button" style="border:1px solid #d6b36b;background:#78350f;color:#fff;border-radius:14px;padding:10px 14px;font:700 13px Cairo,sans-serif;box-shadow:0 8px 24px rgba(120,53,15,.2);cursor:pointer">
+      <i class="fa-solid fa-download" style="margin-left:6px"></i>تثبيت مخطوطة
+    </button>
+  </div>
+
+  <div id="pwaUpdateBar" dir="rtl" style="display:none;position:fixed;right:14px;left:14px;bottom:max(14px,env(safe-area-inset-bottom));z-index:90;max-width:560px;margin:auto;background:#fff7ed;border:1px solid #d97706;border-radius:16px;padding:10px 12px;box-shadow:0 12px 36px rgba(0,0,0,.16);align-items:center;justify-content:space-between;gap:12px;font-family:Cairo,sans-serif">
+    <span style="font-size:12px;font-weight:700;color:#78350f">يتوفر تحديث جديد لمخطوطة.</span>
+    <button id="pwaUpdateBtn" type="button" style="border:0;background:#78350f;color:#fff;border-radius:10px;padding:8px 12px;font:700 12px Cairo,sans-serif;cursor:pointer">تحديث الآن</button>
+  </div>
+
+  <script>
+  (() => {
+    let deferredInstallPrompt = null;
+    let waitingWorker = null;
+    let refreshing = false;
+
+    const installDock = document.getElementById('pwaInstallDock');
+    const installBtn = document.getElementById('pwaInstallBtn');
+    const updateBar = document.getElementById('pwaUpdateBar');
+    const updateBtn = document.getElementById('pwaUpdateBtn');
+
+    const isStandalone = () =>
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true;
+
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    function showInstallIfUseful() {
+      if (!isStandalone() && (deferredInstallPrompt || isIOS)) {
+        installDock.style.display = 'block';
+      } else {
+        installDock.style.display = 'none';
+      }
+    }
+
+    window.addEventListener('beforeinstallprompt', event => {
+      event.preventDefault();
+      deferredInstallPrompt = event;
+      showInstallIfUseful();
+    });
+
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      installDock.style.display = 'none';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        try { await deferredInstallPrompt.userChoice; } catch (_) {}
+        deferredInstallPrompt = null;
+        showInstallIfUseful();
+        return;
+      }
+
+      if (isIOS) {
+        alert('لتثبيت مخطوطة على iPhone أو iPad:\n1) افتح زر المشاركة في Safari.\n2) اختر «إضافة إلى الشاشة الرئيسية».\n3) اضغط «إضافة».');
+      } else {
+        alert('استخدم خيار «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية» من قائمة المتصفح.');
+      }
+    });
+
+    function showUpdate(worker) {
+      waitingWorker = worker;
+      updateBar.style.display = 'flex';
+    }
+
+    updateBtn.addEventListener('click', () => {
+      if (waitingWorker) waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
+
+          if (registration.waiting) showUpdate(registration.waiting);
+
+          registration.addEventListener('updatefound', () => {
+            const worker = registration.installing;
+            if (!worker) return;
+            worker.addEventListener('statechange', () => {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                showUpdate(worker);
+              }
+            });
+          });
+
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (refreshing) return;
+            refreshing = true;
+            window.location.reload();
+          });
+
+          registration.update().catch(() => {});
+        } catch (error) {
+          console.warn('PWA service worker registration failed:', error);
+        }
+      });
+    }
+
+    showInstallIfUseful();
+  })();
+  </script>
+
 </body>
 </html>
