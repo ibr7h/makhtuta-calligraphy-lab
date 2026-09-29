@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.10</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.11</span>
           </p>
         </div>
       </div>
@@ -256,7 +256,7 @@
           <!-- Qalam nib angle: only meaningful for the chisel calligraphy tool -->
           <div id="nibAngleControl" class="flex items-center gap-2 bg-white px-2 py-1 rounded-xl border border-amber-200" title="زاوية قطّة القصبة بالنسبة للمحور الأفقي">
             <i class="fa-solid fa-slash text-xs text-stone-500"></i>
-            <input type="range" id="nibAngle" min="20" max="75" value="42" oninput="updateNibAngle(this.value)" class="w-16 sm:w-20 accent-amber-800 h-1.5 bg-amber-200 rounded-lg cursor-pointer">
+            <input type="range" id="nibAngle" min="0" max="90" value="42" oninput="updateNibAngle(this.value)" class="w-16 sm:w-20 accent-amber-800 h-1.5 bg-amber-200 rounded-lg cursor-pointer">
             <span id="nibAngleVal" class="text-xs font-mono font-bold text-amber-950 w-8">42°</span>
           </div>
 
@@ -568,6 +568,18 @@
               <button onclick="applyBrushPreset('thuluth')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">ثلث عريض</button>
               <button onclick="applyBrushPreset('kufi')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">كوفي هندسي</button>
               <button onclick="applyBrushPreset('soft')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">قلم ناعم</button>
+            </div>
+
+            <div class="mt-3 pt-3 border-t border-amber-200">
+              <div class="text-[11px] font-black text-amber-950 mb-1">فرش AliQaseef</div>
+              <div class="text-[9px] text-stone-500 mb-2 leading-4">إعدادات مستخرجة من ملف Procreate المرفق ومحوّلة لمحرك مخطوطة.</div>
+              <div class="grid grid-cols-2 md:grid-cols-1 gap-1.5">
+                <button onclick="applyBrushPreset('ali_ruqaa')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-bold hover:bg-emerald-50">رقعة — AliQaseef</button>
+                <button onclick="applyBrushPreset('ali_naskh')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-bold hover:bg-emerald-50">نسخ — AliQaseef</button>
+                <button onclick="applyBrushPreset('ali_farsi')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-bold hover:bg-emerald-50">فارسي — AliQaseef</button>
+                <button onclick="applyBrushPreset('ali_thuluth')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-bold hover:bg-emerald-50">ثلث — AliQaseef</button>
+                <button onclick="applyBrushPreset('ali_diwani')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-bold hover:bg-emerald-50">ديواني — AliQaseef</button>
+              </div>
             </div>
           </div>
           <div class="min-w-[180px] md:min-w-0 md:mt-3 md:pt-3 md:border-t md:border-amber-200">
@@ -2014,7 +2026,7 @@
     }
 
     function updateNibAngle(val) {
-      nibAngleDeg = clamp(parseFloat(val) || 42, 20, 75);
+      nibAngleDeg = clamp(parseFloat(val) || 42, 0, 90);
       document.getElementById('nibAngleVal').textContent = `${Math.round(nibAngleDeg)}°`;
     }
 
@@ -2092,7 +2104,16 @@
       ruqaa:  { tool:'calligraphy', size:17, angle:50, roundness:8,  nibThickness:14, spacing:7, smoothing:48, opacity:100, pressure:true, pressureSensitivity:55, minWidth:74, curve:'firm',   rotation:'fixed', twist:18, stabilizer:false, stabilizerRadius:10, stabilizerFriction:35, descenderFlip:false },
       thuluth:{ tool:'calligraphy', size:23, angle:38, roundness:6,  nibThickness:18, spacing:6, smoothing:70, opacity:100, pressure:true, pressureSensitivity:68, minWidth:62, curve:'soft',   rotation:'fixed', twist:25, stabilizer:false, stabilizerRadius:14, stabilizerFriction:50, descenderFlip:false },
       kufi:   { tool:'calligraphy', size:18, angle:60, roundness:2,  nibThickness:10, spacing:5, smoothing:30, opacity:100, pressure:false,pressureSensitivity:35, minWidth:90, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:8, stabilizerFriction:30, descenderFlip:false},
-      soft:   { tool:'smooth',      size:12, angle:42, roundness:100,nibThickness:100,spacing:5, smoothing:74, opacity:92,  pressure:true, pressureSensitivity:72, minWidth:45, curve:'soft',   rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:12, stabilizerFriction:45, descenderFlip:false}
+      soft:   { tool:'smooth',      size:12, angle:42, roundness:100,nibThickness:100,spacing:5, smoothing:74, opacity:92,  pressure:true, pressureSensitivity:72, minWidth:45, curve:'soft',   rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:12, stabilizerFriction:45, descenderFlip:false},
+
+      // AliQaseef Brushes — extracted from the user-supplied Procreate .brushset.
+      // Mapping: paintSize×100≈px, |shapeAngle|→nib angle, shapeRoundness→nib thickness,
+      // plotSmoothing→smoothing. Moving-average stabilization is approximated.
+      ali_ruqaa:  { tool:'calligraphy', size:16, angle:60.1, roundness:100, nibThickness:6, spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:true, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:"AliQaseef/Reqa'a" },
+      ali_naskh:  { tool:'calligraphy', size:7,  angle:65.0, roundness:100, nibThickness:6, spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:true, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Naskh' },
+      ali_farsi:  { tool:'calligraphy', size:12, angle:69.8, roundness:100, nibThickness:6, spacing:1, smoothing:80, opacity:100, pressure:true,  pressureSensitivity:15, minWidth:85,  curve:'linear', rotation:'fixed', twist:0, stabilizer:true, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Farsi' },
+      ali_thuluth: { tool:'calligraphy', size:22, angle:76.6, roundness:100, nibThickness:6, spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:true, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Thuluth' },
+      ali_diwani: { tool:'calligraphy', size:8,  angle:86.6, roundness:100, nibThickness:6, spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:true, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Diwani' }
     };
 
     function toggleBrushSettings(show) {
@@ -2178,7 +2199,7 @@
       stabilizerEnabled=!!p.stabilizer; stabilizerRadiusPx=p.stabilizerRadius??12; stabilizerFriction=(p.stabilizerFriction??45)/100; resetStrokeStabilizer();
       qalamDescenderFlipEnabled=!!p.descenderFlip;
       document.getElementById('brushSize').value=brushSize; document.getElementById('brushSizeVal').textContent=brushSize;
-      document.getElementById('nibAngle').value=nibAngleDeg; document.getElementById('nibAngleVal').textContent=`${nibAngleDeg}°`;
+      document.getElementById('nibAngle').value=nibAngleDeg; document.getElementById('nibAngleVal').textContent=`${Number(nibAngleDeg.toFixed(1))}°`;
       const pe=document.getElementById('pressureEnabled'); if(pe) pe.checked=pressureEnabled;
       const ps=document.getElementById('pressureSensitivity'); if(ps) ps.value=Math.round(pressureSensitivity*100);
       setPressureEnabled(pressureEnabled); syncBrushSettingsUI();
