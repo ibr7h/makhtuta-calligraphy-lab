@@ -278,6 +278,9 @@
               <option value="1.5">×1.5</option>
               <option value="2">×2</option>
             </select>
+            <span class="w-px h-5 bg-amber-200"></span>
+            <button type="button" onclick="saveReplaySnapshot()" title="حفظ الإعادة الحالية" class="p-1.5 rounded-lg hover:bg-amber-50 text-amber-900"><i class="fa-solid fa-floppy-disk"></i></button>
+            <button type="button" onclick="openReplayLibrary()" title="الإعادات المحفوظة" class="p-1.5 rounded-lg hover:bg-amber-50 text-amber-900"><i class="fa-solid fa-folder-open"></i></button>
           </div>
 
           <!-- Actions: Undo, Clear, Download -->
@@ -565,6 +568,25 @@
             </section>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="savedReplayModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-parchment-50 w-full max-w-xl max-h-[82vh] rounded-3xl border-2 border-amber-300 shadow-2xl overflow-hidden flex flex-col">
+      <div class="bg-amber-900 text-white p-4 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold font-kufi text-lg"><i class="fa-solid fa-clock-rotate-left text-amber-300 ml-2"></i>الإعادات المحفوظة</h3>
+          <p class="text-[10px] text-amber-200 mt-0.5">احفظ سجل الكتابة ثم حمّله لاحقًا وشغّله للأمام أو بالعكس</p>
+        </div>
+        <button type="button" onclick="closeReplayLibrary()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-4 overflow-y-auto custom-scrollbar">
+        <div class="flex gap-2 mb-3">
+          <button type="button" onclick="saveReplaySnapshot()" class="px-3 py-2 rounded-xl bg-amber-800 text-white text-xs font-bold hover:bg-amber-900"><i class="fa-solid fa-floppy-disk ml-1"></i>حفظ الإعادة الحالية</button>
+          <span id="replayLibraryStatus" class="self-center text-[10px] text-stone-500"></span>
+        </div>
+        <div id="savedReplayList" class="flex flex-col gap-2"></div>
       </div>
     </div>
   </div>
@@ -2079,6 +2101,216 @@
     }
 
     function resetBrushSettings() { applyBrushPreset('naskh'); }
+
+    const REPLAY_DB_NAME = 'makhtuta-replays';
+    const REPLAY_DB_VERSION = 1;
+    const REPLAY_STORE = 'replays';
+
+    function openReplayDB() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(REPLAY_DB_NAME, REPLAY_DB_VERSION);
+        request.onupgradeneeded = () => {
+          const db = request.result;
+          if (!db.objectStoreNames.contains(REPLAY_STORE)) {
+            const store = db.createObjectStore(REPLAY_STORE, { keyPath: 'id' });
+            store.createIndex('updatedAt', 'updatedAt');
+            store.createIndex('name', 'name');
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    function replayDBTransaction(db, mode, callback) {
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(REPLAY_STORE, mode);
+        const store = tx.objectStore(REPLAY_STORE);
+        let result;
+        try { result = callback(store); }
+        catch (error) { reject(error); return; }
+        tx.oncomplete = () => resolve(result);
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error || new Error('Replay transaction aborted'));
+      });
+    }
+
+    async function getSavedReplayRecords() {
+      const db = await openReplayDB();
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(REPLAY_STORE, 'readonly');
+        const req = tx.objectStore(REPLAY_STORE).getAll();
+        req.onsuccess = () => {
+          const rows = Array.isArray(req.result) ? req.result : [];
+          rows.sort((a,b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+          resolve(rows);
+        };
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function cloneReplayActions(actions) {
+      if (typeof structuredClone === 'function') return structuredClone(actions);
+      return JSON.parse(JSON.stringify(actions));
+    }
+
+    function defaultReplayName() {
+      try {
+        return 'إعادة ' + new Intl.DateTimeFormat('ar-SA', {
+          month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'
+        }).format(new Date());
+      } catch (_) {
+        return 'إعادة ' + new Date().toLocaleString();
+      }
+    }
+
+    function setReplayLibraryStatus(message) {
+      const el = document.getElementById('replayLibraryStatus');
+      if (!el) return;
+      el.textContent = message || '';
+      if (message) setTimeout(() => {
+        if (el.textContent === message) el.textContent = '';
+      }, 2500);
+    }
+
+    async function saveReplaySnapshot() {
+      const actions = visibleReplayActions();
+      if (!actions.length) {
+        setReplayLibraryStatus('لا توجد كتابة لحفظها');
+        return;
+      }
+
+      const proposed = defaultReplayName();
+      const entered = prompt('اسم الإعادة المحفوظة:', proposed);
+      if (entered === null) return;
+      const name = entered.trim().replace(/\s+/g, ' ').slice(0, 60) || proposed;
+
+      try {
+        const db = await openReplayDB();
+        const now = new Date().toISOString();
+        const record = {
+          id: (crypto.randomUUID ? crypto.randomUUID() : 'replay-' + Date.now()),
+          name,
+          createdAt: now,
+          updatedAt: now,
+          actionCount: actions.length,
+          actions: cloneReplayActions(actions)
+        };
+        await replayDBTransaction(db, 'readwrite', store => store.put(record));
+        setReplayLibraryStatus('تم حفظ الإعادة ✓');
+        if (document.getElementById('savedReplayModal')?.classList.contains('flex')) {
+          await renderSavedReplayLibrary();
+        }
+      } catch (error) {
+        console.warn('Saving replay failed:', error);
+        setReplayLibraryStatus('تعذّر حفظ الإعادة');
+      }
+    }
+
+    async function getSavedReplay(id) {
+      const db = await openReplayDB();
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(REPLAY_STORE, 'readonly');
+        const req = tx.objectStore(REPLAY_STORE).get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function loadSavedReplay(id) {
+      try {
+        const record = await getSavedReplay(id);
+        if (!record?.actions?.length) return;
+        if (replayActive) stopStrokeReplay(false);
+        strokeHistory = cloneReplayActions(record.actions);
+        redrawAllStrokes();
+        closeReplayLibrary();
+      } catch (error) {
+        console.warn('Loading replay failed:', error);
+        setReplayLibraryStatus('تعذّر تحميل الإعادة');
+      }
+    }
+
+    async function deleteSavedReplay(id) {
+      try {
+        const record = await getSavedReplay(id);
+        if (!record) return;
+        if (!confirm(`حذف الإعادة «${record.name}»؟`)) return;
+        const db = await openReplayDB();
+        await replayDBTransaction(db, 'readwrite', store => store.delete(id));
+        await renderSavedReplayLibrary();
+      } catch (error) {
+        console.warn('Deleting replay failed:', error);
+        setReplayLibraryStatus('تعذّر حذف الإعادة');
+      }
+    }
+
+    async function renderSavedReplayLibrary() {
+      const box = document.getElementById('savedReplayList');
+      if (!box) return;
+      box.innerHTML = '<div class="text-xs text-stone-500 text-center py-4">جارٍ التحميل…</div>';
+      try {
+        const records = await getSavedReplayRecords();
+        box.innerHTML = '';
+        if (!records.length) {
+          box.innerHTML = '<div class="text-xs text-stone-500 text-center py-6 border border-dashed border-amber-300 rounded-2xl">لا توجد إعادات محفوظة بعد</div>';
+          return;
+        }
+
+        records.forEach(record => {
+          const row = document.createElement('div');
+          row.className = 'bg-white border border-amber-200 rounded-2xl p-3 flex items-center gap-2';
+
+          const info = document.createElement('div');
+          info.className = 'flex-1 min-w-0';
+          const name = document.createElement('div');
+          name.className = 'font-bold text-xs text-amber-950 truncate';
+          name.textContent = record.name;
+          const meta = document.createElement('div');
+          meta.className = 'text-[9px] text-stone-500 mt-0.5';
+          const when = record.updatedAt ? new Date(record.updatedAt).toLocaleString('ar-SA') : '';
+          meta.textContent = `${record.actionCount || record.actions?.length || 0} ضربة • ${when}`;
+          info.appendChild(name);
+          info.appendChild(meta);
+
+          const load = document.createElement('button');
+          load.type = 'button';
+          load.className = 'px-2.5 py-1.5 rounded-lg bg-amber-800 text-white text-[10px] font-bold';
+          load.textContent = 'تحميل';
+          load.addEventListener('click', () => loadSavedReplay(record.id));
+
+          const del = document.createElement('button');
+          del.type = 'button';
+          del.className = 'w-8 h-8 rounded-lg text-rose-600 hover:bg-rose-50';
+          del.title = 'حذف';
+          del.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+          del.addEventListener('click', () => deleteSavedReplay(record.id));
+
+          row.appendChild(info);
+          row.appendChild(load);
+          row.appendChild(del);
+          box.appendChild(row);
+        });
+      } catch (error) {
+        console.warn('Replay library failed:', error);
+        box.innerHTML = '<div class="text-xs text-rose-600 text-center py-4">تعذّر فتح مكتبة الإعادات</div>';
+      }
+    }
+
+    async function openReplayLibrary() {
+      const modal = document.getElementById('savedReplayModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      await renderSavedReplayLibrary();
+    }
+
+    function closeReplayLibrary() {
+      const modal = document.getElementById('savedReplayModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
 
     function setReplaySpeed(val) {
       replaySpeed = clamp(parseFloat(val) || 1, 0.5, 3);
