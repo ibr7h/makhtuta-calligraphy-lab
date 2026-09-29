@@ -494,7 +494,7 @@
             <button type="button" onclick="startQalamLetterDiagnostic('غ')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">غ</button>
             <button type="button" onclick="startQalamLetterDiagnostic('م')" class="qalam-test-letter px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-lg font-bold hover:bg-amber-100">م</button>
           </div>
-          <div id="qalamDiagnosticHint" class="text-[10px] text-stone-600 mt-2 leading-5">في ر و و: تستمر القصبة بالزاوية الأصلية خلال النزول. يبدأ الانعكاس تدريجيًا عند نهاية الخط السفلي/القاع، فلا يحدث فاصل عند خط الأساس.</div>
+          <div id="qalamDiagnosticHint" class="text-[10px] text-stone-600 mt-2 leading-5">في ر و و: تبقى قطّة القصبة ثابتة خلال القوس السفلي كله. يتم تبديل اتجاه القطّة بعد أدنى نقطة على مسار الخروج، مع وصلة قصيرة تمنع الحافة المأكولة.</div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 mb-3 bg-white border border-indigo-200 rounded-2xl p-3">
@@ -1399,19 +1399,14 @@
       }
       if (deepestIndex < 0) return null;
 
-      // Rotate progressively around the bottom turn, over a short arc-length
-      // window. This removes the visible seam created by an instantaneous flip.
+      // Keep the physical cut fixed through the lower bowl. Begin changing
+      // orientation only AFTER the lowest point, on the exit stroke. Rotating
+      // rectangular dabs throughout the bowl creates a serrated/"eaten" edge.
       const shortSide = Math.max(1, Math.min(canvasCssWidth, canvasCssHeight));
-      const transitionPx = clamp((stroke.sizeNorm || 0.03) * shortSide * 1.6, 10, 34);
-      let startIndex = deepestIndex;
-      let walked = 0;
-      for (let i = deepestIndex; i > 0 && walked < transitionPx; i--) {
-        const a = pts[i], b = pts[i - 1];
-        walked += Math.hypot((a.nx-b.nx)*canvasCssWidth, (a.ny-b.ny)*canvasCssHeight);
-        startIndex = i - 1;
-      }
+      const transitionPx = clamp((stroke.sizeNorm || 0.03) * shortSide * 0.85, 7, 18);
+      const startIndex = deepestIndex;
       let endIndex = deepestIndex;
-      walked = 0;
+      let walked = 0;
       for (let i = deepestIndex; i < pts.length - 1 && walked < transitionPx; i++) {
         const a = pts[i], b = pts[i + 1];
         walked += Math.hypot((a.nx-b.nx)*canvasCssWidth, (a.ny-b.ny)*canvasCssHeight);
@@ -1433,7 +1428,10 @@
       const angle = effectiveNibAngle(stroke, point);
       if (!shouldFlipNibBelowBaseline(stroke) || segmentIndex < 0) return angle;
       const mix = descenderFlipMixAt(stroke, segmentIndex, segmentT);
-      return smoothAngleMix(angle, -angle, mix);
+      // Keep each physical cut stable. A continuous 84° rotation of a broad
+      // rectangular nib produces saw-teeth. Switch on the exit and bridge the
+      // two footprints instead of rotating every dab through intermediate angles.
+      return mix < 0.58 ? angle : -angle;
     }
 
     function clearRenderedCanvas() {
@@ -1656,6 +1654,29 @@
           stroke,
           1,
           i - 1
+        );
+      }
+      // Fill the orientation hand-off with a compact rounded bridge so the
+      // lower contour remains continuous without serrated intermediate dabs.
+      const flipProfile = stroke._descenderFlipProfile;
+      if (flipProfile && flipProfile.endIndex > flipProfile.startIndex) {
+        const bridgeIndex = Math.min(
+          stroke.points.length - 1,
+          Math.max(flipProfile.startIndex, Math.round(
+            flipProfile.startIndex + (flipProfile.endIndex - flipProfile.startIndex) * 0.58
+          ))
+        );
+        const bp = stroke.points[bridgeIndex];
+        const p = denormalizePoint(bp);
+        const w = strokeSizePx(stroke, bp);
+        const bridgeStroke = { ...stroke, roundness: Math.max(0.55, stroke.roundness ?? 0.12) };
+        drawRoundedNibFootprint(
+          layerCtx, p.x, p.y, w * 0.88, effectiveNibAngle(stroke, bp),
+          bridgeStroke, 1
+        );
+        drawRoundedNibFootprint(
+          layerCtx, p.x, p.y, w * 0.88, -effectiveNibAngle(stroke, bp),
+          bridgeStroke, 1
         );
       }
       delete stroke._descenderFlipProfile;
@@ -2237,11 +2258,9 @@
             ay+(by-ay)*t,
             wa+(wb-wa)*t,
             options.flipAtBottom
-              ? smoothAngleMix(
-                  brushLabEffectiveAngle(stroke,point,forcedAngle),
-                  -brushLabEffectiveAngle(stroke,point,forcedAngle),
-                  descenderFlipMixAt(stroke, j - 1, t)
-                )
+              ? (descenderFlipMixAt(stroke, j - 1, t) < 0.58
+                  ? brushLabEffectiveAngle(stroke,point,forcedAngle)
+                  : -brushLabEffectiveAngle(stroke,point,forcedAngle))
               : brushLabEffectiveAngle(stroke,point,forcedAngle),
             thickness,
             stroke.roundness??0.12,
