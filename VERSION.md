@@ -1,6 +1,6 @@
 # Version
 
-**Hybrid V6.10 — Optional Ra/Waw Descender Flip**
+**Hybrid V6.11 — AliQaseef Arabic Brush Presets**
 
 - SVG guide layer
 - Canvas renderer
@@ -38,3 +38,8 @@
 - The option is available in Brush Settings and is persisted in named brushes and app settings.
 - ي and all other letters remain outside the reversal policy.
 - The application version is now visible in the main header as V6.10.
+
+- Added five Arabic presets extracted from the supplied AliQaseef Procreate brushset: Reqa'a, Naskh, Farsi, Thuluth and Diwani.
+- Preserved the existing Makhtuta presets as a separate group.
+- Extended the quick nib-angle control to 0–90° to support the extracted Diwani angle (~86.6°).
+- Added docs/ALI_QASEEF_BRUSHSET.md with source values and explicit mapping limitations.
