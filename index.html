@@ -264,12 +264,15 @@
             <span id="pressureCalStatus" class="hidden xl:inline text-[9px] text-stone-500 whitespace-nowrap">0.08–0.95</span>
           </div>
 
-          <!-- Stroke replay: replays only the visible session after the most recent clear -->
+          <!-- Stroke replay: forward or rewind the visible session after the most recent clear -->
           <div class="flex items-center gap-1 bg-white px-1.5 py-1 rounded-xl border border-amber-200">
-            <button id="btnReplay" type="button" onclick="toggleStrokeReplay()" title="إعادة تشغيل حركة الكتابة" class="px-2 py-1 rounded-lg hover:bg-amber-50 text-amber-900 text-xs font-bold transition flex items-center gap-1">
-              <i class="fa-solid fa-play"></i><span class="hidden xl:inline">إعادة الحركة</span>
+            <button id="btnReplay" type="button" onclick="toggleStrokeReplay(false)" title="إعادة تشغيل حركة الكتابة للأمام" class="px-2 py-1 rounded-lg hover:bg-amber-50 text-amber-900 text-xs font-bold transition flex items-center gap-1">
+              <i class="fa-solid fa-play"></i><span class="hidden xl:inline">إعادة</span>
             </button>
-            <select id="replaySpeed" onchange="setReplaySpeed(this.value)" class="bg-transparent text-[10px] font-bold text-stone-600 outline-none" title="سرعة إعادة الحركة">
+            <button id="btnReplayReverse" type="button" onclick="toggleStrokeReplay(true)" title="إعادة حركة الكتابة بالعكس من آخر ضربة إلى أول ضربة" class="px-2 py-1 rounded-lg hover:bg-amber-50 text-amber-900 text-xs font-bold transition flex items-center gap-1">
+              <i class="fa-solid fa-backward"></i><span class="hidden xl:inline">عكس</span>
+            </button>
+            <select id="replaySpeed" onchange="setReplaySpeed(this.value)" class="bg-transparent text-[10px] font-bold text-stone-600 outline-none" title="سرعة الإعادة">
               <option value="0.75">×0.75</option>
               <option value="1" selected>×1</option>
               <option value="1.5">×1.5</option>
@@ -486,10 +489,22 @@
               <button onclick="applyBrushPreset('soft')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">قلم ناعم</button>
             </div>
           </div>
-          <div class="min-w-[165px] md:min-w-0 md:mt-3 md:pt-3 md:border-t md:border-amber-200">
-            <button onclick="savePersonalBrushPreset()" class="w-full px-3 py-2 rounded-xl bg-amber-800 text-white text-xs font-bold hover:bg-amber-900"><i class="fa-solid fa-floppy-disk ml-1"></i>حفظ الإعداد الحالي</button>
-            <button id="btnLoadPersonalPreset" onclick="loadPersonalBrushPreset()" class="w-full mt-1.5 px-3 py-2 rounded-xl bg-white border border-amber-300 text-amber-900 text-xs font-bold hover:bg-amber-50">تطبيق المحفوظ</button>
-            <button onclick="resetBrushSettings()" class="w-full mt-1.5 px-3 py-2 rounded-xl text-stone-600 text-xs font-bold hover:bg-stone-100">إعادة الافتراضي</button>
+          <div class="min-w-[180px] md:min-w-0 md:mt-3 md:pt-3 md:border-t md:border-amber-200">
+            <div class="text-[11px] font-black text-amber-950 mb-2">فرشي المحفوظة</div>
+            <input id="brushPresetName" type="text" maxlength="40" placeholder="اسم الفرشاة — مثال: نسخ خفيف" class="w-full px-2.5 py-2 rounded-xl bg-white border border-amber-300 text-xs outline-none focus:ring-2 focus:ring-amber-500">
+            <button onclick="saveNamedBrushPreset()" class="w-full mt-1.5 px-3 py-2 rounded-xl bg-amber-800 text-white text-xs font-bold hover:bg-amber-900"><i class="fa-solid fa-floppy-disk ml-1"></i>حفظ الفرشاة بالاسم</button>
+            <div id="namedBrushPresetList" class="mt-2 flex flex-col gap-1 max-h-36 overflow-y-auto custom-scrollbar"></div>
+
+            <div class="mt-3 pt-3 border-t border-amber-200">
+              <div class="text-[11px] font-black text-amber-950 mb-2">إعدادات التطبيق</div>
+              <div class="grid grid-cols-2 gap-1">
+                <button onclick="saveAppSettings()" class="px-2 py-2 rounded-xl bg-white border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-50"><i class="fa-solid fa-bookmark ml-1"></i>حفظ</button>
+                <button onclick="restoreAppSettings(false)" class="px-2 py-2 rounded-xl bg-white border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-50"><i class="fa-solid fa-arrow-rotate-left ml-1"></i>استعادة</button>
+              </div>
+              <div id="appSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
+            </div>
+
+            <button onclick="resetBrushSettings()" class="w-full mt-2 px-3 py-2 rounded-xl text-stone-600 text-xs font-bold hover:bg-stone-100">إعادة الفرشاة الافتراضية</button>
           </div>
         </aside>
 
@@ -1022,6 +1037,7 @@
     let replayActive = false;
     let replayRaf = 0;
     let replaySpeed = 1;
+    let replayDirection = 'forward';
     let replayRunToken = 0;
 
     // Hybrid V4 — Qalam Engine V3 + Replay + calibrated pressure.
@@ -1044,7 +1060,9 @@
       initCanvas();
       renderAlphabetGrid();
       initExtras();
+      restoreAppSettings(true);
       syncBrushSettingsUI();
+      renderNamedBrushPresets();
       window.addEventListener('resize', debounceResizeCanvas);
     });
 
@@ -1825,6 +1843,222 @@
       return { tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,pressureMin,pressureMax };
     }
 
+    const NAMED_BRUSH_PRESETS_KEY = 'makhtuta.namedBrushPresets.v1';
+    const APP_SETTINGS_KEY = 'makhtuta.appSettings.v1';
+
+    function applySavedBrushSettings(p) {
+      if (!p || typeof p !== 'object') return;
+      setBrushType(p.tool || 'calligraphy');
+      brushSize = clamp(Number(p.size ?? 15), 4, 48);
+      nibAngleDeg = clamp(Number(p.angle ?? 42), 0, 90);
+      nibRoundness = clamp(Number(p.roundness ?? 0.12), 0, 1);
+      nibThicknessRatio = clamp(Number(p.nibThickness ?? 0.16), 0.02, 0.40);
+      brushSpacing = clamp(Number(p.spacing ?? 0.08), 0.01, 0.30);
+      qalamSmoothing = clamp(Number(p.smoothing ?? 0.58), 0, 0.95);
+      brushOpacity = clamp(Number(p.opacity ?? 1), 0.1, 1);
+      pressureEnabled = p.pressureEnabled !== false;
+      pressureSensitivity = clamp(Number(p.pressureSensitivity ?? 0.62), 0, 1);
+      pressureMinWidth = clamp(Number(p.pressureMinWidth ?? 0.70), 0.2, 1);
+      pressureCurve = ['soft','linear','firm'].includes(p.pressureCurve) ? p.pressureCurve : 'linear';
+      rotationSource = p.rotationSource === 'twist' ? 'twist' : 'fixed';
+      twistInfluence = clamp(Number(p.twistInfluence ?? 0.22), 0, 1);
+      if (Number.isFinite(Number(p.pressureMin))) pressureMin = clamp(Number(p.pressureMin), 0, 0.82);
+      if (Number.isFinite(Number(p.pressureMax))) pressureMax = clamp(Number(p.pressureMax), pressureMin + 0.10, 1);
+
+      const sizeEl = document.getElementById('brushSize');
+      const angleEl = document.getElementById('nibAngle');
+      const pressureEl = document.getElementById('pressureEnabled');
+      const pressureSensEl = document.getElementById('pressureSensitivity');
+      if (sizeEl) sizeEl.value = brushSize;
+      if (angleEl) angleEl.value = nibAngleDeg;
+      if (pressureEl) pressureEl.checked = pressureEnabled;
+      if (pressureSensEl) pressureSensEl.value = Math.round(pressureSensitivity * 100);
+      const sizeVal = document.getElementById('brushSizeVal');
+      const angleVal = document.getElementById('nibAngleVal');
+      if (sizeVal) sizeVal.textContent = brushSize;
+      if (angleVal) angleVal.textContent = `${Math.round(nibAngleDeg)}°`;
+      setPressureEnabled(pressureEnabled);
+      syncBrushSettingsUI();
+    }
+
+    function readNamedBrushPresets() {
+      let list = [];
+      try {
+        const parsed = JSON.parse(localStorage.getItem(NAMED_BRUSH_PRESETS_KEY) || '[]');
+        if (Array.isArray(parsed)) list = parsed;
+      } catch (_) {}
+
+      // One-time migration of the former single personal preset.
+      if (!list.length) {
+        try {
+          const legacy = JSON.parse(localStorage.getItem('makhtuta.personalBrush.v1') || 'null');
+          if (legacy) {
+            list.push({
+              id: 'legacy-' + Date.now(),
+              name: 'إعدادي السابق',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              settings: legacy
+            });
+            localStorage.setItem(NAMED_BRUSH_PRESETS_KEY, JSON.stringify(list));
+          }
+        } catch (_) {}
+      }
+      return list;
+    }
+
+    function writeNamedBrushPresets(list) {
+      localStorage.setItem(NAMED_BRUSH_PRESETS_KEY, JSON.stringify(list));
+    }
+
+    function renderNamedBrushPresets() {
+      const box = document.getElementById('namedBrushPresetList');
+      if (!box) return;
+      const presets = readNamedBrushPresets();
+      box.innerHTML = '';
+
+      if (!presets.length) {
+        const empty = document.createElement('div');
+        empty.className = 'text-[10px] text-stone-500 text-center py-2';
+        empty.textContent = 'لا توجد فرش محفوظة بعد';
+        box.appendChild(empty);
+        return;
+      }
+
+      presets.forEach(preset => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-1 bg-white border border-amber-200 rounded-xl p-1';
+
+        const apply = document.createElement('button');
+        apply.type = 'button';
+        apply.className = 'flex-1 text-right px-2 py-1.5 text-[10px] font-bold text-amber-950 hover:bg-amber-50 rounded-lg truncate';
+        apply.textContent = preset.name;
+        apply.title = 'تطبيق ' + preset.name;
+        apply.addEventListener('click', () => applyNamedBrushPreset(preset.id));
+
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'w-7 h-7 rounded-lg text-rose-600 hover:bg-rose-50';
+        del.title = 'حذف';
+        del.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+        del.addEventListener('click', () => deleteNamedBrushPreset(preset.id));
+
+        row.appendChild(apply);
+        row.appendChild(del);
+        box.appendChild(row);
+      });
+    }
+
+    function saveNamedBrushPreset() {
+      const input = document.getElementById('brushPresetName');
+      const name = (input?.value || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+      if (!name) {
+        if (input) {
+          input.focus();
+          input.placeholder = 'اكتب اسمًا للفرشاة أولًا';
+        }
+        return;
+      }
+
+      const list = readNamedBrushPresets();
+      const now = new Date().toISOString();
+      const existing = list.find(p => String(p.name).toLocaleLowerCase('ar') === name.toLocaleLowerCase('ar'));
+
+      if (existing) {
+        existing.settings = currentBrushPresetData();
+        existing.updatedAt = now;
+      } else {
+        list.push({
+          id: (crypto.randomUUID ? crypto.randomUUID() : 'brush-' + Date.now()),
+          name,
+          createdAt: now,
+          updatedAt: now,
+          settings: currentBrushPresetData()
+        });
+      }
+
+      writeNamedBrushPresets(list);
+      if (input) input.value = '';
+      renderNamedBrushPresets();
+    }
+
+    function applyNamedBrushPreset(id) {
+      const preset = readNamedBrushPresets().find(p => p.id === id);
+      if (!preset) return;
+      applySavedBrushSettings(preset.settings);
+      const input = document.getElementById('brushPresetName');
+      if (input) input.value = preset.name;
+    }
+
+    function deleteNamedBrushPreset(id) {
+      const list = readNamedBrushPresets();
+      const preset = list.find(p => p.id === id);
+      if (!preset) return;
+      if (!confirm(`حذف إعداد الفرشاة «${preset.name}»؟`)) return;
+      writeNamedBrushPresets(list.filter(p => p.id !== id));
+      renderNamedBrushPresets();
+    }
+
+    function setAppSettingsStatus(message) {
+      const el = document.getElementById('appSettingsStatus');
+      if (!el) return;
+      el.textContent = message || '';
+      if (message) setTimeout(() => {
+        if (el.textContent === message) el.textContent = '';
+      }, 2200);
+    }
+
+    function saveAppSettings() {
+      const payload = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        brush: currentBrushPresetData(),
+        inkColor,
+        replaySpeed,
+        mode: typeof mode !== 'undefined' ? mode : 'letters',
+        fontKey: typeof fontKey !== 'undefined' ? fontKey : 'amiri',
+        currentForm,
+        wordTashkeel: typeof wordTashkeel !== 'undefined' ? wordTashkeel : true
+      };
+      try {
+        localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(payload));
+        setAppSettingsStatus('تم حفظ إعدادات التطبيق ✓');
+      } catch (_) {
+        setAppSettingsStatus('تعذّر حفظ الإعدادات');
+      }
+    }
+
+    function restoreAppSettings(silent = false) {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem(APP_SETTINGS_KEY) || 'null'); } catch (_) {}
+      if (!saved) {
+        if (!silent) setAppSettingsStatus('لا توجد إعدادات محفوظة');
+        return;
+      }
+
+      if (saved.brush) applySavedBrushSettings(saved.brush);
+      if (saved.inkColor) setInkColor(saved.inkColor);
+
+      if (Number.isFinite(Number(saved.replaySpeed))) {
+        setReplaySpeed(saved.replaySpeed);
+        const speedEl = document.getElementById('replaySpeed');
+        if (speedEl) speedEl.value = String(saved.replaySpeed);
+      }
+
+      if (saved.fontKey && typeof FONTS !== 'undefined' && FONTS[saved.fontKey]) setFont(saved.fontKey);
+      if (saved.mode && ['letters','words','phrases'].includes(saved.mode)) setMode(saved.mode);
+      if (saved.currentForm && ['isolated','initial','medial','final'].includes(saved.currentForm)) setLetterForm(saved.currentForm);
+
+      if (typeof saved.wordTashkeel === 'boolean' && typeof wordTashkeel !== 'undefined') {
+        wordTashkeel = saved.wordTashkeel;
+        const chk = document.getElementById('wordTashkeelChk');
+        if (chk) chk.checked = wordTashkeel;
+        if (typeof renderChips === 'function' && mode !== 'letters') renderChips();
+      }
+
+      if (!silent) setAppSettingsStatus('تمت استعادة الإعدادات ✓');
+    }
+
     function savePersonalBrushPreset() {
       try { localStorage.setItem('makhtuta.personalBrush.v1', JSON.stringify(currentBrushPresetData())); }
       catch(_) {}
@@ -1858,14 +2092,39 @@
       return strokeHistory.slice(lastClear + 1).filter(a => a.kind === 'stroke' && a.points?.length);
     }
 
+    function buildReverseReplayStroke(stroke) {
+      if (!stroke?.points?.length) return stroke;
+      const src = stroke.points;
+      const firstT = src[0].t ?? 0;
+      const lastT = src[src.length - 1].t ?? firstT;
+      const points = [...src].reverse().map(p => ({
+        ...p,
+        // Preserve the original pauses/speed profile, but traverse it backward.
+        t: firstT + Math.max(0, lastT - (p.t ?? firstT))
+      }));
+      return { ...stroke, points };
+    }
+
     function updateReplayButton() {
-      const btn = document.getElementById('btnReplay');
-      if (!btn) return;
-      const icon = btn.querySelector('i');
-      const label = btn.querySelector('span');
-      if (icon) icon.className = replayActive ? 'fa-solid fa-stop' : 'fa-solid fa-play';
-      if (label) label.textContent = replayActive ? 'إيقاف' : 'إعادة الحركة';
-      btn.classList.toggle('bg-amber-100', replayActive);
+      const forward = document.getElementById('btnReplay');
+      const reverse = document.getElementById('btnReplayReverse');
+      if (!forward || !reverse) return;
+
+      const forwardActive = replayActive && replayDirection === 'forward';
+      const reverseActive = replayActive && replayDirection === 'reverse';
+
+      const fIcon = forward.querySelector('i');
+      const fLabel = forward.querySelector('span');
+      const rIcon = reverse.querySelector('i');
+      const rLabel = reverse.querySelector('span');
+
+      if (fIcon) fIcon.className = forwardActive ? 'fa-solid fa-stop' : 'fa-solid fa-play';
+      if (fLabel) fLabel.textContent = forwardActive ? 'إيقاف' : 'إعادة';
+      if (rIcon) rIcon.className = reverseActive ? 'fa-solid fa-stop' : 'fa-solid fa-backward';
+      if (rLabel) rLabel.textContent = reverseActive ? 'إيقاف' : 'عكس';
+
+      forward.classList.toggle('bg-amber-100', forwardActive);
+      reverse.classList.toggle('bg-amber-100', reverseActive);
     }
 
     function stopStrokeReplay(restore = true) {
@@ -1877,16 +2136,19 @@
       if (restore) redrawAllStrokes();
     }
 
-    async function replayOneStroke(stroke, token) {
+    async function replayOneStroke(stroke, token, reverse = false) {
       if (!stroke.points?.length || token !== replayRunToken) return false;
-      if (stroke.points.length === 1) {
-        renderDot(stroke.points[0], stroke);
+      const replayStroke = reverse ? buildReverseReplayStroke(stroke) : stroke;
+      const points = replayStroke.points;
+
+      if (points.length === 1) {
+        renderDot(points[0], replayStroke);
         await new Promise(r => setTimeout(r, 80 / replaySpeed));
         return token === replayRunToken;
       }
 
-      const firstT = stroke.points[0].t ?? 0;
-      const lastT = stroke.points[stroke.points.length - 1].t ?? firstT;
+      const firstT = points[0].t ?? 0;
+      const lastT = points[points.length - 1].t ?? firstT;
       const recordedDuration = Math.max(80, Math.min(5000, lastT - firstT));
       const duration = recordedDuration / replaySpeed;
       const started = performance.now();
@@ -1898,34 +2160,34 @@
           const progress = clamp((now - started) / duration, 0, 1);
           const targetRecordedT = firstT + recordedDuration * progress;
           let targetIndex = renderedUntil;
-          while (targetIndex + 1 < stroke.points.length && (stroke.points[targetIndex + 1].t ?? firstT) <= targetRecordedT) {
+          while (targetIndex + 1 < points.length && (points[targetIndex + 1].t ?? firstT) <= targetRecordedT) {
             targetIndex++;
           }
-          // Ensure visual progress even when timestamps are sparse.
-          targetIndex = Math.max(targetIndex, Math.floor(progress * (stroke.points.length - 1)));
+          targetIndex = Math.max(targetIndex, Math.floor(progress * (points.length - 1)));
+
           for (let i = renderedUntil + 1; i <= targetIndex; i++) {
-            renderStrokeSegment(stroke.points[i - 1], stroke.points[i], stroke);
-            if (stroke.tool === 'calligraphy' && i >= 2) {
-              renderCalligraphyJoin(stroke.points[i - 2], stroke.points[i - 1], stroke.points[i], stroke);
-            }
+            renderStrokeSegment(points[i - 1], points[i], replayStroke);
           }
           renderedUntil = targetIndex;
+
           if (progress >= 1) {
-            // Final deterministic outline removes incremental anti-alias seams.
-            renderWholeStroke(stroke);
+            renderWholeStroke(replayStroke);
             return resolve(true);
           }
           replayRaf = requestAnimationFrame(frame);
         };
-        renderDot(stroke.points[0], stroke);
+        renderDot(points[0], replayStroke);
         replayRaf = requestAnimationFrame(frame);
       });
     }
 
-    async function startStrokeReplay() {
-      const actions = visibleReplayActions();
+    async function startStrokeReplay(reverse = false) {
+      let actions = visibleReplayActions();
       if (!actions.length) return;
+      if (reverse) actions = [...actions].reverse();
+
       stopStrokeReplay(false);
+      replayDirection = reverse ? 'reverse' : 'forward';
       replayActive = true;
       const token = ++replayRunToken;
       updateReplayButton();
@@ -1933,7 +2195,7 @@
 
       for (let i = 0; i < actions.length; i++) {
         if (!replayActive || token !== replayRunToken) return;
-        const ok = await replayOneStroke(actions[i], token);
+        const ok = await replayOneStroke(actions[i], token, reverse);
         if (!ok) return;
         if (i < actions.length - 1) {
           await new Promise(r => setTimeout(r, Math.max(45, 120 / replaySpeed)));
@@ -1948,9 +2210,9 @@
       }
     }
 
-    function toggleStrokeReplay() {
+    function toggleStrokeReplay(reverse = false) {
       if (replayActive) stopStrokeReplay(true);
-      else startStrokeReplay();
+      else startStrokeReplay(reverse);
     }
 
     function toggleGuidelines(show) {
