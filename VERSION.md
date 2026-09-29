@@ -1,6 +1,6 @@
 # Version
 
-**Hybrid V6.4 — Brush Lab A/B + Qalam Stabilizer**
+**Hybrid V6.4.1 — Guided Qalam Angle Diagnostic**
 
 - SVG guide layer
 - Canvas renderer
@@ -21,3 +21,7 @@
 - Web App Manifest
 - Service Worker + offline fallback
 - In-app PWA update notification
+
+- Guided diagnostic letters: ج، ح، خ، ع، غ، م
+- Default diagnostic comparison: +θ versus −θ on the exact same recorded stroke
+- Displays the originally recorded nib angle alongside diagnostic angles
