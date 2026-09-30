@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.19.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.20.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.19 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.20 β</span>
           </p>
         </div>
       </div>
@@ -312,6 +312,11 @@
               <option value="1.5">×1.5</option>
               <option value="2">×2</option>
             </select>
+            <select id="replayRepeatMode" onchange="setReplayRepeatMode(this.value)" class="bg-transparent text-[10px] font-bold text-stone-600 outline-none border-r border-amber-200 pr-1" title="تكرار الإعادة">
+              <option value="count" selected>تكرار</option>
+              <option value="infinite">∞ لا نهائي</option>
+            </select>
+            <input id="replayRepeatCount" type="number" min="1" max="99" value="1" inputmode="numeric" onchange="setReplayRepeatCount(this.value)" class="w-10 px-1 py-0.5 rounded border border-amber-200 text-center text-[10px] font-bold text-stone-700" title="عدد مرات الإعادة">
             <span class="w-px h-5 bg-amber-200"></span>
             <button type="button" onclick="saveReplaySnapshot()" title="حفظ الإعادة الحالية" class="p-1.5 rounded-lg hover:bg-amber-50 text-amber-900"><i class="fa-solid fa-floppy-disk"></i></button>
             <button type="button" onclick="openReplayLibrary()" title="الإعادات المحفوظة" class="p-1.5 rounded-lg hover:bg-amber-50 text-amber-900"><i class="fa-solid fa-folder-open"></i></button>
@@ -687,7 +692,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.19.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.20.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -1311,6 +1316,9 @@
     let replaySpeed = 1;
     let replayDirection = 'forward';
     let replayRunToken = 0;
+    let replayRepeatMode = 'count'; // count | infinite
+    let replayRepeatCount = 1;
+    let replayCurrentIteration = 0;
 
     // Hybrid V4 — Qalam Engine V3 + Replay + calibrated pressure.
     // Qalam Engine V3 + vector-like stroke model: Canvas is only the renderer, not the source of truth.
@@ -3949,6 +3957,25 @@
       reverse.classList.toggle('bg-amber-100', reverseActive);
     }
 
+    function setReplayRepeatMode(mode) {
+      replayRepeatMode = mode === 'infinite' ? 'infinite' : 'count';
+      const count = document.getElementById('replayRepeatCount');
+      if (count) {
+        count.disabled = replayRepeatMode === 'infinite';
+        count.classList.toggle('opacity-40', replayRepeatMode === 'infinite');
+      }
+    }
+
+    function setReplayRepeatCount(value) {
+      replayRepeatCount = clamp(Math.round(Number(value) || 1), 1, 99);
+      const input = document.getElementById('replayRepeatCount');
+      if (input) input.value = String(replayRepeatCount);
+    }
+
+    function replayShouldContinue(iteration) {
+      return replayRepeatMode === 'infinite' || iteration < replayRepeatCount;
+    }
+
     function stopStrokeReplay(restore = true) {
       replayRunToken++;
       replayActive = false;
@@ -4011,22 +4038,32 @@
       stopStrokeReplay(false);
       replayDirection = reverse ? 'reverse' : 'forward';
       replayActive = true;
+      replayCurrentIteration = 0;
       const token = ++replayRunToken;
       updateReplayButton();
-      clearRenderedCanvas();
 
-      for (let i = 0; i < actions.length; i++) {
-        if (!replayActive || token !== replayRunToken) return;
-        const ok = await replayOneStroke(actions[i], token, reverse);
-        if (!ok) return;
-        if (i < actions.length - 1) {
-          await new Promise(r => setTimeout(r, Math.max(45, 120 / replaySpeed)));
+      while (replayActive && token === replayRunToken && replayShouldContinue(replayCurrentIteration)) {
+        replayCurrentIteration += 1;
+        clearRenderedCanvas();
+
+        for (let i = 0; i < actions.length; i++) {
+          if (!replayActive || token !== replayRunToken) return;
+          const ok = await replayOneStroke(actions[i], token, reverse);
+          if (!ok) return;
+          if (i < actions.length - 1) {
+            await new Promise(r => setTimeout(r, Math.max(45, 120 / replaySpeed)));
+          }
+        }
+
+        if (replayShouldContinue(replayCurrentIteration) && replayActive && token === replayRunToken) {
+          await new Promise(r => setTimeout(r, Math.max(180, 420 / replaySpeed)));
         }
       }
 
       if (token === replayRunToken) {
         replayActive = false;
         replayRaf = 0;
+        replayCurrentIteration = 0;
         updateReplayButton();
         redrawAllStrokes();
       }
