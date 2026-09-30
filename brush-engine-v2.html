@@ -1353,6 +1353,11 @@
     let canvasCssHeight = 1;
     const MAX_STROKE_ACTIONS = 600;
     const MAX_PRACTICE_AREAS = 12;
+    const WORKSPACE_DB_NAME='makhtuta-workspace-v2';
+    const WORKSPACE_DB_VERSION=1;
+    const WORKSPACE_STORE='workspace';
+    let workspaceSaveTimer=0;
+    let workspaceRestoreComplete=false;
 
     // Quiz State
     let quizScore = 0;
@@ -1363,6 +1368,7 @@
     // Initialize on page load
     window.addEventListener('DOMContentLoaded', () => {
       initCanvas();
+      restoreWorkspace().finally(()=>{workspaceRestoreComplete=true;renderPracticeAreaTabs();updateHistoryButtons();redrawAllStrokes()});
       renderPracticeAreaTabs();
       updateHistoryButtons();
       renderAlphabetGrid();
@@ -2237,12 +2243,12 @@
       a.editUndo=a.editUndo||[];a.editRedo=[];
       a.editUndo.push({label,before,after,seq:++historyOperationSequence});
       if(a.editUndo.length>80)a.editUndo.shift();
-      updateHistoryButtons();
+      updateHistoryButtons();scheduleWorkspaceSave();
     }
     function restoreEditHistory(snapshot){
       const a=activePracticeArea();if(!a)return;
       a.history=cloneHistoryState(snapshot);a.history.forEach(x=>ensureStrokeIdentity(x));strokeHistory=a.history;
-      clearObjectSelection();redrawAllStrokes();
+      clearObjectSelection();redrawAllStrokes();scheduleWorkspaceSave();
     }
     function undoObjectEdit(){
       const a=activePracticeArea();if(!a?.editUndo?.length)return false;
@@ -2563,6 +2569,24 @@
       renderSelectionOverlay();
     }
 
+
+    function openWorkspaceDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(WORKSPACE_DB_NAME,WORKSPACE_DB_VERSION);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(WORKSPACE_STORE))db.createObjectStore(WORKSPACE_STORE,{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
+    function workspacePayload(){return{id:'current',savedAt:new Date().toISOString(),activePracticeAreaId,practiceAreaCounter,areas:practiceAreas.map(a=>({id:a.id,number:a.number,name:a.name,history:cloneHistoryState(a.history)}))}}
+    async function saveWorkspaceNow(){
+      if(!workspaceRestoreComplete)return;
+      try{const db=await openWorkspaceDB();const tx=db.transaction(WORKSPACE_STORE,'readwrite');tx.objectStore(WORKSPACE_STORE).put(workspacePayload());await new Promise((res,rej)=>{tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}catch(e){console.warn('Workspace autosave failed',e)}
+    }
+    function scheduleWorkspaceSave(){if(!workspaceRestoreComplete)return;clearTimeout(workspaceSaveTimer);workspaceSaveTimer=setTimeout(saveWorkspaceNow,350)}
+    async function restoreWorkspace(){
+      try{const db=await openWorkspaceDB();const tx=db.transaction(WORKSPACE_STORE,'readonly');const req=tx.objectStore(WORKSPACE_STORE).get('current');const row=await new Promise((res,rej)=>{req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});
+        if(!row?.areas?.length)return false;
+        practiceAreas.splice(0,practiceAreas.length,...row.areas.slice(0,MAX_PRACTICE_AREAS).map(a=>({id:a.id,number:a.number,name:a.name,history:Array.isArray(a.history)?a.history:[],redo:[],editUndo:[],editRedo:[]})));
+        practiceAreas.forEach(a=>a.history.forEach(x=>ensureStrokeIdentity(x)));
+        practiceAreaCounter=Math.max(Number(row.practiceAreaCounter)||1,...practiceAreas.map(a=>Number(a.number)||1));
+        activePracticeAreaId=practiceAreas.some(a=>a.id===row.activePracticeAreaId)?row.activePracticeAreaId:practiceAreas[0].id;
+        strokeHistory=activePracticeArea().history;return true;
+      }catch(e){console.warn('Workspace restore failed',e);return false}
+    }
     function activePracticeArea() {
       return practiceAreas.find(area => area.id === activePracticeAreaId) || practiceAreas[0] || null;
     }
@@ -2651,7 +2675,7 @@
       resetStrokeStabilizer();
       renderPracticeAreaTabs();
       updateHistoryButtons();
-      redrawAllStrokes();
+      redrawAllStrokes();scheduleWorkspaceSave();
     }
 
     function switchPracticeArea(id) {
@@ -2666,7 +2690,7 @@
       resetStrokeStabilizer();
       renderPracticeAreaTabs();
       updateHistoryButtons();
-      redrawAllStrokes();
+      redrawAllStrokes();scheduleWorkspaceSave();
     }
 
     function deletePracticeArea(id) {
@@ -2688,7 +2712,7 @@
       resetStrokeStabilizer();
       renderPracticeAreaTabs();
       updateHistoryButtons();
-      redrawAllStrokes();
+      redrawAllStrokes();scheduleWorkspaceSave();
     }
 
     function replaceActivePracticeHistory(actions) {
@@ -2711,6 +2735,7 @@
       if (strokeHistory.length > MAX_STROKE_ACTIONS) strokeHistory.shift();
       if (clearRedo && area) { area.redo = []; area.editRedo = []; }
       updateHistoryButtons();
+      scheduleWorkspaceSave();
     }
 
     function undoStroke() {
@@ -2725,7 +2750,7 @@
       const action=strokeHistory.pop();
       area.redo.push(action);
       if(area.redo.length>MAX_STROKE_ACTIONS)area.redo.shift();
-      redrawAllStrokes();updateHistoryButtons();
+      redrawAllStrokes();updateHistoryButtons();scheduleWorkspaceSave();
     }
 
     function redoStroke() {
@@ -2740,7 +2765,7 @@
       const action=area.redo.pop();
       strokeHistory.push(action);
       if(strokeHistory.length>MAX_STROKE_ACTIONS)strokeHistory.shift();
-      redrawAllStrokes();updateHistoryButtons();
+      redrawAllStrokes();updateHistoryButtons();scheduleWorkspaceSave();
     }
 
     function clearCanvas() {
