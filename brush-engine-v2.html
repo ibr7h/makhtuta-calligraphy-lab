@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.18.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.19.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.18 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.19 β</span>
           </p>
         </div>
       </div>
@@ -236,6 +236,12 @@
               <i class="fa-solid fa-draw-polygon text-xs"></i>
               <span class="hidden sm:inline">لاسو</span>
             </button>
+            <select id="lassoHitMode" onchange="setLassoHitMode(this.value)" class="hidden sm:block px-1.5 py-1 rounded-lg border border-violet-200 bg-white text-[9px] font-bold text-violet-800" title="طريقة اختيار اللاسو">
+              <option value="touch">Touch</option><option value="inside">Inside</option><option value="object">Object</option>
+            </select>
+            <select id="lassoCombineMode" onchange="setLassoCombineMode(this.value)" class="hidden md:block px-1.5 py-1 rounded-lg border border-violet-200 bg-white text-[9px] font-bold text-violet-800" title="دمج التحديد">
+              <option value="replace">Replace</option><option value="add">Add +</option><option value="remove">Remove −</option>
+            </select>
             <button id="btnMakeObject" onclick="convertSelectionToObject()" disabled title="تحويل التحديد إلى Object واحد" class="px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all text-indigo-700 hover:bg-indigo-50 disabled:opacity-35 disabled:cursor-not-allowed flex items-center gap-1">
               <i class="fa-solid fa-object-group"></i>
               <span class="hidden lg:inline">Object</span>
@@ -395,6 +401,13 @@
           <!-- Active Interactive Drawing Canvas -->
           <canvas id="drawingCanvas" class="absolute inset-0 w-full h-full z-20"></canvas>
           <canvas id="selectionOverlay" class="absolute inset-0 w-full h-full z-30 pointer-events-none" aria-hidden="true"></canvas>
+          <div id="objectFloatingToolbar" class="hidden absolute z-40 items-center gap-1 p-1 rounded-xl bg-stone-900/95 text-white shadow-xl border border-white/10" style="direction:rtl">
+            <span id="objectInspectorText" class="px-2 text-[9px] font-bold whitespace-nowrap"></span>
+            <button type="button" onclick="duplicateSelectedObject()" class="w-7 h-7 rounded-lg hover:bg-white/15" title="نسخ"><i class="fa-regular fa-clone text-[10px]"></i></button>
+            <button type="button" onclick="convertSelectionToObject()" class="w-7 h-7 rounded-lg hover:bg-white/15" title="تجميع"><i class="fa-solid fa-object-group text-[10px]"></i></button>
+            <button type="button" onclick="ungroupSelectedObjects()" class="w-7 h-7 rounded-lg hover:bg-white/15" title="فك التجميع"><i class="fa-solid fa-object-ungroup text-[10px]"></i></button>
+            <button id="btnLockObjectFloat" type="button" onclick="toggleSelectedObjectLock()" class="w-7 h-7 rounded-lg hover:bg-white/15" title="قفل/فتح"><i class="fa-solid fa-lock text-[10px]"></i></button>
+          </div>
         </div>
 
         <div class="bg-parchment-50 border-t border-amber-200 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs text-stone-700 gap-3">
@@ -674,7 +687,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.18.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.19.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -1253,6 +1266,8 @@
     let objectCounter = 0;
     let strokeIdentityCounter = 0;
     let objectTransformGesture = null;
+    let lassoHitMode = 'touch';
+    let lassoCombineMode = 'replace';
     const OBJECT_HANDLE_RADIUS = 11;
     const OBJECT_ROTATE_OFFSET = 34;
     let inkColor = '#1A1817';
@@ -1307,7 +1322,9 @@
       number: 1,
       name: 'منطقة 1',
       history: strokeHistory,
-      redo: []
+      redo: [],
+      editUndo: [],
+      editRedo: []
     }];
     let currentStroke = null;
     let canvasCssWidth = 1;
@@ -2155,11 +2172,20 @@
       return visible.filter(stroke => ids.has(stroke.strokeId));
     }
 
+    function strokeFullyInsideLasso(stroke, polygon) {
+      return !!stroke?.points?.length && stroke.points.every(p => pointInPolygon(p, polygon));
+    }
+    function setLassoHitMode(mode){lassoHitMode=['touch','inside','object'].includes(mode)?mode:'touch'}
+    function setLassoCombineMode(mode){lassoCombineMode=['replace','add','remove'].includes(mode)?mode:'replace'}
     function selectWithLasso(polygon) {
       const visible = visibleSelectableStrokes();
-      const direct = visible.filter(stroke => strokeIntersectsLasso(stroke, polygon));
+      let direct = visible.filter(stroke => lassoHitMode==='inside' ? strokeFullyInsideLasso(stroke,polygon) : strokeIntersectsLasso(stroke,polygon));
+      if(lassoHitMode==='object') direct=direct.filter(stroke=>!!stroke.objectId);
       const expanded = expandSelectionToWholeObjects(direct, visible);
-      selectedStrokeIds = new Set(expanded.map(stroke => stroke.strokeId));
+      const ids=new Set(expanded.map(stroke=>stroke.strokeId));
+      if(lassoCombineMode==='add') ids.forEach(id=>selectedStrokeIds.add(id));
+      else if(lassoCombineMode==='remove') ids.forEach(id=>selectedStrokeIds.delete(id));
+      else selectedStrokeIds=ids;
       updateObjectSelectionUI();
       renderSelectionOverlay();
     }
@@ -2183,6 +2209,28 @@
       };
     }
 
+    function cloneHistoryState(history=strokeHistory){return typeof structuredClone==='function'?structuredClone(history):JSON.parse(JSON.stringify(history))}
+    function recordEditSnapshot(label,before,after){
+      const a=activePracticeArea();if(!a)return;
+      a.editUndo=a.editUndo||[];a.editRedo=[];
+      a.editUndo.push({label,before,after});
+      if(a.editUndo.length>80)a.editUndo.shift();
+      updateHistoryButtons();
+    }
+    function restoreEditHistory(snapshot){
+      const a=activePracticeArea();if(!a)return;
+      a.history=cloneHistoryState(snapshot);a.history.forEach(x=>ensureStrokeIdentity(x));strokeHistory=a.history;
+      clearObjectSelection();redrawAllStrokes();
+    }
+    function undoObjectEdit(){
+      const a=activePracticeArea();if(!a?.editUndo?.length)return false;
+      const e=a.editUndo.pop();a.editRedo=a.editRedo||[];a.editRedo.push(e);restoreEditHistory(e.before);return true;
+    }
+    function redoObjectEdit(){
+      const a=activePracticeArea();if(!a?.editRedo?.length)return false;
+      const e=a.editRedo.pop();a.editUndo=a.editUndo||[];a.editUndo.push(e);restoreEditHistory(e.after);return true;
+    }
+
     function selectionPixelGeometry() {
       const b=selectionBounds(); if(!b)return null;
       const r={x:b.minX*canvasCssWidth,y:b.minY*canvasCssHeight,w:Math.max(1,(b.maxX-b.minX)*canvasCssWidth),h:Math.max(1,(b.maxY-b.minY)*canvasCssHeight)};
@@ -2191,7 +2239,8 @@
     function pointerCanvasPx(e){const r=canvas.getBoundingClientRect();return{x:clamp(e.clientX-r.left,0,r.width),y:clamp(e.clientY-r.top,0,r.height)}}
     function objectPointDistance(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
     function hitObjectTransformTarget(e){
-      const g=selectionPixelGeometry(); if(!g||!selectedVisibleStrokes().length)return null;
+      const selected=selectedVisibleStrokes();
+      const g=selectionPixelGeometry(); if(!g||!selected.length||selected.some(s=>s.objectLocked))return null;
       const p=pointerCanvasPx(e);
       if(objectPointDistance(p,g.rotate)<=OBJECT_HANDLE_RADIUS+7)return'rotate';
       if(objectPointDistance(p,g.scale)<=OBJECT_HANDLE_RADIUS+7)return'scale';
@@ -2204,7 +2253,7 @@
     function beginObjectTransform(e,type){
       const g=selectionPixelGeometry();if(!g)return false;
       const p=pointerCanvasPx(e);
-      objectTransformGesture={type,start:p,center:g.center,startDistance:Math.max(8,objectPointDistance(p,g.center)),startAngle:Math.atan2(p.y-g.center.y,p.x-g.center.x),snapshots:selectedTransformSnapshot()};
+      objectTransformGesture={type,start:p,center:g.center,startDistance:Math.max(8,objectPointDistance(p,g.center)),startAngle:Math.atan2(p.y-g.center.y,p.x-g.center.x),snapshots:selectedTransformSnapshot(),historyBefore:cloneHistoryState()};
       return true;
     }
     function updateObjectTransform(e){
@@ -2228,13 +2277,14 @@
       });
       redrawAllStrokes();
     }
-    function finishObjectTransform(){if(!objectTransformGesture)return;objectTransformGesture=null;const a=activePracticeArea();if(a)a.redo=[];updateHistoryButtons();renderSelectionOverlay()}
+    function finishObjectTransform(){if(!objectTransformGesture)return;const g=objectTransformGesture;objectTransformGesture=null;recordEditSnapshot(g.type,g.historyBefore,cloneHistoryState());updateHistoryButtons();renderSelectionOverlay()}
     function duplicateSelectedObject(){
       const selected=selectedVisibleStrokes();if(!selected.length)return;
+      const before=cloneHistoryState();
       const oid=`object-${++objectCounter}`;
       const clones=selected.map(src=>{const c=typeof structuredClone==='function'?structuredClone(src):JSON.parse(JSON.stringify(src));c.strokeId=`stroke-${++strokeIdentityCounter}`;c.objectId=oid;c.points.forEach(p=>{p.nx=clamp((p.nx||0)+.025,-.25,1.25);p.ny=clamp((p.ny||0)+.025,-.25,1.25);if(Number.isFinite(p.rawNx))p.rawNx+=.025;if(Number.isFinite(p.rawNy))p.rawNy+=.025;if(Number.isFinite(p.deviceRawNx))p.deviceRawNx+=.025;if(Number.isFinite(p.deviceRawNy))p.deviceRawNy+=.025});cleanupStrokeDynamics(c);return c});
       const a=syncActivePracticeHistoryReference();clones.forEach(c=>strokeHistory.push(c));while(strokeHistory.length>MAX_STROKE_ACTIONS)strokeHistory.shift();if(a)a.redo=[];
-      selectedStrokeIds=new Set(clones.map(c=>c.strokeId));updateHistoryButtons();updateObjectSelectionUI();redrawAllStrokes();
+      selectedStrokeIds=new Set(clones.map(c=>c.strokeId));recordEditSnapshot('duplicate',before,cloneHistoryState());updateHistoryButtons();updateObjectSelectionUI();redrawAllStrokes();
     }
 
     function clearSelectionOverlayCanvas() {
@@ -2286,7 +2336,8 @@
         }
 
         const grouped = selectedVisibleStrokes().some(stroke => !!stroke.objectId);
-        const label = grouped ? 'Object محدد' : 'تحديد';
+        const locked = selectedVisibleStrokes().length && selectedVisibleStrokes().every(stroke=>stroke.objectLocked);
+        const label = locked ? '🔒 Object مقفل' : (grouped ? 'Object محدد' : 'تحديد');
         selectionCtx.setLineDash([]);
         selectionCtx.font = '700 11px Cairo, sans-serif';
         const tw = Math.ceil(selectionCtx.measureText(label).width) + 16;
@@ -2303,6 +2354,13 @@
       selectionCtx.restore();
     }
 
+    function positionFloatingObjectToolbar(){
+      const bar=document.getElementById('objectFloatingToolbar'),g=selectionPixelGeometry();if(!bar||!g)return;
+      const maxX=Math.max(6,canvasCssWidth-(bar.offsetWidth||220)-6);
+      bar.style.left=`${clamp(g.rect.x,6,maxX)}px`;
+      bar.style.top=`${Math.max(6,g.rect.y-48)}px`;
+    }
+
     function updateObjectSelectionUI() {
       const strokes = selectedVisibleStrokes();
       const make = document.getElementById('btnMakeObject');
@@ -2316,6 +2374,23 @@
         badge.textContent = strokes.length ? String(strokes.length) : '';
         badge.classList.toggle('hidden', strokes.length === 0);
       }
+      const floating=document.getElementById('objectFloatingToolbar');
+      const inspector=document.getElementById('objectInspectorText');
+      const lockBtn=document.getElementById('btnLockObjectFloat');
+      if(floating){
+        floating.classList.toggle('hidden',strokes.length===0);
+        floating.classList.toggle('flex',strokes.length>0);
+      }
+      if(inspector&&strokes.length){
+        const b=selectionBounds(),w=b?Math.round((b.maxX-b.minX)*canvasCssWidth):0,h=b?Math.round((b.maxY-b.minY)*canvasCssHeight):0;
+        inspector.textContent=`${strokes.length} strokes • ${w}×${h}px`;
+      }
+      if(lockBtn){
+        const locked=strokes.length&&strokes.every(s=>s.objectLocked);
+        lockBtn.innerHTML=locked?'<i class="fa-solid fa-lock-open text-[10px]"></i>':'<i class="fa-solid fa-lock text-[10px]"></i>';
+        lockBtn.title=locked?'فتح القفل':'قفل العنصر';
+      }
+      positionFloatingObjectToolbar();
     }
 
     function clearObjectSelection() {
@@ -2329,6 +2404,7 @@
     function convertSelectionToObject() {
       const selected = selectedVisibleStrokes();
       if (!selected.length) return;
+      const before=cloneHistoryState();
       const objectId = `object-${++objectCounter}`;
       selected.forEach(stroke => { stroke.objectId = objectId; });
       // If the lasso included part of an older object, merge every selected member into the new object.
@@ -2338,6 +2414,7 @@
         if (selectedIds.has(stroke.strokeId)) stroke.objectId = objectId;
       });
       selectedStrokeIds = new Set(selected.map(stroke => stroke.strokeId));
+      recordEditSnapshot('group',before,cloneHistoryState());
       updateObjectSelectionUI();
       renderSelectionOverlay();
     }
@@ -2347,11 +2424,24 @@
       if (!selected.length) return;
       const objectIds = new Set(selected.map(stroke => stroke.objectId).filter(Boolean));
       if (!objectIds.size) return;
+      const before=cloneHistoryState();
       visibleSelectableStrokes().forEach(stroke => {
         if (stroke.objectId && objectIds.has(stroke.objectId)) stroke.objectId = null;
       });
+      recordEditSnapshot('ungroup',before,cloneHistoryState());
       updateObjectSelectionUI();
       renderSelectionOverlay();
+    }
+
+    function toggleSelectedObjectLock(){
+      const selected=selectedVisibleStrokes();if(!selected.length)return;
+      const before=cloneHistoryState();
+      const objects=new Set(selected.map(s=>s.objectId).filter(Boolean));
+      const target=objects.size?visibleSelectableStrokes().filter(s=>objects.has(s.objectId)):selected;
+      const shouldLock=!target.every(s=>s.objectLocked);
+      target.forEach(s=>s.objectLocked=shouldLock);
+      recordEditSnapshot(shouldLock?'lock':'unlock',before,cloneHistoryState());
+      updateObjectSelectionUI();renderSelectionOverlay();
     }
 
     function setInteractionMode(mode) {
@@ -2374,7 +2464,7 @@
     function beginLassoFromEvent(e) {
       const p = pointerPoint(e);
       lassoPoints = [p];
-      selectedStrokeIds.clear();
+      if(lassoCombineMode==='replace') selectedStrokeIds.clear();
       updateObjectSelectionUI();
       renderSelectionOverlay();
     }
@@ -2412,8 +2502,8 @@
       const area = activePracticeArea();
       const undo = document.getElementById('btnUndoStroke');
       const redo = document.getElementById('btnRedoStroke');
-      const hasUndo = !!area?.history?.length;
-      const hasRedo = !!area?.redo?.length;
+      const hasUndo = !!area?.history?.length || !!area?.editUndo?.length;
+      const hasRedo = !!area?.redo?.length || !!area?.editRedo?.length;
       if (undo) {
         undo.disabled = !hasUndo;
         undo.classList.toggle('opacity-35', !hasUndo);
@@ -2474,7 +2564,9 @@
         number,
         name: `منطقة ${number}`,
         history: [],
-        redo: []
+        redo: [],
+        editUndo: [],
+        editRedo: []
       };
       practiceAreas.push(area);
       activePracticeAreaId = area.id;
@@ -2530,6 +2622,8 @@
       area.history = Array.isArray(actions) ? actions : [];
       area.history.forEach(action => ensureStrokeIdentity(action));
       area.redo = [];
+      area.editUndo = [];
+      area.editRedo = [];
       strokeHistory = area.history;
       clearObjectSelection();
       updateHistoryButtons();
@@ -2539,14 +2633,16 @@
       const area = syncActivePracticeHistoryReference();
       strokeHistory.push(action);
       if (strokeHistory.length > MAX_STROKE_ACTIONS) strokeHistory.shift();
-      if (clearRedo && area) area.redo = [];
+      if (clearRedo && area) { area.redo = []; area.editRedo = []; }
       updateHistoryButtons();
     }
 
     function undoStroke() {
       if (replayActive) stopStrokeReplay(false);
       const area = syncActivePracticeHistoryReference();
-      if (!area || !strokeHistory.length) return;
+      if (!area) return;
+      if(area.editUndo?.length){undoObjectEdit();updateHistoryButtons();return}
+      if(!strokeHistory.length)return;
       const action = strokeHistory.pop();
       area.redo.push(action);
       if (area.redo.length > MAX_STROKE_ACTIONS) area.redo.shift();
@@ -2557,7 +2653,9 @@
     function redoStroke() {
       if (replayActive) stopStrokeReplay(false);
       const area = syncActivePracticeHistoryReference();
-      if (!area?.redo?.length) return;
+      if(!area)return;
+      if(area.editRedo?.length){redoObjectEdit();updateHistoryButtons();return}
+      if (!area.redo?.length) return;
       const action = area.redo.pop();
       pushHistory(action, false);
       redrawAllStrokes();
