@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.23.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.25.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.23 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.25 β</span>
           </p>
         </div>
       </div>
@@ -470,6 +470,7 @@
           </div>
           <div id="assessmentResults" class="hidden mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
           <div id="assessmentFeedback" class="hidden mt-2 p-2.5 rounded-xl bg-white border border-emerald-200 text-xs text-stone-700 leading-6"></div>
+          <div class="mt-2 rounded-xl bg-white border border-emerald-200 overflow-hidden"><div class="px-2.5 py-2 flex items-center justify-between gap-2 border-b border-emerald-100"><strong class="text-[10px] text-emerald-900"><i class="fa-solid fa-clock-rotate-left ml-1"></i>سجل المحاولات</strong><button type="button" onclick="clearAttemptHistory()" class="text-[9px] font-bold text-rose-700">مسح السجل</button></div><div id="attemptHistoryList" class="max-h-32 overflow-y-auto custom-scrollbar p-2 text-[9px] text-stone-600">لا توجد محاولات مسجلة.</div></div>
         </div>
       </div>
 
@@ -698,7 +699,8 @@
                   <div id="aliEffectiveMovingAverage" class="px-2 py-1 text-center font-mono font-bold"></div>
                 </div>
                 <div class="p-2 border-t border-emerald-100">
-                  <button type="button" onclick="resetActiveAliBrushToArchive()" class="w-full px-2 py-1.5 rounded-lg bg-emerald-700 text-white text-[9px] font-bold hover:bg-emerald-800"><i class="fa-solid fa-rotate-left ml-1"></i>Reset to Archive Values</button>
+                  <div class="grid grid-cols-2 gap-1.5"><button type="button" onclick="saveActiveBrushCalibration()" class="px-2 py-1.5 rounded-lg bg-indigo-700 text-white text-[9px] font-bold"><i class="fa-solid fa-floppy-disk ml-1"></i>حفظ المعايرة</button><button type="button" onclick="applySavedBrushCalibration()" class="px-2 py-1.5 rounded-lg bg-white border border-indigo-200 text-indigo-800 text-[9px] font-bold"><i class="fa-solid fa-wand-magic-sparkles ml-1"></i>تطبيق المحفوظ</button></div>
+                  <button type="button" onclick="resetActiveAliBrushToArchive()" class="w-full mt-1.5 px-2 py-1.5 rounded-lg bg-emerald-700 text-white text-[9px] font-bold hover:bg-emerald-800"><i class="fa-solid fa-rotate-left ml-1"></i>Reset to Archive Values</button><div id="brushCalibrationSavedStatus" class="mt-1 text-[8px] font-bold text-indigo-700"></div>
                   <div class="mt-1 text-[8px] leading-4 text-stone-500">يعيد التحويل المباشر من Brush.archive. لا يغيّر الملف الأصلي ولا الفرش الأخرى.</div>
                 </div>
               </div>
@@ -720,7 +722,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.23.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.25.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -2368,6 +2370,9 @@
     function assessmentCard(label,value,detail){
       return '<div class="rounded-xl bg-white border border-emerald-200 p-2 text-center"><div class="text-[9px] text-stone-500 font-bold">'+label+'</div><div class="text-lg font-black text-emerald-800">'+value+'%</div><div class="text-[9px] text-stone-500">'+detail+'</div></div>';
     }
+
+    function renderAttemptHistory(){const el=document.getElementById('attemptHistoryList');if(!el)return;const attempts=activePracticeArea()?.attempts||[];if(!attempts.length){el.textContent='لا توجد محاولات مسجلة.';return}el.innerHTML=attempts.slice(-12).reverse().map(a=>{const idx=attempts.indexOf(a),prev=idx>0?attempts[idx-1]:null,delta=prev?Number(a.overall)-Number(prev.overall):0,trend=prev?(delta>0?'▲ +'+delta:delta<0?'▼ '+delta:'— 0'):'الأولى',dt=new Date(a.at);return '<div class="flex items-center justify-between gap-2 py-1.5 border-b border-stone-100 last:border-0"><span>'+(a.letter||'—')+' • '+dt.toLocaleString('ar-SA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</span><span class="font-black text-emerald-800">'+a.overall+'%</span><span class="font-bold '+(delta>0?'text-emerald-700':delta<0?'text-rose-700':'text-stone-400')+'">'+trend+'</span></div>'}).join('')}
+    function clearAttemptHistory(){const area=activePracticeArea();if(!area?.attempts?.length)return;area.attempts=[];renderAttemptHistory();scheduleWorkspaceSave()}
     function assessStudentAgainstModel(){
       const all=activeVisibleStrokesIncludingModel(),model=all.filter(s=>s.isTrainingModel),student=all.filter(s=>!s.isTrainingModel);
       const status=document.getElementById('assessmentStatus'),results=document.getElementById('assessmentResults'),feedback=document.getElementById('assessmentFeedback');
@@ -2385,6 +2390,7 @@
         angle:metricScore(angleErr,35),extension:metricScore(extensionErr,.18),shape:metricScore(shapeErr,.55)
       };
       const overall=Math.round(metrics.alignment*.17+metrics.size*.16+metrics.baseline*.17+metrics.angle*.14+metrics.extension*.14+metrics.shape*.22);
+      const area=activePracticeArea();if(area){area.attempts=area.attempts||[];area.attempts.push({id:(crypto.randomUUID?crypto.randomUUID():'attempt-'+Date.now()),at:new Date().toISOString(),overall,metrics:{...metrics},letter:currentPracticeLetter(),modelStrokeCount:model.length,studentStrokeCount:student.length});if(area.attempts.length>50)area.attempts.splice(0,area.attempts.length-50);scheduleWorkspaceSave();renderAttemptHistory()}
       results.innerHTML=assessmentCard('المحاذاة',metrics.alignment,Math.round(alignErr*canvasCssWidth)+'px')+
         assessmentCard('الحجم',metrics.size,Math.round(sizeErr*100)+'% فرق')+
         assessmentCard('خط الأساس',metrics.baseline,Math.round(baselineErr*canvasCssHeight)+'px')+
@@ -2695,7 +2701,7 @@
 
 
     function openWorkspaceDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open(WORKSPACE_DB_NAME,WORKSPACE_DB_VERSION);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(WORKSPACE_STORE))db.createObjectStore(WORKSPACE_STORE,{keyPath:'id'})};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
-    function workspacePayload(){return{id:'current',savedAt:new Date().toISOString(),activePracticeAreaId,practiceAreaCounter,autoGroupEnabled,modelOpacity,areas:practiceAreas.map(a=>({id:a.id,number:a.number,name:a.name,history:cloneHistoryState(a.history)}))}}
+    function workspacePayload(){return{id:'current',savedAt:new Date().toISOString(),activePracticeAreaId,practiceAreaCounter,autoGroupEnabled,modelOpacity,areas:practiceAreas.map(a=>({id:a.id,number:a.number,name:a.name,history:cloneHistoryState(a.history),attempts:cloneHistoryState(a.attempts||[])}))}}
     async function saveWorkspaceNow(){
       if(!workspaceRestoreComplete)return;
       try{const db=await openWorkspaceDB();const tx=db.transaction(WORKSPACE_STORE,'readwrite');tx.objectStore(WORKSPACE_STORE).put(workspacePayload());await new Promise((res,rej)=>{tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)})}catch(e){console.warn('Workspace autosave failed',e)}
@@ -2704,7 +2710,7 @@
     async function restoreWorkspace(){
       try{const db=await openWorkspaceDB();const tx=db.transaction(WORKSPACE_STORE,'readonly');const req=tx.objectStore(WORKSPACE_STORE).get('current');const row=await new Promise((res,rej)=>{req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error)});
         if(!row?.areas?.length)return false;
-        practiceAreas.splice(0,practiceAreas.length,...row.areas.slice(0,MAX_PRACTICE_AREAS).map(a=>({id:a.id,number:a.number,name:a.name,history:Array.isArray(a.history)?a.history:[],redo:[],editUndo:[],editRedo:[]})));
+        practiceAreas.splice(0,practiceAreas.length,...row.areas.slice(0,MAX_PRACTICE_AREAS).map(a=>({id:a.id,number:a.number,name:a.name,history:Array.isArray(a.history)?a.history:[],attempts:Array.isArray(a.attempts)?a.attempts:[],redo:[],editUndo:[],editRedo:[]})));
         practiceAreas.forEach(a=>a.history.forEach(x=>ensureStrokeIdentity(x)));
         practiceAreaCounter=Math.max(Number(row.practiceAreaCounter)||1,...practiceAreas.map(a=>Number(a.number)||1));
         autoGroupEnabled=!!row.autoGroupEnabled;modelOpacity=clamp(Number(row.modelOpacity)||.28,.1,.8);
@@ -2771,6 +2777,7 @@
         box.appendChild(tab);
       });
 
+      renderAttemptHistory();
       const add = document.getElementById('btnAddPracticeArea');
       if (add) {
         const full = practiceAreas.length >= MAX_PRACTICE_AREAS;
@@ -2790,6 +2797,7 @@
         number,
         name: `منطقة ${number}`,
         history: [],
+        attempts: [],
         redo: [],
         editUndo: [],
         editRedo: []
@@ -3146,6 +3154,7 @@
     }
 
     let activeBrushPresetKey = null;
+    const BRUSH_CALIBRATION_STORAGE_KEY='makhtuta-brush-calibrations-v1';
 
     const BRUSH_PRESETS = {
       naskh:  { tool:'calligraphy', size:15, angle:42, roundness:12, nibThickness:16, spacing:8, smoothing:62, opacity:100, pressure:true, pressureSensitivity:62, minWidth:70, curve:'linear', rotation:'fixed', twist:22, stabilizer:false, stabilizerRadius:12, stabilizerFriction:45, descenderFlip:false },
@@ -3168,6 +3177,12 @@
       return typeof key === 'string' && key.startsWith('ali_') && !!BRUSH_PRESETS[key]?.archive;
     }
 
+
+    function currentBrushCalibrationSnapshot(){return{size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,nibShapeMode,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,descenderFlipEnabled:qalamDescenderFlipEnabled,velocityDynamicsEnabled,velocityDynamicsStrength,startTaperStrength,endTaperStrength,taperLengthPx,savedAt:new Date().toISOString()}}
+    function readBrushCalibrations(){try{return JSON.parse(localStorage.getItem(BRUSH_CALIBRATION_STORAGE_KEY)||'{}')}catch(_){return{}}}
+    function saveActiveBrushCalibration(){if(!activeBrushPresetKey)return;const all=readBrushCalibrations();all[activeBrushPresetKey]=currentBrushCalibrationSnapshot();localStorage.setItem(BRUSH_CALIBRATION_STORAGE_KEY,JSON.stringify(all));const el=document.getElementById('brushCalibrationSavedStatus');if(el)el.textContent='تم حفظ معايرة '+activeBrushPresetKey+' ✓';renderAliCalibrationPanel()}
+    function applyCalibrationSnapshot(d){if(!d)return false;setBrushType('calligraphy');brushSize=Number(d.size??brushSize);nibAngleDeg=Number(d.angle??nibAngleDeg);nibRoundness=Number(d.roundness??nibRoundness);nibThicknessRatio=Number(d.nibThickness??nibThicknessRatio);nibShapeMode=d.nibShapeMode||nibShapeMode;brushSpacing=Number(d.spacing??brushSpacing);qalamSmoothing=Number(d.smoothing??qalamSmoothing);brushOpacity=Number(d.opacity??brushOpacity);pressureEnabled=!!d.pressureEnabled;pressureSensitivity=Number(d.pressureSensitivity??pressureSensitivity);pressureMinWidth=Number(d.pressureMinWidth??pressureMinWidth);pressureCurve=d.pressureCurve||pressureCurve;rotationSource=d.rotationSource||rotationSource;twistInfluence=Number(d.twistInfluence??twistInfluence);stabilizerEnabled=!!d.stabilizerEnabled;stabilizerRadiusPx=Number(d.stabilizerRadiusPx??stabilizerRadiusPx);stabilizerFriction=Number(d.stabilizerFriction??stabilizerFriction);qalamDescenderFlipEnabled=!!d.descenderFlipEnabled;velocityDynamicsEnabled=!!d.velocityDynamicsEnabled;velocityDynamicsStrength=Number(d.velocityDynamicsStrength??velocityDynamicsStrength);startTaperStrength=Number(d.startTaperStrength??startTaperStrength);endTaperStrength=Number(d.endTaperStrength??endTaperStrength);taperLengthPx=Number(d.taperLengthPx??taperLengthPx);syncBrushSettingsUI();renderAliCalibrationPanel();return true}
+    function applySavedBrushCalibration(){const d=readBrushCalibrations()[activeBrushPresetKey],el=document.getElementById('brushCalibrationSavedStatus');if(!d){if(el)el.textContent='لا توجد معايرة محفوظة لهذه الفرشاة.';return}applyCalibrationSnapshot(d);if(el)el.textContent='تم تطبيق المعايرة المحفوظة ✓'}
     function archiveMappedDefaults(preset) {
       const a = preset?.archive;
       if (!a) return null;
