@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.20.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.21.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.20 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.21 β</span>
           </p>
         </div>
       </div>
@@ -242,6 +242,9 @@
             <select id="lassoCombineMode" onchange="setLassoCombineMode(this.value)" class="block px-1.5 py-1 rounded-lg border border-violet-200 bg-white text-[9px] font-bold text-violet-800" title="دمج التحديد">
               <option value="replace">Replace</option><option value="add">Add +</option><option value="remove">Remove −</option>
             </select>
+            <label class="flex items-center gap-1 px-1.5 py-1 rounded-lg border border-sky-200 bg-sky-50 text-[9px] font-bold text-sky-800" title="محاذاة ذكية للمركز وخط الأساس">
+              <input id="objectSnapEnabled" type="checkbox" checked onchange="objectSnapEnabled=this.checked" class="accent-sky-700"> Snap
+            </label>
             <button id="btnMakeObject" onclick="convertSelectionToObject()" disabled title="تحويل التحديد إلى Object واحد" class="px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all text-indigo-700 hover:bg-indigo-50 disabled:opacity-35 disabled:cursor-not-allowed flex items-center gap-1">
               <i class="fa-solid fa-object-group"></i>
               <span class="hidden lg:inline">Object</span>
@@ -412,6 +415,13 @@
             <button type="button" onclick="convertSelectionToObject()" class="w-7 h-7 rounded-lg hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed" title="تجميع"><i class="fa-solid fa-object-group text-[10px]"></i></button>
             <button type="button" onclick="ungroupSelectedObjects()" class="w-7 h-7 rounded-lg hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed" title="فك التجميع"><i class="fa-solid fa-object-ungroup text-[10px]"></i></button>
             <button id="btnLockObjectFloat" type="button" onclick="toggleSelectedObjectLock()" class="w-7 h-7 rounded-lg hover:bg-white/15 disabled:opacity-30 disabled:cursor-not-allowed" title="قفل/فتح"><i class="fa-solid fa-lock text-[10px]"></i></button>
+            <button type="button" onclick="copySelectedObject()" class="w-7 h-7 rounded-lg hover:bg-white/15 disabled:opacity-30" title="نسخ للحافظة"><i class="fa-solid fa-copy text-[10px]"></i></button>
+            <button id="btnPasteObjectFloat" type="button" onclick="pasteObjectClipboard()" class="w-7 h-7 rounded-lg hover:bg-white/15 disabled:opacity-30" title="لصق"><i class="fa-solid fa-paste text-[10px]"></i></button>
+            <button type="button" onclick="flipSelectedObject('x')" class="w-7 h-7 rounded-lg hover:bg-white/15 disabled:opacity-30" title="قلب أفقي"><i class="fa-solid fa-left-right text-[10px]"></i></button>
+            <button type="button" onclick="flipSelectedObject('y')" class="w-7 h-7 rounded-lg hover:bg-white/15 disabled:opacity-30" title="قلب رأسي"><i class="fa-solid fa-up-down text-[10px]"></i></button>
+            <button type="button" onclick="resetSelectedObjectTransform()" class="w-7 h-7 rounded-lg hover:bg-white/15 disabled:opacity-30" title="إعادة التحويل"><i class="fa-solid fa-arrows-rotate text-[10px]"></i></button>
+            <button type="button" onclick="reorderSelectedObject('front')" class="w-7 h-7 rounded-lg hover:bg-white/15 disabled:opacity-30" title="إحضار للأمام"><i class="fa-solid fa-layer-group text-[10px]"></i></button>
+            <button type="button" onclick="reorderSelectedObject('back')" class="w-7 h-7 rounded-lg hover:bg-white/15 disabled:opacity-30" title="إرسال للخلف"><i class="fa-solid fa-layer-group text-[10px] opacity-60"></i></button>
           </div>
         </div>
 
@@ -692,7 +702,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.20.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.21.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -1272,6 +1282,9 @@
     let strokeIdentityCounter = 0;
     let historyOperationSequence = 0;
     let objectTransformGesture = null;
+    let objectClipboard = null;
+    let objectSnapEnabled = true;
+    const objectInitialTransforms = new Map();
     let lassoHitMode = 'touch';
     let lassoCombineMode = 'replace';
     const OBJECT_HANDLE_RADIUS = 11;
@@ -2261,19 +2274,21 @@
     }
     function beginObjectTransform(e,type){
       const g=selectionPixelGeometry();if(!g)return false;
+      captureObjectInitialState(selectedVisibleStrokes());
       const p=pointerCanvasPx(e);
       objectTransformGesture={type,start:p,center:g.center,startDistance:Math.max(8,objectPointDistance(p,g.center)),startAngle:Math.atan2(p.y-g.center.y,p.x-g.center.x),snapshots:selectedTransformSnapshot(),historyBefore:cloneHistoryState()};
       return true;
     }
     function updateObjectTransform(e){
       const g=objectTransformGesture;if(!g)return;
-      const p=pointerCanvasPx(e);let scale=1,rot=0;
+      const p=pointerCanvasPx(e);let scale=1,rot=0,moveDx=p.x-g.start.x,moveDy=p.y-g.start.y;
+      if(g.type==='move'){const b=selectionBounds();const snap=applyObjectSnapDelta(moveDx,moveDy,b);moveDx=snap.dx;moveDy=snap.dy}
       if(g.type==='scale')scale=clamp(objectPointDistance(p,g.center)/g.startDistance,.15,6);
       if(g.type==='rotate')rot=Math.atan2(p.y-g.center.y,p.x-g.center.x)-g.startAngle;
       g.snapshots.forEach(item=>{
         item.stroke.points.forEach((pt,i)=>{
           const b=item.points[i];let x=b.nx*canvasCssWidth,y=b.ny*canvasCssHeight;
-          if(g.type==='move'){x+=p.x-g.start.x;y+=p.y-g.start.y}
+          if(g.type==='move'){x+=moveDx;y+=moveDy}
           else{const dx=(x-g.center.x)*scale,dy=(y-g.center.y)*scale,c=Math.cos(rot),sn=Math.sin(rot);x=g.center.x+dx*c-dy*sn;y=g.center.y+dx*sn+dy*c}
           const nx=clamp(x/canvasCssWidth,-.25,1.25),ny=clamp(y/canvasCssHeight,-.25,1.25),ddx=nx-b.nx,ddy=ny-b.ny;
           pt.nx=nx;pt.ny=ny;pt.rawNx=clamp(b.rawNx+ddx,-.25,1.25);pt.rawNy=clamp(b.rawNy+ddy,-.25,1.25);
@@ -2287,6 +2302,50 @@
       redrawAllStrokes();
     }
     function finishObjectTransform(){if(!objectTransformGesture)return;const g=objectTransformGesture;objectTransformGesture=null;recordEditSnapshot(g.type,g.historyBefore,cloneHistoryState());updateHistoryButtons();renderSelectionOverlay()}
+
+    function selectedEditableStrokes(){const a=selectedVisibleStrokes();return a.length&&!a.some(s=>s.objectLocked)?a:[]}
+    function captureObjectInitialState(strokes){
+      strokes.forEach(stroke=>{ensureStrokeIdentity(stroke);if(!objectInitialTransforms.has(stroke.strokeId))objectInitialTransforms.set(stroke.strokeId,cloneHistoryState([stroke])[0])});
+    }
+    function transformSelectedPoints(mutator,label){
+      const selected=selectedEditableStrokes();if(!selected.length)return;
+      captureObjectInitialState(selected);const before=cloneHistoryState(),b=selectionBounds();if(!b)return;
+      const cx=(b.minX+b.maxX)/2,cy=(b.minY+b.maxY)/2;
+      selected.forEach(stroke=>{stroke.points.forEach(p=>mutator(p,cx,cy,stroke));cleanupStrokeDynamics(stroke)});
+      recordEditSnapshot(label,before,cloneHistoryState());redrawAllStrokes();updateObjectSelectionUI();
+    }
+    function flipSelectedObject(axis){
+      transformSelectedPoints((p,cx,cy)=>{const nx=axis==='x'?2*cx-p.nx:p.nx,ny=axis==='y'?2*cy-p.ny:p.ny;const dx=nx-p.nx,dy=ny-p.ny;p.nx=nx;p.ny=ny;if(Number.isFinite(p.rawNx))p.rawNx+=dx;if(Number.isFinite(p.rawNy))p.rawNy+=dy;if(Number.isFinite(p.deviceRawNx))p.deviceRawNx+=dx;if(Number.isFinite(p.deviceRawNy))p.deviceRawNy+=dy},axis==='x'?'flip-x':'flip-y');
+    }
+    function resetSelectedObjectTransform(){
+      const selected=selectedEditableStrokes();if(!selected.length)return;const before=cloneHistoryState();let changed=false;
+      selected.forEach(stroke=>{const original=objectInitialTransforms.get(stroke.strokeId);if(!original)return;const keep={objectId:stroke.objectId,objectLocked:stroke.objectLocked,strokeId:stroke.strokeId};Object.keys(stroke).forEach(k=>delete stroke[k]);Object.assign(stroke,cloneHistoryState([original])[0],keep);changed=true});
+      if(changed){recordEditSnapshot('reset-transform',before,cloneHistoryState());redrawAllStrokes();updateObjectSelectionUI()}
+    }
+    function copySelectedObject(){
+      const selected=selectedVisibleStrokes();if(!selected.length)return false;objectClipboard=cloneHistoryState(selected);return true;
+    }
+    function pasteObjectClipboard(){
+      if(!objectClipboard?.length)return;const before=cloneHistoryState(),oid='object-'+(++objectCounter);
+      const clones=cloneHistoryState(objectClipboard).map(src=>{src.strokeId='stroke-'+(++strokeIdentityCounter);src.objectId=oid;src.objectLocked=false;src.points.forEach(p=>{p.nx+=.035;p.ny+=.035;if(Number.isFinite(p.rawNx))p.rawNx+=.035;if(Number.isFinite(p.rawNy))p.rawNy+=.035;if(Number.isFinite(p.deviceRawNx))p.deviceRawNx+=.035;if(Number.isFinite(p.deviceRawNy))p.deviceRawNy+=.035});return src});
+      clones.forEach(c=>strokeHistory.push(c));selectedStrokeIds=new Set(clones.map(c=>c.strokeId));recordEditSnapshot('paste',before,cloneHistoryState());redrawAllStrokes();updateObjectSelectionUI();
+    }
+    function reorderSelectedObject(direction){
+      const selected=selectedEditableStrokes();if(!selected.length)return;const before=cloneHistoryState(),ids=new Set(selected.map(s=>s.strokeId));
+      const chosen=strokeHistory.filter(x=>x.kind==='stroke'&&ids.has(x.strokeId)),rest=strokeHistory.filter(x=>!(x.kind==='stroke'&&ids.has(x.strokeId)));
+      strokeHistory.splice(0,strokeHistory.length,...(direction==='back'?[...chosen,...rest]:[...rest,...chosen]));
+      recordEditSnapshot(direction==='back'?'send-back':'bring-front',before,cloneHistoryState());redrawAllStrokes();
+    }
+    function applyObjectSnapDelta(dx,dy,bounds){
+      if(!objectSnapEnabled||!bounds)return{dx,dy};
+      const threshold=10;let sx=dx,sy=dy;
+      const cx=((bounds.minX+bounds.maxX)/2)*canvasCssWidth+dx;
+      const base=bounds.maxY*canvasCssHeight+dy;
+      if(Math.abs(cx-canvasCssWidth/2)<=threshold)sx+=canvasCssWidth/2-cx;
+      const baseline=canvasCssHeight*.62;
+      if(Math.abs(base-baseline)<=threshold)sy+=baseline-base;
+      return{dx:sx,dy:sy};
+    }
     function duplicateSelectedObject(){
       const selected=selectedVisibleStrokes();if(!selected.length)return;
       const before=cloneHistoryState();
@@ -2396,6 +2455,7 @@
         const b=selectionBounds(),w=b?Math.round((b.maxX-b.minX)*canvasCssWidth):0,h=b?Math.round((b.maxY-b.minY)*canvasCssHeight):0;
         inspector.textContent=`${strokes.length} strokes • ${w}×${h}px`;
       }
+      const pasteBtn=document.getElementById('btnPasteObjectFloat');if(pasteBtn)pasteBtn.disabled=!objectClipboard?.length;
       const floatUngroup=floating?.querySelector('button[onclick="ungroupSelectedObjects()"]');
       const floatGroup=floating?.querySelector('button[onclick="convertSelectionToObject()"]');
       if(floatUngroup) floatUngroup.disabled=strokes.some(s=>s.objectLocked)||!strokes.some(s=>s.objectId);
