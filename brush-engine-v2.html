@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.15.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.16.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.15 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.16 β</span>
           </p>
         </div>
       </div>
@@ -298,8 +298,11 @@
           <!-- Actions: Undo, Clear, Download -->
           <div class="flex items-center gap-1.5 mr-auto">
             <button id="btnFs" onclick="toggleFullscreen()" title="ملء الشاشة" class="p-2 rounded-xl bg-white border border-amber-200 hover:bg-amber-50 text-stone-700 transition"><i class="fa-solid fa-expand"></i></button>
-            <button onclick="undoStroke()" title="تراجع خطوة" class="p-2 rounded-xl bg-white border border-amber-200 hover:bg-amber-50 text-stone-700 transition">
+            <button id="btnUndoStroke" onclick="undoStroke()" title="تراجع خطوة في منطقة التدريب الحالية" class="p-2 rounded-xl bg-white border border-amber-200 hover:bg-amber-50 text-stone-700 transition">
               <i class="fa-solid fa-rotate-left"></i>
+            </button>
+            <button id="btnRedoStroke" onclick="redoStroke()" title="إعادة الخطوة في منطقة التدريب الحالية" class="p-2 rounded-xl bg-white border border-amber-200 hover:bg-amber-50 text-stone-700 transition">
+              <i class="fa-solid fa-rotate-right"></i>
             </button>
             <button onclick="clearCanvas()" title="مسح اللوحة" class="p-2 rounded-xl bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 transition">
               <i class="fa-solid fa-trash-can"></i>
@@ -309,6 +312,14 @@
               <span class="hidden sm:inline">حفظ</span>
             </button>
           </div>
+        </div>
+
+        <!-- Multiple independent practice areas -->
+        <div class="bg-white border-t border-amber-200 px-3 py-2 flex items-center gap-2">
+          <div id="practiceAreaTabs" class="flex-1 min-w-0 flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-0.5" aria-label="مناطق التدريب"></div>
+          <button id="btnAddPracticeArea" type="button" onclick="addPracticeArea()" class="shrink-0 px-2.5 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-[10px] sm:text-xs font-bold shadow-sm transition whitespace-nowrap" title="إضافة منطقة تدريب مستقلة">
+            <i class="fa-solid fa-plus ml-1"></i><span>منطقة تدريب</span>
+          </button>
         </div>
 
         <!-- Hybrid workspace: SVG guidance layer + Canvas ink layer -->
@@ -646,7 +657,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.15.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.16.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -1261,11 +1272,21 @@
     // Hybrid V4 — Qalam Engine V3 + Replay + calibrated pressure.
     // Qalam Engine V3 + vector-like stroke model: Canvas is only the renderer, not the source of truth.
     // Coordinates and brush size are normalized so strokes survive resize/fullscreen/orientation changes.
-    let strokeHistory = []; // [{kind:'stroke', tool, color, angle, sizeNorm, points:[...]}, {kind:'clear'}]
+    let strokeHistory = []; // Active practice-area history; Canvas remains only the renderer.
+    let practiceAreaCounter = 1;
+    let activePracticeAreaId = 'practice-area-1';
+    const practiceAreas = [{
+      id: activePracticeAreaId,
+      number: 1,
+      name: 'منطقة 1',
+      history: strokeHistory,
+      redo: []
+    }];
     let currentStroke = null;
     let canvasCssWidth = 1;
     let canvasCssHeight = 1;
     const MAX_STROKE_ACTIONS = 600;
+    const MAX_PRACTICE_AREAS = 12;
 
     // Quiz State
     let quizScore = 0;
@@ -1276,6 +1297,8 @@
     // Initialize on page load
     window.addEventListener('DOMContentLoaded', () => {
       initCanvas();
+      renderPracticeAreaTabs();
+      updateHistoryButtons();
       renderAlphabetGrid();
       initExtras();
       restoreAppSettings(true);
@@ -2004,22 +2027,172 @@
       }
     }
 
-    function pushHistory(action) {
+    function activePracticeArea() {
+      return practiceAreas.find(area => area.id === activePracticeAreaId) || practiceAreas[0] || null;
+    }
+
+    function syncActivePracticeHistoryReference() {
+      const area = activePracticeArea();
+      strokeHistory = area ? area.history : [];
+      return area;
+    }
+
+    function updateHistoryButtons() {
+      const area = activePracticeArea();
+      const undo = document.getElementById('btnUndoStroke');
+      const redo = document.getElementById('btnRedoStroke');
+      const hasUndo = !!area?.history?.length;
+      const hasRedo = !!area?.redo?.length;
+      if (undo) {
+        undo.disabled = !hasUndo;
+        undo.classList.toggle('opacity-35', !hasUndo);
+        undo.classList.toggle('cursor-not-allowed', !hasUndo);
+      }
+      if (redo) {
+        redo.disabled = !hasRedo;
+        redo.classList.toggle('opacity-35', !hasRedo);
+        redo.classList.toggle('cursor-not-allowed', !hasRedo);
+      }
+    }
+
+    function renderPracticeAreaTabs() {
+      const box = document.getElementById('practiceAreaTabs');
+      if (!box) return;
+      box.innerHTML = '';
+      practiceAreas.forEach(area => {
+        const active = area.id === activePracticeAreaId;
+        const tab = document.createElement('button');
+        tab.type = 'button';
+        tab.dataset.areaId = area.id;
+        tab.onclick = () => switchPracticeArea(area.id);
+        tab.className = 'shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-[10px] sm:text-xs font-bold transition ' +
+          (active
+            ? 'bg-amber-100 border-amber-500 text-amber-950 shadow-sm'
+            : 'bg-white border-amber-200 text-stone-600 hover:bg-amber-50');
+        tab.innerHTML = `<i class="fa-solid fa-pen-ruler text-[9px]"></i><span>${area.name}</span>` +
+          (practiceAreas.length > 1
+            ? `<span role="button" aria-label="حذف ${area.name}" title="حذف ${area.name}" class="practice-area-delete mr-1 w-4 h-4 inline-flex items-center justify-center rounded-full ${active?'text-rose-600 hover:bg-rose-100':'text-stone-400 hover:text-rose-600 hover:bg-rose-50'}"><i class="fa-solid fa-xmark text-[8px]"></i></span>`
+            : '');
+        const del = tab.querySelector('.practice-area-delete');
+        if (del) {
+          del.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            deletePracticeArea(area.id);
+          });
+        }
+        box.appendChild(tab);
+      });
+
+      const add = document.getElementById('btnAddPracticeArea');
+      if (add) {
+        const full = practiceAreas.length >= MAX_PRACTICE_AREAS;
+        add.disabled = full;
+        add.classList.toggle('opacity-40', full);
+        add.classList.toggle('cursor-not-allowed', full);
+        add.title = full ? `الحد الأقصى ${MAX_PRACTICE_AREAS} منطقة تدريب` : 'إضافة منطقة تدريب مستقلة';
+      }
+    }
+
+    function addPracticeArea() {
+      if (practiceAreas.length >= MAX_PRACTICE_AREAS || isDrawing) return;
+      if (replayActive) stopStrokeReplay(false);
+      const number = ++practiceAreaCounter;
+      const area = {
+        id: `practice-area-${number}`,
+        number,
+        name: `منطقة ${number}`,
+        history: [],
+        redo: []
+      };
+      practiceAreas.push(area);
+      activePracticeAreaId = area.id;
+      strokeHistory = area.history;
+      currentStroke = null;
+      resetStrokeStabilizer();
+      renderPracticeAreaTabs();
+      updateHistoryButtons();
+      redrawAllStrokes();
+    }
+
+    function switchPracticeArea(id) {
+      if (id === activePracticeAreaId || isDrawing) return;
+      const area = practiceAreas.find(item => item.id === id);
+      if (!area) return;
+      if (replayActive) stopStrokeReplay(false);
+      activePracticeAreaId = id;
+      strokeHistory = area.history;
+      currentStroke = null;
+      resetStrokeStabilizer();
+      renderPracticeAreaTabs();
+      updateHistoryButtons();
+      redrawAllStrokes();
+    }
+
+    function deletePracticeArea(id) {
+      if (practiceAreas.length <= 1 || isDrawing) return;
+      const index = practiceAreas.findIndex(area => area.id === id);
+      if (index < 0) return;
+      if (replayActive) stopStrokeReplay(false);
+      const deletingActive = id === activePracticeAreaId;
+      practiceAreas.splice(index, 1);
+      if (deletingActive) {
+        const next = practiceAreas[Math.min(index, practiceAreas.length - 1)];
+        activePracticeAreaId = next.id;
+        strokeHistory = next.history;
+      } else {
+        syncActivePracticeHistoryReference();
+      }
+      currentStroke = null;
+      resetStrokeStabilizer();
+      renderPracticeAreaTabs();
+      updateHistoryButtons();
+      redrawAllStrokes();
+    }
+
+    function replaceActivePracticeHistory(actions) {
+      const area = activePracticeArea();
+      if (!area) return;
+      area.history = Array.isArray(actions) ? actions : [];
+      area.redo = [];
+      strokeHistory = area.history;
+      updateHistoryButtons();
+    }
+
+    function pushHistory(action, clearRedo = true) {
+      const area = syncActivePracticeHistoryReference();
       strokeHistory.push(action);
       if (strokeHistory.length > MAX_STROKE_ACTIONS) strokeHistory.shift();
+      if (clearRedo && area) area.redo = [];
+      updateHistoryButtons();
     }
 
     function undoStroke() {
       if (replayActive) stopStrokeReplay(false);
-      if (!strokeHistory.length) return;
-      strokeHistory.pop();
+      const area = syncActivePracticeHistoryReference();
+      if (!area || !strokeHistory.length) return;
+      const action = strokeHistory.pop();
+      area.redo.push(action);
+      if (area.redo.length > MAX_STROKE_ACTIONS) area.redo.shift();
       redrawAllStrokes();
+      updateHistoryButtons();
+    }
+
+    function redoStroke() {
+      if (replayActive) stopStrokeReplay(false);
+      const area = syncActivePracticeHistoryReference();
+      if (!area?.redo?.length) return;
+      const action = area.redo.pop();
+      pushHistory(action, false);
+      redrawAllStrokes();
+      updateHistoryButtons();
     }
 
     function clearCanvas() {
       if (replayActive) stopStrokeReplay(false);
       if (!strokeHistory.length) {
         clearRenderedCanvas();
+        updateHistoryButtons();
         return;
       }
       pushHistory({ kind: 'clear', t: performance.now() });
@@ -3134,7 +3307,7 @@
         const record = await getSavedReplay(id);
         if (!record?.actions?.length) return;
         if (replayActive) stopStrokeReplay(false);
-        strokeHistory = cloneReplayActions(record.actions);
+        replaceActivePracticeHistory(cloneReplayActions(record.actions));
         redrawAllStrokes();
         closeReplayLibrary();
       } catch (error) {
@@ -3403,7 +3576,7 @@
       // 4. Save file
       const link = document.createElement('a');
       const letterData = ARABIC_LETTERS[currentLetterIndex];
-      link.download = `لوحة_${letterData.name}_${currentForm}.png`;
+      link.download = `لوحة_${letterData.name}_${currentForm}_${activePracticeArea()?.name || 'منطقة'}.png`;
       link.href = exportCanvas.toDataURL('image/png');
       link.click();
     }
