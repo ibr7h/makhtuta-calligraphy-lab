@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-19-beta-install-route-2026-09-30-7';
+const CACHE_VERSION = 'makhtuta-pwa-v6-20-beta-replay-repeat-2026-09-30-8';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
