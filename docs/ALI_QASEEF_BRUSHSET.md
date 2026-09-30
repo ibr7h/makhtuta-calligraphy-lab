@@ -24,3 +24,15 @@ The brushset is a ZIP/Procreate package containing five `SilicaBrush` archives. 
 - Procreate taper, wet-edge, rendering, grain and Valkyrie-specific transfer settings do not have 1:1 equivalents in the current Makhtuta engine and are not claimed as exact reproductions.
 
 These presets are therefore parameter-based approximations grounded in the supplied Brush.archive values, not binary-compatible Procreate brushes.
+
+
+## Original vs Effective calibration
+
+Brush Engine V2 keeps the decoded Procreate source values separate from the current Makhtuta rendering values.
+
+- **Original** displays raw `Brush.archive` values such as `paintSize`, `shapeAngle`, `shapeRoundness`, `plotSmoothing`, `dynamicsPressureSize`, and moving-average stabilization.
+- **Effective** displays the values currently used by Makhtuta after conversion or manual calibration.
+- The UI marks the active AliQaseef brush as **Archive** while its effective core values match the direct archive mapping, and **Calibrated** after a relevant manual adjustment.
+- **Reset to Archive Values** recomputes the direct mapping from the raw archive values rather than copying rounded display values.
+- Saved named brushes and saved app settings retain `sourcePresetKey`, so the original source brush can still be identified when the settings are restored.
+- Procreate moving-average stabilization remains displayed as an original source value but is not silently treated as identical to Makhtuta Stabilizer; the Effective column reports it as not applied unless Makhtuta stabilization is explicitly enabled.
