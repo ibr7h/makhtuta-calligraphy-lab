@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.22.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.23.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.22 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.23 β</span>
           </p>
         </div>
       </div>
@@ -460,6 +460,17 @@
             <input type="range" id="ghostOpacitySlider" min="0" max="0.55" step="0.05" value="0.22" oninput="setGhostOpacity(this.value)" class="w-20 accent-amber-800 h-1.5 bg-amber-200 rounded cursor-pointer">
           </div>
         </div>
+        <div id="studentAssessmentPanel" class="border-t border-emerald-200 bg-emerald-50/70 px-3 py-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="assessStudentAgainstModel()" class="px-3 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm">
+              <i class="fa-solid fa-chart-simple ml-1"></i> تقييم المحاولة
+            </button>
+            <span id="assessmentStatus" class="text-[10px] font-bold text-stone-600">عيّن نموذجًا ثم اكتب المحاولة.</span>
+            <button id="btnClearStudentAttempt" type="button" onclick="clearStudentAttempt()" class="mr-auto px-2.5 py-1.5 rounded-lg border border-rose-200 bg-white text-rose-700 text-[10px] font-bold">مسح المحاولة فقط</button>
+          </div>
+          <div id="assessmentResults" class="hidden mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
+          <div id="assessmentFeedback" class="hidden mt-2 p-2.5 rounded-xl bg-white border border-emerald-200 text-xs text-stone-700 leading-6"></div>
+        </div>
       </div>
 
       <!-- Diacritics (Harakat) Selector Bar -->
@@ -709,7 +720,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.22.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.23.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -2327,6 +2338,78 @@
     }
     function finishObjectTransform(){if(!objectTransformGesture)return;const g=objectTransformGesture;objectTransformGesture=null;recordEditSnapshot(g.type,g.historyBefore,cloneHistoryState());updateHistoryButtons();renderSelectionOverlay()}
 
+
+    function activeVisibleStrokesIncludingModel(){
+      let lastClear=-1;for(let i=0;i<strokeHistory.length;i++)if(strokeHistory[i].kind==='clear')lastClear=i;
+      return strokeHistory.slice(lastClear+1).filter(a=>a.kind==='stroke'&&a.tool!=='eraser'&&a.points?.length);
+    }
+    function boundsForStrokes(strokes){
+      if(!strokes?.length)return null;let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+      strokes.forEach(s=>{const pad=Math.max(.003,(s.sizeNorm||.02)*.45);s.points.forEach(p=>{minX=Math.min(minX,p.nx-pad);minY=Math.min(minY,p.ny-pad);maxX=Math.max(maxX,p.nx+pad);maxY=Math.max(maxY,p.ny+pad)})});
+      return{minX,maxX,minY,maxY,width:Math.max(.001,maxX-minX),height:Math.max(.001,maxY-minY),cx:(minX+maxX)/2,cy:(minY+maxY)/2};
+    }
+    function meanStrokeAngle(strokes){
+      const vals=strokes.map(s=>Number(s.angle)).filter(Number.isFinite);if(!vals.length)return 0;
+      const x=vals.reduce((a,v)=>a+Math.cos(v),0),y=vals.reduce((a,v)=>a+Math.sin(v),0);return Math.atan2(y,x);
+    }
+    function angleDeltaDegrees(a,b){let d=Math.abs((a-b)*180/Math.PI)%360;if(d>180)d=360-d;return Math.min(d,180-d)}
+    function sampleStrokePoints(strokes,max=240){
+      const pts=strokes.flatMap(s=>s.points.map(p=>({x:p.nx,y:p.ny})));if(pts.length<=max)return pts;
+      const step=pts.length/max,out=[];for(let i=0;i<max;i++)out.push(pts[Math.min(pts.length-1,Math.floor(i*step))]);return out;
+    }
+    function normalizedShapeDistance(model,student,mb,sb){
+      const mp=sampleStrokePoints(model),sp=sampleStrokePoints(student);if(!mp.length||!sp.length)return 1;
+      const norm=(p,b)=>({x:(p.x-b.cx)/b.width,y:(p.y-b.cy)/b.height});
+      const m=mp.map(p=>norm(p,mb)),u=sp.map(p=>norm(p,sb));
+      const directed=(a,b)=>a.reduce((sum,p)=>{let best=Infinity;b.forEach(q=>{const d=Math.hypot(p.x-q.x,p.y-q.y);if(d<best)best=d});return sum+best},0)/a.length;
+      return Math.min(1,(directed(m,u)+directed(u,m))/2/1.4);
+    }
+    function metricScore(error,tolerance){return Math.round(100*clamp(1-error/Math.max(.0001,tolerance),0,1))}
+    function assessmentCard(label,value,detail){
+      return '<div class="rounded-xl bg-white border border-emerald-200 p-2 text-center"><div class="text-[9px] text-stone-500 font-bold">'+label+'</div><div class="text-lg font-black text-emerald-800">'+value+'%</div><div class="text-[9px] text-stone-500">'+detail+'</div></div>';
+    }
+    function assessStudentAgainstModel(){
+      const all=activeVisibleStrokesIncludingModel(),model=all.filter(s=>s.isTrainingModel),student=all.filter(s=>!s.isTrainingModel);
+      const status=document.getElementById('assessmentStatus'),results=document.getElementById('assessmentResults'),feedback=document.getElementById('assessmentFeedback');
+      if(!model.length){status.textContent='لا يوجد نموذج تدريب في هذه المنطقة.';results.classList.add('hidden');feedback.classList.add('hidden');return}
+      if(!student.length){status.textContent='اكتب محاولة الطالب أولًا.';results.classList.add('hidden');feedback.classList.add('hidden');return}
+      const mb=boundsForStrokes(model),sb=boundsForStrokes(student);
+      const alignErr=Math.hypot(sb.cx-mb.cx,sb.cy-mb.cy);
+      const sizeErr=(Math.abs(sb.width-mb.width)/mb.width+Math.abs(sb.height-mb.height)/mb.height)/2;
+      const baselineErr=Math.abs(sb.maxY-mb.maxY);
+      const angleErr=angleDeltaDegrees(meanStrokeAngle(model),meanStrokeAngle(student));
+      const extensionErr=(Math.abs(sb.minX-mb.minX)+Math.abs(sb.maxX-mb.maxX))/2;
+      const shapeErr=normalizedShapeDistance(model,student,mb,sb);
+      const metrics={
+        alignment:metricScore(alignErr,.16),size:metricScore(sizeErr,.45),baseline:metricScore(baselineErr,.12),
+        angle:metricScore(angleErr,35),extension:metricScore(extensionErr,.18),shape:metricScore(shapeErr,.55)
+      };
+      const overall=Math.round(metrics.alignment*.17+metrics.size*.16+metrics.baseline*.17+metrics.angle*.14+metrics.extension*.14+metrics.shape*.22);
+      results.innerHTML=assessmentCard('المحاذاة',metrics.alignment,Math.round(alignErr*canvasCssWidth)+'px')+
+        assessmentCard('الحجم',metrics.size,Math.round(sizeErr*100)+'% فرق')+
+        assessmentCard('خط الأساس',metrics.baseline,Math.round(baselineErr*canvasCssHeight)+'px')+
+        assessmentCard('الميل',metrics.angle,angleErr.toFixed(1)+'°')+
+        assessmentCard('الامتداد',metrics.extension,Math.round(extensionErr*canvasCssWidth)+'px')+
+        assessmentCard('الشكل',metrics.shape,'هندسي');
+      results.classList.remove('hidden');
+      const notes=[];
+      if(metrics.baseline<70)notes.push('راجع موضع الكتابة بالنسبة لخط الأساس.');
+      if(metrics.size<70)notes.push(sb.width>mb.width||sb.height>mb.height?'حجم المحاولة أكبر من النموذج؛ حاول تقليل الامتداد.':'حجم المحاولة أصغر من النموذج؛ وسّعها قليلًا.');
+      if(metrics.alignment<70)notes.push('حرّك مركز التكوين ليقترب من موضع النموذج.');
+      if(metrics.angle<70)notes.push('زاوية القلم/الميل تختلف بوضوح عن النموذج.');
+      if(metrics.extension<70)notes.push('راجع بدايات ونهايات الامتداد الأفقي.');
+      if(metrics.shape<70)notes.push('المسار العام للحروف يحتاج اقترابًا أكبر من بنية النموذج.');
+      if(!notes.length)notes.push('القياسات الأساسية متقاربة مع النموذج. راجع التفاصيل الدقيقة بصريًا.');
+      feedback.innerHTML='<strong>المؤشر العام: '+overall+'%</strong><br>'+notes.map(n=>'• '+n).join('<br>')+'<div class="mt-1 text-[9px] text-stone-500">المؤشر أداة تدريب هندسية، وليس حكمًا على جودة الخط أو بديلًا عن تقييم المعلم.</div>';
+      feedback.classList.remove('hidden');status.textContent='تم تحليل '+student.length+' ضربة مقابل '+model.length+' ضربة في النموذج.';
+    }
+    function clearStudentAttempt(){
+      const before=cloneHistoryState();const kept=strokeHistory.filter(a=>a.kind!=='stroke'||a.isTrainingModel);
+      if(kept.length===strokeHistory.length)return;strokeHistory.splice(0,strokeHistory.length,...kept);
+      recordEditSnapshot('clear-student-attempt',before,cloneHistoryState());clearObjectSelection();redrawAllStrokes();scheduleWorkspaceSave();
+      const r=document.getElementById('assessmentResults'),f=document.getElementById('assessmentFeedback');r?.classList.add('hidden');f?.classList.add('hidden');
+      const st=document.getElementById('assessmentStatus');if(st)st.textContent='تم مسح محاولة الطالب مع الإبقاء على النموذج.';
+    }
     function setAutoGroupEnabled(on){autoGroupEnabled=!!on;if(!autoGroupEnabled){clearTimeout(autoGroupTimer);autoGroupPendingIds=[]}}
     function queueAutoGroup(stroke){
       if(!autoGroupEnabled||!stroke||stroke.tool==='eraser'||stroke.isTrainingModel)return;
