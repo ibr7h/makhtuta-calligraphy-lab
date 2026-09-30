@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.17.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.18.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.17 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.18 β</span>
           </p>
         </div>
       </div>
@@ -243,6 +243,9 @@
             <button id="btnUngroupObject" onclick="ungroupSelectedObjects()" disabled title="فك تجميع الـObject المحدد" class="px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all text-stone-600 hover:bg-stone-100 disabled:opacity-35 disabled:cursor-not-allowed flex items-center gap-1">
               <i class="fa-solid fa-object-ungroup"></i>
               <span class="hidden xl:inline">فك</span>
+            </button>
+            <button id="btnDuplicateObject" onclick="duplicateSelectedObject()" disabled title="نسخ التحديد" class="px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all text-violet-700 hover:bg-violet-50 disabled:opacity-35 disabled:cursor-not-allowed flex items-center gap-1">
+              <i class="fa-regular fa-clone"></i><span class="hidden xl:inline">نسخ</span>
             </button>
             <span id="selectionCountBadge" class="hidden px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-800 text-[9px] font-black" title="عدد الضربات المحددة"></span>
             <button id="btnBrushSettings" onclick="toggleBrushSettings(true)" title="إعدادات القصبة والفرشاة" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-amber-900 hover:bg-amber-100/70 flex items-center gap-1 border-r border-amber-200 mr-1 pr-2">
@@ -671,7 +674,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.17.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.18.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -1249,6 +1252,9 @@
     let selectedStrokeIds = new Set();
     let objectCounter = 0;
     let strokeIdentityCounter = 0;
+    let objectTransformGesture = null;
+    const OBJECT_HANDLE_RADIUS = 11;
+    const OBJECT_ROTATE_OFFSET = 34;
     let inkColor = '#1A1817';
     let brushSize = 15;
     let nibAngleDeg = 42;
@@ -2177,6 +2183,60 @@
       };
     }
 
+    function selectionPixelGeometry() {
+      const b=selectionBounds(); if(!b)return null;
+      const r={x:b.minX*canvasCssWidth,y:b.minY*canvasCssHeight,w:Math.max(1,(b.maxX-b.minX)*canvasCssWidth),h:Math.max(1,(b.maxY-b.minY)*canvasCssHeight)};
+      return {rect:r,center:{x:r.x+r.w/2,y:r.y+r.h/2},scale:{x:r.x+r.w,y:r.y+r.h},rotate:{x:r.x+r.w/2,y:Math.max(14,r.y-OBJECT_ROTATE_OFFSET)}};
+    }
+    function pointerCanvasPx(e){const r=canvas.getBoundingClientRect();return{x:clamp(e.clientX-r.left,0,r.width),y:clamp(e.clientY-r.top,0,r.height)}}
+    function objectPointDistance(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+    function hitObjectTransformTarget(e){
+      const g=selectionPixelGeometry(); if(!g||!selectedVisibleStrokes().length)return null;
+      const p=pointerCanvasPx(e);
+      if(objectPointDistance(p,g.rotate)<=OBJECT_HANDLE_RADIUS+7)return'rotate';
+      if(objectPointDistance(p,g.scale)<=OBJECT_HANDLE_RADIUS+7)return'scale';
+      const r=g.rect;
+      return p.x>=r.x-6&&p.x<=r.x+r.w+6&&p.y>=r.y-6&&p.y<=r.y+r.h+6?'move':null;
+    }
+    function selectedTransformSnapshot(){
+      return selectedVisibleStrokes().map(stroke=>({stroke,sizeNorm:stroke.sizeNorm,angle:stroke.angle,points:stroke.points.map(p=>({nx:p.nx,ny:p.ny,rawNx:Number.isFinite(p.rawNx)?p.rawNx:p.nx,rawNy:Number.isFinite(p.rawNy)?p.rawNy:p.ny,deviceRawNx:p.deviceRawNx,deviceRawNy:p.deviceRawNy}))}));
+    }
+    function beginObjectTransform(e,type){
+      const g=selectionPixelGeometry();if(!g)return false;
+      const p=pointerCanvasPx(e);
+      objectTransformGesture={type,start:p,center:g.center,startDistance:Math.max(8,objectPointDistance(p,g.center)),startAngle:Math.atan2(p.y-g.center.y,p.x-g.center.x),snapshots:selectedTransformSnapshot()};
+      return true;
+    }
+    function updateObjectTransform(e){
+      const g=objectTransformGesture;if(!g)return;
+      const p=pointerCanvasPx(e);let scale=1,rot=0;
+      if(g.type==='scale')scale=clamp(objectPointDistance(p,g.center)/g.startDistance,.15,6);
+      if(g.type==='rotate')rot=Math.atan2(p.y-g.center.y,p.x-g.center.x)-g.startAngle;
+      g.snapshots.forEach(item=>{
+        item.stroke.points.forEach((pt,i)=>{
+          const b=item.points[i];let x=b.nx*canvasCssWidth,y=b.ny*canvasCssHeight;
+          if(g.type==='move'){x+=p.x-g.start.x;y+=p.y-g.start.y}
+          else{const dx=(x-g.center.x)*scale,dy=(y-g.center.y)*scale,c=Math.cos(rot),sn=Math.sin(rot);x=g.center.x+dx*c-dy*sn;y=g.center.y+dx*sn+dy*c}
+          const nx=clamp(x/canvasCssWidth,-.25,1.25),ny=clamp(y/canvasCssHeight,-.25,1.25),ddx=nx-b.nx,ddy=ny-b.ny;
+          pt.nx=nx;pt.ny=ny;pt.rawNx=clamp(b.rawNx+ddx,-.25,1.25);pt.rawNy=clamp(b.rawNy+ddy,-.25,1.25);
+          if(Number.isFinite(b.deviceRawNx))pt.deviceRawNx=clamp(b.deviceRawNx+ddx,-.25,1.25);
+          if(Number.isFinite(b.deviceRawNy))pt.deviceRawNy=clamp(b.deviceRawNy+ddy,-.25,1.25);
+        });
+        item.stroke.sizeNorm=g.type==='scale'?Math.max(.0005,item.sizeNorm*scale):item.sizeNorm;
+        item.stroke.angle=g.type==='rotate'?(Number(item.angle)||0)+rot:item.angle;
+        cleanupStrokeDynamics(item.stroke);
+      });
+      redrawAllStrokes();
+    }
+    function finishObjectTransform(){if(!objectTransformGesture)return;objectTransformGesture=null;const a=activePracticeArea();if(a)a.redo=[];updateHistoryButtons();renderSelectionOverlay()}
+    function duplicateSelectedObject(){
+      const selected=selectedVisibleStrokes();if(!selected.length)return;
+      const oid=`object-${++objectCounter}`;
+      const clones=selected.map(src=>{const c=typeof structuredClone==='function'?structuredClone(src):JSON.parse(JSON.stringify(src));c.strokeId=`stroke-${++strokeIdentityCounter}`;c.objectId=oid;c.points.forEach(p=>{p.nx=clamp((p.nx||0)+.025,-.25,1.25);p.ny=clamp((p.ny||0)+.025,-.25,1.25);if(Number.isFinite(p.rawNx))p.rawNx+=.025;if(Number.isFinite(p.rawNy))p.rawNy+=.025;if(Number.isFinite(p.deviceRawNx))p.deviceRawNx+=.025;if(Number.isFinite(p.deviceRawNy))p.deviceRawNy+=.025});cleanupStrokeDynamics(c);return c});
+      const a=syncActivePracticeHistoryReference();clones.forEach(c=>strokeHistory.push(c));while(strokeHistory.length>MAX_STROKE_ACTIONS)strokeHistory.shift();if(a)a.redo=[];
+      selectedStrokeIds=new Set(clones.map(c=>c.strokeId));updateHistoryButtons();updateObjectSelectionUI();redrawAllStrokes();
+    }
+
     function clearSelectionOverlayCanvas() {
       if (!selectionOverlay || !selectionCtx) return;
       const dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -2217,6 +2277,13 @@
         selectionCtx.setLineDash([6, 4]);
         selectionCtx.fillRect(x, y, w, h);
         selectionCtx.strokeRect(x, y, w, h);
+        const transformGeo=selectionPixelGeometry();
+        if(transformGeo){
+          selectionCtx.setLineDash([]);selectionCtx.strokeStyle='#6D28D9';selectionCtx.lineWidth=1.4;
+          selectionCtx.beginPath();selectionCtx.moveTo(transformGeo.center.x,y);selectionCtx.lineTo(transformGeo.rotate.x,transformGeo.rotate.y);selectionCtx.stroke();
+          selectionCtx.fillStyle='#fff';selectionCtx.beginPath();selectionCtx.arc(transformGeo.rotate.x,transformGeo.rotate.y,7,0,Math.PI*2);selectionCtx.fill();selectionCtx.stroke();
+          selectionCtx.fillStyle='#6D28D9';selectionCtx.fillRect(transformGeo.scale.x-6,transformGeo.scale.y-6,12,12);
+        }
 
         const grouped = selectedVisibleStrokes().some(stroke => !!stroke.objectId);
         const label = grouped ? 'Object محدد' : 'تحديد';
@@ -2240,9 +2307,11 @@
       const strokes = selectedVisibleStrokes();
       const make = document.getElementById('btnMakeObject');
       const ungroup = document.getElementById('btnUngroupObject');
+      const duplicate = document.getElementById('btnDuplicateObject');
       const badge = document.getElementById('selectionCountBadge');
       if (make) make.disabled = strokes.length === 0;
       if (ungroup) ungroup.disabled = !strokes.some(stroke => !!stroke.objectId);
+      if (duplicate) duplicate.disabled = strokes.length === 0;
       if (badge) {
         badge.textContent = strokes.length ? String(strokes.length) : '';
         badge.classList.toggle('hidden', strokes.length === 0);
@@ -2250,6 +2319,7 @@
     }
 
     function clearObjectSelection() {
+      objectTransformGesture=null;
       selectedStrokeIds.clear();
       lassoPoints = [];
       updateObjectSelectionUI();
@@ -2583,8 +2653,10 @@
       isDrawing = true;
       activePointerId = e.pointerId;
       try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
-      if (interactionMode === 'lasso') beginLassoFromEvent(e);
-      else beginStrokeFromEvent(e);
+      if (interactionMode === 'lasso') {
+        const target=hitObjectTransformTarget(e);
+        if(target)beginObjectTransform(e,target);else beginLassoFromEvent(e);
+      } else beginStrokeFromEvent(e);
     }
 
     function draw(e) {
@@ -2593,7 +2665,8 @@
 
       const events = (typeof e.getCoalescedEvents === 'function') ? e.getCoalescedEvents() : [];
       if (interactionMode === 'lasso') {
-        if (events.length) events.forEach(appendLassoFromEvent);
+        if(objectTransformGesture)updateObjectTransform(events.length?events[events.length-1]:e);
+        else if(events.length)events.forEach(appendLassoFromEvent);
         else appendLassoFromEvent(e);
         return;
       }
@@ -2610,8 +2683,8 @@
       if (e?.cancelable) e.preventDefault();
 
       if (interactionMode === 'lasso') {
-        if (e && e.type === 'pointerup') appendLassoFromEvent(e);
-        finishLasso();
+        if(objectTransformGesture){if(e&&e.type==='pointerup')updateObjectTransform(e);finishObjectTransform()}
+        else{if(e&&e.type==='pointerup')appendLassoFromEvent(e);finishLasso()}
       } else {
         if (e && currentStroke && e.type === 'pointerup') appendPointFromEvent(e);
         if (currentStroke?.points?.length) {
