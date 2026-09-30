@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.16.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.17.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.16 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.17 β</span>
           </p>
         </div>
       </div>
@@ -232,6 +232,19 @@
               <i class="fa-solid fa-eraser text-xs"></i>
               <span class="hidden sm:inline">ممحاة</span>
             </button>
+            <button id="btnLasso" onclick="setInteractionMode(interactionMode === 'lasso' ? 'draw' : 'lasso')" title="تحديد حر باللاسو" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-violet-700 hover:bg-violet-50 flex items-center gap-1 border-r border-amber-200 mr-1 pr-2">
+              <i class="fa-solid fa-draw-polygon text-xs"></i>
+              <span class="hidden sm:inline">لاسو</span>
+            </button>
+            <button id="btnMakeObject" onclick="convertSelectionToObject()" disabled title="تحويل التحديد إلى Object واحد" class="px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all text-indigo-700 hover:bg-indigo-50 disabled:opacity-35 disabled:cursor-not-allowed flex items-center gap-1">
+              <i class="fa-solid fa-object-group"></i>
+              <span class="hidden lg:inline">Object</span>
+            </button>
+            <button id="btnUngroupObject" onclick="ungroupSelectedObjects()" disabled title="فك تجميع الـObject المحدد" class="px-2 py-1.5 rounded-lg text-[10px] font-bold transition-all text-stone-600 hover:bg-stone-100 disabled:opacity-35 disabled:cursor-not-allowed flex items-center gap-1">
+              <i class="fa-solid fa-object-ungroup"></i>
+              <span class="hidden xl:inline">فك</span>
+            </button>
+            <span id="selectionCountBadge" class="hidden px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-800 text-[9px] font-black" title="عدد الضربات المحددة"></span>
             <button id="btnBrushSettings" onclick="toggleBrushSettings(true)" title="إعدادات القصبة والفرشاة" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-amber-900 hover:bg-amber-100/70 flex items-center gap-1 border-r border-amber-200 mr-1 pr-2">
               <i class="fa-solid fa-sliders text-xs"></i>
               <span class="hidden md:inline">إعدادات القصبة</span>
@@ -378,6 +391,7 @@
 
           <!-- Active Interactive Drawing Canvas -->
           <canvas id="drawingCanvas" class="absolute inset-0 w-full h-full z-20"></canvas>
+          <canvas id="selectionOverlay" class="absolute inset-0 w-full h-full z-30 pointer-events-none" aria-hidden="true"></canvas>
         </div>
 
         <div class="bg-parchment-50 border-t border-amber-200 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs text-stone-700 gap-3">
@@ -657,7 +671,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.16.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.17.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -1228,6 +1242,13 @@
     let isDrawing = false;
     let activePointerId = null;
     let brushType = 'calligraphy';
+    let interactionMode = 'draw'; // draw | lasso
+    let selectionOverlay = null;
+    let selectionCtx = null;
+    let lassoPoints = [];
+    let selectedStrokeIds = new Set();
+    let objectCounter = 0;
+    let strokeIdentityCounter = 0;
     let inkColor = '#1A1817';
     let brushSize = 15;
     let nibAngleDeg = 42;
@@ -1310,6 +1331,8 @@
     function initCanvas() {
       canvas = document.getElementById('drawingCanvas');
       ctx = canvas.getContext('2d', { alpha: true });
+      selectionOverlay = document.getElementById('selectionOverlay');
+      selectionCtx = selectionOverlay?.getContext('2d', { alpha: true }) || null;
       resizeCanvasToContainer();
 
       // Unified Pointer Events path: mouse, touch, Apple Pencil and other styluses.
@@ -1331,11 +1354,17 @@
       canvasCssHeight = Math.max(1, rect.height);
       canvas.width = Math.max(1, Math.round(canvasCssWidth * dpr));
       canvas.height = Math.max(1, Math.round(canvasCssHeight * dpr));
+      if (selectionOverlay && selectionCtx) {
+        selectionOverlay.width = canvas.width;
+        selectionOverlay.height = canvas.height;
+        selectionCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
 
       // Work in CSS-pixel coordinates while retaining high-DPI backing resolution.
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       redrawAllStrokes();
       updateGuideSvgGeometry();
+      renderSelectionOverlay();
     }
 
     let resizeTimer;
@@ -2025,6 +2054,278 @@
           renderWholeStroke(action);
         }
       }
+      renderSelectionOverlay();
+    }
+
+
+    // ===== Object / Lasso layer =====
+    // Ink remains vector-like stroke data. Object grouping is represented by a shared objectId
+    // on strokes, so no raster snapshot is introduced and replay/render quality is preserved.
+    function ensureStrokeIdentity(stroke) {
+      if (!stroke || stroke.kind !== 'stroke') return null;
+      if (!stroke.strokeId) stroke.strokeId = `stroke-${++strokeIdentityCounter}`;
+      return stroke.strokeId;
+    }
+
+    function visibleSelectableStrokes() {
+      let lastClear = -1;
+      for (let i = 0; i < strokeHistory.length; i++) {
+        if (strokeHistory[i].kind === 'clear') lastClear = i;
+      }
+      return strokeHistory
+        .slice(lastClear + 1)
+        .filter(action => action.kind === 'stroke' && action.tool !== 'eraser' && action.points?.length)
+        .map(stroke => {
+          ensureStrokeIdentity(stroke);
+          return stroke;
+        });
+    }
+
+    function pointInPolygon(point, polygon) {
+      let inside = false;
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const a = polygon[i], b = polygon[j];
+        const crosses = ((a.ny > point.ny) !== (b.ny > point.ny)) &&
+          (point.nx < (b.nx - a.nx) * (point.ny - a.ny) / ((b.ny - a.ny) || 1e-9) + a.nx);
+        if (crosses) inside = !inside;
+      }
+      return inside;
+    }
+
+    function orientation2d(a, b, c) {
+      const v = (b.ny - a.ny) * (c.nx - b.nx) - (b.nx - a.nx) * (c.ny - b.ny);
+      if (Math.abs(v) < 1e-9) return 0;
+      return v > 0 ? 1 : 2;
+    }
+
+    function onSegment2d(a, b, c) {
+      return b.nx <= Math.max(a.nx, c.nx) + 1e-9 && b.nx + 1e-9 >= Math.min(a.nx, c.nx) &&
+             b.ny <= Math.max(a.ny, c.ny) + 1e-9 && b.ny + 1e-9 >= Math.min(a.ny, c.ny);
+    }
+
+    function segmentsIntersect2d(p1, q1, p2, q2) {
+      const o1 = orientation2d(p1, q1, p2);
+      const o2 = orientation2d(p1, q1, q2);
+      const o3 = orientation2d(p2, q2, p1);
+      const o4 = orientation2d(p2, q2, q1);
+      if (o1 !== o2 && o3 !== o4) return true;
+      if (o1 === 0 && onSegment2d(p1, p2, q1)) return true;
+      if (o2 === 0 && onSegment2d(p1, q2, q1)) return true;
+      if (o3 === 0 && onSegment2d(p2, p1, q2)) return true;
+      if (o4 === 0 && onSegment2d(p2, q1, q2)) return true;
+      return false;
+    }
+
+    function strokeIntersectsLasso(stroke, polygon) {
+      const pts = stroke?.points || [];
+      if (!pts.length || polygon.length < 3) return false;
+      if (pts.some(p => pointInPolygon(p, polygon))) return true;
+      if (pts.length === 1) return false;
+
+      // Segment/polygon edge intersection catches fast strokes whose sampled points
+      // lie outside while the actual stroke crosses the lasso boundary.
+      for (let i = 1; i < pts.length; i++) {
+        const a = pts[i - 1], b = pts[i];
+        for (let j = 0; j < polygon.length; j++) {
+          const c = polygon[j], d = polygon[(j + 1) % polygon.length];
+          if (segmentsIntersect2d(a, b, c, d)) return true;
+        }
+      }
+      return false;
+    }
+
+    function selectedVisibleStrokes() {
+      const visible = visibleSelectableStrokes();
+      return visible.filter(stroke => selectedStrokeIds.has(stroke.strokeId));
+    }
+
+    function expandSelectionToWholeObjects(strokes, visible) {
+      const objectIds = new Set(strokes.map(s => s.objectId).filter(Boolean));
+      if (!objectIds.size) return strokes;
+      const ids = new Set(strokes.map(s => s.strokeId));
+      visible.forEach(stroke => {
+        if (stroke.objectId && objectIds.has(stroke.objectId)) ids.add(stroke.strokeId);
+      });
+      return visible.filter(stroke => ids.has(stroke.strokeId));
+    }
+
+    function selectWithLasso(polygon) {
+      const visible = visibleSelectableStrokes();
+      const direct = visible.filter(stroke => strokeIntersectsLasso(stroke, polygon));
+      const expanded = expandSelectionToWholeObjects(direct, visible);
+      selectedStrokeIds = new Set(expanded.map(stroke => stroke.strokeId));
+      updateObjectSelectionUI();
+      renderSelectionOverlay();
+    }
+
+    function selectionBounds() {
+      const strokes = selectedVisibleStrokes();
+      if (!strokes.length) return null;
+      let minX = 1, minY = 1, maxX = 0, maxY = 0;
+      strokes.forEach(stroke => {
+        const pad = Math.max(0.004, (stroke.sizeNorm || 0.02) * 0.58);
+        stroke.points.forEach(p => {
+          minX = Math.min(minX, p.nx - pad);
+          minY = Math.min(minY, p.ny - pad);
+          maxX = Math.max(maxX, p.nx + pad);
+          maxY = Math.max(maxY, p.ny + pad);
+        });
+      });
+      return {
+        minX: clamp(minX, 0, 1), minY: clamp(minY, 0, 1),
+        maxX: clamp(maxX, 0, 1), maxY: clamp(maxY, 0, 1)
+      };
+    }
+
+    function clearSelectionOverlayCanvas() {
+      if (!selectionOverlay || !selectionCtx) return;
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      selectionCtx.save();
+      selectionCtx.setTransform(1, 0, 0, 1, 0, 0);
+      selectionCtx.clearRect(0, 0, selectionOverlay.width, selectionOverlay.height);
+      selectionCtx.restore();
+      selectionCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function renderSelectionOverlay() {
+      if (!selectionCtx || !selectionOverlay) return;
+      clearSelectionOverlayCanvas();
+      selectionCtx.save();
+
+      if (lassoPoints.length > 1) {
+        selectionCtx.strokeStyle = '#7C3AED';
+        selectionCtx.fillStyle = 'rgba(124,58,237,0.07)';
+        selectionCtx.lineWidth = 1.8;
+        selectionCtx.setLineDash([7, 5]);
+        selectionCtx.beginPath();
+        selectionCtx.moveTo(lassoPoints[0].nx * canvasCssWidth, lassoPoints[0].ny * canvasCssHeight);
+        for (let i = 1; i < lassoPoints.length; i++) {
+          selectionCtx.lineTo(lassoPoints[i].nx * canvasCssWidth, lassoPoints[i].ny * canvasCssHeight);
+        }
+        selectionCtx.stroke();
+      }
+
+      const bounds = selectionBounds();
+      if (bounds) {
+        const x = bounds.minX * canvasCssWidth;
+        const y = bounds.minY * canvasCssHeight;
+        const w = Math.max(1, (bounds.maxX - bounds.minX) * canvasCssWidth);
+        const h = Math.max(1, (bounds.maxY - bounds.minY) * canvasCssHeight);
+        selectionCtx.strokeStyle = '#6D28D9';
+        selectionCtx.fillStyle = 'rgba(109,40,217,0.035)';
+        selectionCtx.lineWidth = 1.6;
+        selectionCtx.setLineDash([6, 4]);
+        selectionCtx.fillRect(x, y, w, h);
+        selectionCtx.strokeRect(x, y, w, h);
+
+        const grouped = selectedVisibleStrokes().some(stroke => !!stroke.objectId);
+        const label = grouped ? 'Object محدد' : 'تحديد';
+        selectionCtx.setLineDash([]);
+        selectionCtx.font = '700 11px Cairo, sans-serif';
+        const tw = Math.ceil(selectionCtx.measureText(label).width) + 16;
+        const ly = Math.max(4, y - 25);
+        selectionCtx.fillStyle = '#6D28D9';
+        selectionCtx.beginPath();
+        selectionCtx.roundRect?.(x, ly, tw, 21, 6);
+        if (selectionCtx.roundRect) selectionCtx.fill();
+        else selectionCtx.fillRect(x, ly, tw, 21);
+        selectionCtx.fillStyle = '#fff';
+        selectionCtx.textBaseline = 'middle';
+        selectionCtx.fillText(label, x + 8, ly + 10.5);
+      }
+      selectionCtx.restore();
+    }
+
+    function updateObjectSelectionUI() {
+      const strokes = selectedVisibleStrokes();
+      const make = document.getElementById('btnMakeObject');
+      const ungroup = document.getElementById('btnUngroupObject');
+      const badge = document.getElementById('selectionCountBadge');
+      if (make) make.disabled = strokes.length === 0;
+      if (ungroup) ungroup.disabled = !strokes.some(stroke => !!stroke.objectId);
+      if (badge) {
+        badge.textContent = strokes.length ? String(strokes.length) : '';
+        badge.classList.toggle('hidden', strokes.length === 0);
+      }
+    }
+
+    function clearObjectSelection() {
+      selectedStrokeIds.clear();
+      lassoPoints = [];
+      updateObjectSelectionUI();
+      renderSelectionOverlay();
+    }
+
+    function convertSelectionToObject() {
+      const selected = selectedVisibleStrokes();
+      if (!selected.length) return;
+      const objectId = `object-${++objectCounter}`;
+      selected.forEach(stroke => { stroke.objectId = objectId; });
+      // If the lasso included part of an older object, merge every selected member into the new object.
+      const visible = visibleSelectableStrokes();
+      const selectedIds = new Set(selected.map(s => s.strokeId));
+      visible.forEach(stroke => {
+        if (selectedIds.has(stroke.strokeId)) stroke.objectId = objectId;
+      });
+      selectedStrokeIds = new Set(selected.map(stroke => stroke.strokeId));
+      updateObjectSelectionUI();
+      renderSelectionOverlay();
+    }
+
+    function ungroupSelectedObjects() {
+      const selected = selectedVisibleStrokes();
+      if (!selected.length) return;
+      const objectIds = new Set(selected.map(stroke => stroke.objectId).filter(Boolean));
+      if (!objectIds.size) return;
+      visibleSelectableStrokes().forEach(stroke => {
+        if (stroke.objectId && objectIds.has(stroke.objectId)) stroke.objectId = null;
+      });
+      updateObjectSelectionUI();
+      renderSelectionOverlay();
+    }
+
+    function setInteractionMode(mode) {
+      interactionMode = mode === 'lasso' ? 'lasso' : 'draw';
+      lassoPoints = [];
+      if (interactionMode === 'draw') selectedStrokeIds.clear();
+
+      const btn = document.getElementById('btnLasso');
+      if (btn) {
+        const active = interactionMode === 'lasso';
+        btn.classList.toggle('bg-violet-700', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('text-violet-700', !active);
+      }
+      if (canvas) canvas.style.cursor = interactionMode === 'lasso' ? 'crosshair' : '';
+      updateObjectSelectionUI();
+      renderSelectionOverlay();
+    }
+
+    function beginLassoFromEvent(e) {
+      const p = pointerPoint(e);
+      lassoPoints = [p];
+      selectedStrokeIds.clear();
+      updateObjectSelectionUI();
+      renderSelectionOverlay();
+    }
+
+    function appendLassoFromEvent(e) {
+      const p = pointerPoint(e);
+      const prev = lassoPoints[lassoPoints.length - 1];
+      if (prev) {
+        const dx = (p.nx - prev.nx) * canvasCssWidth;
+        const dy = (p.ny - prev.ny) * canvasCssHeight;
+        if (Math.hypot(dx, dy) < 3) return;
+      }
+      lassoPoints.push(p);
+      renderSelectionOverlay();
+    }
+
+    function finishLasso() {
+      if (lassoPoints.length >= 3) selectWithLasso(lassoPoints);
+      else clearObjectSelection();
+      lassoPoints = [];
+      renderSelectionOverlay();
     }
 
     function activePracticeArea() {
@@ -2109,6 +2410,7 @@
       activePracticeAreaId = area.id;
       strokeHistory = area.history;
       currentStroke = null;
+      clearObjectSelection();
       resetStrokeStabilizer();
       renderPracticeAreaTabs();
       updateHistoryButtons();
@@ -2123,6 +2425,7 @@
       activePracticeAreaId = id;
       strokeHistory = area.history;
       currentStroke = null;
+      clearObjectSelection();
       resetStrokeStabilizer();
       renderPracticeAreaTabs();
       updateHistoryButtons();
@@ -2144,6 +2447,7 @@
         syncActivePracticeHistoryReference();
       }
       currentStroke = null;
+      clearObjectSelection();
       resetStrokeStabilizer();
       renderPracticeAreaTabs();
       updateHistoryButtons();
@@ -2154,8 +2458,10 @@
       const area = activePracticeArea();
       if (!area) return;
       area.history = Array.isArray(actions) ? actions : [];
+      area.history.forEach(action => ensureStrokeIdentity(action));
       area.redo = [];
       strokeHistory = area.history;
+      clearObjectSelection();
       updateHistoryButtons();
     }
 
@@ -2190,6 +2496,7 @@
 
     function clearCanvas() {
       if (replayActive) stopStrokeReplay(false);
+      clearObjectSelection();
       if (!strokeHistory.length) {
         clearRenderedCanvas();
         updateHistoryButtons();
@@ -2205,6 +2512,8 @@
       const point = stabilizerEnabled ? applyStrokeStabilizer(rawPoint) : rawPoint;
       currentStroke = {
         kind: 'stroke',
+        strokeId: `stroke-${++strokeIdentityCounter}`,
+        objectId: null,
         tool: brushType,
         color: inkColor,
         practiceLetter: currentPracticeLetter(),
@@ -2274,7 +2583,8 @@
       isDrawing = true;
       activePointerId = e.pointerId;
       try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
-      beginStrokeFromEvent(e);
+      if (interactionMode === 'lasso') beginLassoFromEvent(e);
+      else beginStrokeFromEvent(e);
     }
 
     function draw(e) {
@@ -2282,6 +2592,11 @@
       if (e.cancelable) e.preventDefault();
 
       const events = (typeof e.getCoalescedEvents === 'function') ? e.getCoalescedEvents() : [];
+      if (interactionMode === 'lasso') {
+        if (events.length) events.forEach(appendLassoFromEvent);
+        else appendLassoFromEvent(e);
+        return;
+      }
       if (events.length) {
         events.forEach(appendPointFromEvent);
       } else {
@@ -2294,13 +2609,18 @@
       if (e && activePointerId !== null && e.pointerId !== undefined && e.pointerId !== activePointerId) return;
       if (e?.cancelable) e.preventDefault();
 
-      if (e && currentStroke && e.type === 'pointerup') appendPointFromEvent(e);
-      if (currentStroke?.points?.length) {
-        pushHistory(currentStroke);
-        // Replace incremental live joins by the deterministic continuous outline.
-        redrawAllStrokes();
+      if (interactionMode === 'lasso') {
+        if (e && e.type === 'pointerup') appendLassoFromEvent(e);
+        finishLasso();
+      } else {
+        if (e && currentStroke && e.type === 'pointerup') appendPointFromEvent(e);
+        if (currentStroke?.points?.length) {
+          pushHistory(currentStroke);
+          // Replace incremental live joins by the deterministic continuous outline.
+          redrawAllStrokes();
+        }
+        finalizePressureCalibration();
       }
-      finalizePressureCalibration();
 
       try {
         if (activePointerId !== null && canvas.hasPointerCapture?.(activePointerId)) {
@@ -2315,6 +2635,7 @@
     }
 
     function setBrushType(type) {
+      if (interactionMode !== 'draw') setInteractionMode('draw');
       brushType = type;
       document.querySelectorAll('.brush-btn').forEach(btn => {
         btn.classList.remove('bg-amber-800', 'text-white');
