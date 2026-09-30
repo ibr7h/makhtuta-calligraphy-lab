@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-19-beta-lasso-object-lock-2026-09-30-6';
+const CACHE_VERSION = 'makhtuta-pwa-v6-19-beta-install-route-2026-09-30-7';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
@@ -8,6 +8,7 @@ const CORE = [
   './version.js',
   './pwa-updater.js',
   './manifest.webmanifest',
+  './manifest-beta.webmanifest',
   './offline.html',
   './icons/icon.svg',
   './icons/icon-maskable.svg'
