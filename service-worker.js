@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-15-beta-archive-calibration-2026-09-30-2';
+const CACHE_VERSION = 'makhtuta-pwa-v6-16-beta-multi-practice-2026-09-30-3';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
