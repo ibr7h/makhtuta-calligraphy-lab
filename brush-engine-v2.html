@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.14.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.15.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.14 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.15 β</span>
           </p>
         </div>
       </div>
@@ -586,6 +586,48 @@
                 <button onclick="applyBrushPreset('ali_diwani')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-emerald-200 text-xs font-bold hover:bg-emerald-50">ديواني — AliQaseef</button>
               </div>
               <div id="aliArchiveStatus" class="mt-2 px-2 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100 text-[9px] leading-4 text-emerald-900">Brush.archive: اختر فرشاة لعرض القيم الأصلية.</div>
+              <div id="aliCalibrationPanel" class="hidden mt-2 rounded-xl border border-emerald-200 bg-white overflow-hidden">
+                <div class="px-2.5 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between gap-2">
+                  <div>
+                    <div id="aliCalibrationTitle" class="text-[10px] font-black text-emerald-950">معايرة AliQaseef</div>
+                    <div class="text-[8px] text-emerald-700">Original = Brush.archive • Effective = محرك مخطوطة</div>
+                  </div>
+                  <span id="aliCalibrationState" class="text-[8px] px-1.5 py-0.5 rounded-full bg-white border border-emerald-200 text-emerald-800">Archive</span>
+                </div>
+                <div class="grid grid-cols-[1.1fr_1fr_1fr] text-[8px] leading-4">
+                  <div class="px-2 py-1 font-black text-stone-500 border-b border-l border-stone-100">المعامل</div>
+                  <div class="px-2 py-1 font-black text-stone-500 border-b border-l border-stone-100 text-center">Original</div>
+                  <div class="px-2 py-1 font-black text-stone-500 border-b border-stone-100 text-center">Effective</div>
+
+                  <div class="px-2 py-1 border-b border-l border-stone-100">Size</div>
+                  <div id="aliOriginalSize" class="px-2 py-1 border-b border-l border-stone-100 text-center font-mono"></div>
+                  <div id="aliEffectiveSize" class="px-2 py-1 border-b border-stone-100 text-center font-mono font-bold"></div>
+
+                  <div class="px-2 py-1 border-b border-l border-stone-100">Angle</div>
+                  <div id="aliOriginalAngle" class="px-2 py-1 border-b border-l border-stone-100 text-center font-mono"></div>
+                  <div id="aliEffectiveAngle" class="px-2 py-1 border-b border-stone-100 text-center font-mono font-bold"></div>
+
+                  <div class="px-2 py-1 border-b border-l border-stone-100">Shape</div>
+                  <div id="aliOriginalShape" class="px-2 py-1 border-b border-l border-stone-100 text-center font-mono"></div>
+                  <div id="aliEffectiveShape" class="px-2 py-1 border-b border-stone-100 text-center font-mono font-bold"></div>
+
+                  <div class="px-2 py-1 border-b border-l border-stone-100">Smoothing</div>
+                  <div id="aliOriginalSmoothing" class="px-2 py-1 border-b border-l border-stone-100 text-center font-mono"></div>
+                  <div id="aliEffectiveSmoothing" class="px-2 py-1 border-b border-stone-100 text-center font-mono font-bold"></div>
+
+                  <div class="px-2 py-1 border-b border-l border-stone-100">Pressure Size</div>
+                  <div id="aliOriginalPressure" class="px-2 py-1 border-b border-l border-stone-100 text-center font-mono"></div>
+                  <div id="aliEffectivePressure" class="px-2 py-1 border-b border-stone-100 text-center font-mono font-bold"></div>
+
+                  <div class="px-2 py-1 border-l border-stone-100">Moving Avg.</div>
+                  <div id="aliOriginalMovingAverage" class="px-2 py-1 border-l border-stone-100 text-center font-mono"></div>
+                  <div id="aliEffectiveMovingAverage" class="px-2 py-1 text-center font-mono font-bold"></div>
+                </div>
+                <div class="p-2 border-t border-emerald-100">
+                  <button type="button" onclick="resetActiveAliBrushToArchive()" class="w-full px-2 py-1.5 rounded-lg bg-emerald-700 text-white text-[9px] font-bold hover:bg-emerald-800"><i class="fa-solid fa-rotate-left ml-1"></i>Reset to Archive Values</button>
+                  <div class="mt-1 text-[8px] leading-4 text-stone-500">يعيد التحويل المباشر من Brush.archive. لا يغيّر الملف الأصلي ولا الفرش الأخرى.</div>
+                </div>
+              </div>
             </div>
           </div>
           <div class="min-w-[180px] md:min-w-0 md:mt-3 md:pt-3 md:border-t md:border-amber-200">
@@ -604,7 +646,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.14.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.15.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -2204,6 +2246,8 @@
       updatePressureStatus();
     }
 
+    let activeBrushPresetKey = null;
+
     const BRUSH_PRESETS = {
       naskh:  { tool:'calligraphy', size:15, angle:42, roundness:12, nibThickness:16, spacing:8, smoothing:62, opacity:100, pressure:true, pressureSensitivity:62, minWidth:70, curve:'linear', rotation:'fixed', twist:22, stabilizer:false, stabilizerRadius:12, stabilizerFriction:45, descenderFlip:false },
       ruqaa:  { tool:'calligraphy', size:17, angle:50, roundness:8,  nibThickness:14, spacing:7, smoothing:48, opacity:100, pressure:true, pressureSensitivity:55, minWidth:74, curve:'firm',   rotation:'fixed', twist:18, stabilizer:false, stabilizerRadius:10, stabilizerFriction:35, descenderFlip:false },
@@ -2214,12 +2258,149 @@
       // AliQaseef Brushes — decoded directly from each Procreate Brush.archive.
       // All five Shape.png files are byte-identical circular masks. The distinct nib is therefore
       // reconstructed as an ellipse: shared shapeRoundness=5.658639% + each archive shapeAngle.
-      ali_ruqaa:  { tool:'calligraphy', size:15.9613, angle:60.0906, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:"AliQaseef/Reqa'a", archive:{paintSize:0.1596130729,shapeAngle:-1.0487782955,shapeRoundness:0.0565863922,pressureSize:0,minSize:0.0100000007,wetEdges:0.0020295065} },
-      ali_naskh:  { tool:'calligraphy', size:7.4944,  angle:65.0042, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Naskh', archive:{paintSize:0.0749443322,shapeAngle:-1.1345371008,shapeRoundness:0.0565863922,pressureSize:0,minSize:0.0068562846,wetEdges:0} },
-      ali_farsi:  { tool:'calligraphy', size:12.0016, angle:69.8245, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:true,  pressureSensitivity:15, minWidth:85, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Farsi', archive:{paintSize:0.1200158,shapeAngle:-1.2186665535,shapeRoundness:0.0565863922,pressureSize:0.150000006,minSize:0.0068562846,wetEdges:0.0020295065} },
-      ali_thuluth: { tool:'calligraphy', size:22.4348, angle:76.6244, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Thuluth', archive:{paintSize:0.2243483961,shapeAngle:-1.3373485804,shapeRoundness:0.0565863922,pressureSize:0,minSize:0.0068562846,wetEdges:0.0020295065} },
-      ali_diwani: { tool:'calligraphy', size:8.1856,  angle:86.6242, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Diwani', archive:{paintSize:0.0818564743,shapeAngle:-1.5118772984,shapeRoundness:0.0565863922,pressureSize:0,minSize:0.0068562846,wetEdges:0.0020295065} }
+      ali_ruqaa:  { tool:'calligraphy', size:15.9613, angle:60.0906, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:"AliQaseef/Reqa'a", archive:{paintSize:0.1596130729,shapeAngle:-1.0487782955,shapeRoundness:0.0565863922,pressureSize:0,plotSmoothing:0.8,movingAverage:0.3,minSize:0.0100000007,wetEdges:0.0020295065} },
+      ali_naskh:  { tool:'calligraphy', size:7.4944,  angle:65.0042, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Naskh', archive:{paintSize:0.0749443322,shapeAngle:-1.1345371008,shapeRoundness:0.0565863922,pressureSize:0,plotSmoothing:0.8,movingAverage:0.3,minSize:0.0068562846,wetEdges:0} },
+      ali_farsi:  { tool:'calligraphy', size:12.0016, angle:69.8245, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:true,  pressureSensitivity:15, minWidth:85, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Farsi', archive:{paintSize:0.1200158,shapeAngle:-1.2186665535,shapeRoundness:0.0565863922,pressureSize:0.150000006,plotSmoothing:0.8,movingAverage:0.3,minSize:0.0068562846,wetEdges:0.0020295065} },
+      ali_thuluth: { tool:'calligraphy', size:22.4348, angle:76.6244, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Thuluth', archive:{paintSize:0.2243483961,shapeAngle:-1.3373485804,shapeRoundness:0.0565863922,pressureSize:0,plotSmoothing:0.8,movingAverage:0.3,minSize:0.0068562846,wetEdges:0.0020295065} },
+      ali_diwani: { tool:'calligraphy', size:8.1856,  angle:86.6242, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Diwani', archive:{paintSize:0.0818564743,shapeAngle:-1.5118772984,shapeRoundness:0.0565863922,pressureSize:0,plotSmoothing:0.8,movingAverage:0.3,minSize:0.0068562846,wetEdges:0.0020295065} }
     };
+
+    function isAliPresetKey(key) {
+      return typeof key === 'string' && key.startsWith('ali_') && !!BRUSH_PRESETS[key]?.archive;
+    }
+
+    function archiveMappedDefaults(preset) {
+      const a = preset?.archive;
+      if (!a) return null;
+      const pressureSize = clamp(Number(a.pressureSize || 0), 0, 1);
+      return {
+        size: Number(a.paintSize) * 100,
+        angle: Math.abs(Number(a.shapeAngle)) * 180 / Math.PI,
+        roundness: 1,
+        nibThickness: clamp(Number(a.shapeRoundness), 0.02, 0.40),
+        nibShapeMode: 'ellipse',
+        spacing: Number(preset.spacing ?? 1) / 100,
+        smoothing: clamp(Number(a.plotSmoothing ?? 0.8), 0, 0.95),
+        opacity: Number(preset.opacity ?? 100) / 100,
+        pressureEnabled: pressureSize > 0,
+        pressureSensitivity: pressureSize,
+        pressureMinWidth: clamp(1 - pressureSize, 0.2, 1),
+        pressureCurve: 'linear',
+        rotationSource: 'fixed',
+        twistInfluence: 0,
+        stabilizerEnabled: false,
+        stabilizerRadiusPx: Number(preset.stabilizerRadius ?? 4),
+        stabilizerFriction: Number(preset.stabilizerFriction ?? 30) / 100,
+        descenderFlipEnabled: false,
+        velocityDynamicsEnabled: false,
+        velocityDynamicsStrength: 0,
+        startTaperStrength: 0,
+        endTaperStrength: 0,
+        taperLengthPx: 36
+      };
+    }
+
+    function aliEffectiveDiffersFromArchive(preset) {
+      const d = archiveMappedDefaults(preset);
+      if (!d) return false;
+      const near = (a,b,eps=0.001) => Math.abs(Number(a)-Number(b)) <= eps;
+      return !(
+        near(brushSize,d.size,0.01) &&
+        near(nibAngleDeg,d.angle,0.01) &&
+        near(nibThicknessRatio,d.nibThickness,0.0001) &&
+        nibShapeMode === d.nibShapeMode &&
+        near(qalamSmoothing,d.smoothing,0.001) &&
+        pressureEnabled === d.pressureEnabled &&
+        near(pressureSensitivity,d.pressureSensitivity,0.001)
+      );
+    }
+
+    function renderAliCalibrationPanel() {
+      const panel = document.getElementById('aliCalibrationPanel');
+      const status = document.getElementById('aliArchiveStatus');
+      const p = BRUSH_PRESETS[activeBrushPresetKey];
+      if (!panel || !status) return;
+
+      if (!isAliPresetKey(activeBrushPresetKey) || !p?.archive) {
+        panel.classList.add('hidden');
+        status.textContent = 'Brush.archive: اختر فرشاة AliQaseef لعرض Original مقابل Effective.';
+        return;
+      }
+
+      panel.classList.remove('hidden');
+      const a = p.archive;
+      const sourceName = p.source?.split('/').pop() || activeBrushPresetKey;
+      const setText = (id,value) => { const el=document.getElementById(id); if(el) el.textContent=value; };
+
+      setText('aliCalibrationTitle', `${sourceName} — Original / Effective`);
+      setText('aliOriginalSize', Number(a.paintSize).toFixed(10));
+      setText('aliEffectiveSize', `${Number(brushSize.toFixed(4))} px`);
+      setText('aliOriginalAngle', `${Number(a.shapeAngle).toFixed(10)} rad`);
+      setText('aliEffectiveAngle', `${Number(nibAngleDeg.toFixed(4))}°`);
+      setText('aliOriginalShape', Number(a.shapeRoundness).toFixed(10));
+      setText('aliEffectiveShape', `${Number((nibThicknessRatio*100).toFixed(4))}% • ${nibShapeMode}`);
+      setText('aliOriginalSmoothing', Number(a.plotSmoothing ?? 0.8).toFixed(2));
+      setText('aliEffectiveSmoothing', `${Math.round(qalamSmoothing*100)}%`);
+      setText('aliOriginalPressure', Number(a.pressureSize || 0).toFixed(4));
+      setText('aliEffectivePressure', pressureEnabled ? `${Math.round(pressureSensitivity*100)}%` : 'OFF');
+      setText('aliOriginalMovingAverage', Number(a.movingAverage ?? 0.3).toFixed(2));
+      setText('aliEffectiveMovingAverage', stabilizerEnabled ? `تقريب ${Math.round(stabilizerFriction*100)}%` : 'غير مطبق');
+
+      const changed = aliEffectiveDiffersFromArchive(p);
+      const state = document.getElementById('aliCalibrationState');
+      if (state) {
+        state.textContent = changed ? 'Calibrated' : 'Archive';
+        state.className = changed
+          ? 'text-[8px] px-1.5 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800'
+          : 'text-[8px] px-1.5 py-0.5 rounded-full bg-white border border-emerald-200 text-emerald-800';
+      }
+
+      status.textContent = `Brush.archive • ${sourceName} — القيم الأصلية محفوظة، وEffective يعرض إعداد المحرك الحالي.`;
+    }
+
+    function applyAliMappedDefaults(key) {
+      const p = BRUSH_PRESETS[key];
+      const d = archiveMappedDefaults(p);
+      if (!d) return false;
+      setBrushType('calligraphy');
+      brushSize=d.size;
+      nibAngleDeg=d.angle;
+      nibRoundness=d.roundness;
+      nibThicknessRatio=d.nibThickness;
+      nibShapeMode=d.nibShapeMode;
+      brushSpacing=d.spacing;
+      qalamSmoothing=d.smoothing;
+      brushOpacity=d.opacity;
+      pressureEnabled=d.pressureEnabled;
+      pressureSensitivity=d.pressureSensitivity;
+      pressureMinWidth=d.pressureMinWidth;
+      pressureCurve=d.pressureCurve;
+      rotationSource=d.rotationSource;
+      twistInfluence=d.twistInfluence;
+      stabilizerEnabled=d.stabilizerEnabled;
+      stabilizerRadiusPx=d.stabilizerRadiusPx;
+      stabilizerFriction=d.stabilizerFriction;
+      qalamDescenderFlipEnabled=d.descenderFlipEnabled;
+      velocityDynamicsEnabled=d.velocityDynamicsEnabled;
+      velocityDynamicsStrength=d.velocityDynamicsStrength;
+      startTaperStrength=d.startTaperStrength;
+      endTaperStrength=d.endTaperStrength;
+      taperLengthPx=d.taperLengthPx;
+      resetStrokeStabilizer();
+      return true;
+    }
+
+    function resetActiveAliBrushToArchive() {
+      if (!isAliPresetKey(activeBrushPresetKey)) return;
+      if (!applyAliMappedDefaults(activeBrushPresetKey)) return;
+      const sizeEl=document.getElementById('brushSize'); if(sizeEl) sizeEl.value=brushSize;
+      const angleEl=document.getElementById('nibAngle'); if(angleEl) angleEl.value=nibAngleDeg;
+      const pe=document.getElementById('pressureEnabled'); if(pe) pe.checked=pressureEnabled;
+      const ps=document.getElementById('pressureSensitivity'); if(ps) ps.value=Math.round(pressureSensitivity*100);
+      setPressureEnabled(pressureEnabled);
+      syncBrushSettingsUI();
+      renderAliCalibrationPanel();
+    }
 
     function toggleBrushSettings(show) {
       const modal = document.getElementById('brushSettingsModal');
@@ -2271,6 +2452,7 @@
       const chk=document.getElementById('bsPressureEnabled'); if(chk) chk.checked=pressureEnabled;
       const pr=document.getElementById('bsPressureRange'); if(pr) pr.textContent=`النطاق: ${pressureMin.toFixed(2)}–${pressureMax.toFixed(2)}`;
       updateBrushPreview();
+      renderAliCalibrationPanel();
     }
 
     function updateBrushSetting(key, value) {
@@ -2309,6 +2491,10 @@
 
     function applyBrushPreset(name) {
       const p=BRUSH_PRESETS[name]; if(!p) return;
+      activeBrushPresetKey = name;
+      if (isAliPresetKey(name)) {
+        applyAliMappedDefaults(name);
+      } else {
       setBrushType(p.tool); brushSize=p.size; nibAngleDeg=p.angle; nibRoundness=p.roundness/100; nibThicknessRatio=(p.nibThickness??16)/100; nibShapeMode=p.nibShape==='ellipse'?'ellipse':'roundedRect';
       brushSpacing=p.spacing/100; qalamSmoothing=p.smoothing/100; brushOpacity=p.opacity/100;
       pressureEnabled=p.pressure; pressureSensitivity=p.pressureSensitivity/100; pressureMinWidth=p.minWidth/100;
@@ -2320,23 +2506,17 @@
       startTaperStrength=clamp(Number(p.startTaper??0)/100,0,1);
       endTaperStrength=clamp(Number(p.endTaper??0)/100,0,1);
       taperLengthPx=clamp(Number(p.taperLength??36),8,120);
+      }
       document.getElementById('brushSize').value=brushSize; document.getElementById('brushSizeVal').textContent=brushSize;
       document.getElementById('nibAngle').value=nibAngleDeg; document.getElementById('nibAngleVal').textContent=`${Number(nibAngleDeg.toFixed(1))}°`;
       const pe=document.getElementById('pressureEnabled'); if(pe) pe.checked=pressureEnabled;
       const ps=document.getElementById('pressureSensitivity'); if(ps) ps.value=Math.round(pressureSensitivity*100);
       setPressureEnabled(pressureEnabled); syncBrushSettingsUI();
-      const archiveStatus=document.getElementById('aliArchiveStatus');
-      if(archiveStatus){
-        if(p.archive){
-          archiveStatus.textContent=`Brush.archive • ${p.source.split('/').pop()} — angle ${p.angle.toFixed(2)}° • size ${p.size.toFixed(2)} • shape ${p.nibThickness.toFixed(2)}% • pressure-size ${Math.round((p.archive.pressureSize||0)*100)}%`;
-        } else {
-          archiveStatus.textContent='Brush.archive: الإعداد الحالي ليس من مجموعة AliQaseef.';
-        }
-      }
+      renderAliCalibrationPanel();
     }
 
     function currentBrushPresetData() {
-      return { tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,nibShapeMode,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,descenderFlipEnabled:qalamDescenderFlipEnabled,velocityDynamicsEnabled,velocityDynamicsStrength,startTaperStrength,endTaperStrength,taperLengthPx,pressureMin,pressureMax };
+      return { sourcePresetKey:isAliPresetKey(activeBrushPresetKey)?activeBrushPresetKey:null,tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,nibShapeMode,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,descenderFlipEnabled:qalamDescenderFlipEnabled,velocityDynamicsEnabled,velocityDynamicsStrength,startTaperStrength,endTaperStrength,taperLengthPx,pressureMin,pressureMax };
     }
 
     let qalamDiagnosticLetter = '';
@@ -2590,6 +2770,7 @@
 
     function applySavedBrushSettings(p) {
       if (!p || typeof p !== 'object') return;
+      activeBrushPresetKey = isAliPresetKey(p.sourcePresetKey) ? p.sourcePresetKey : null;
       setBrushType(p.tool || 'calligraphy');
       brushSize = clamp(Number(p.size ?? 15), 4, 48);
       nibAngleDeg = clamp(Number(p.angle ?? 42), 0, 90);
