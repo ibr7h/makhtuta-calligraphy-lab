@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-33-segment-glyph-mapping-2026-10-01-12';
+const CACHE_VERSION = 'makhtuta-pwa-v6-34-1-outline-engine-2026-10-01-13';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
