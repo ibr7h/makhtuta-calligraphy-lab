@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.34.3.4-beta">
+<html lang="ar" dir="rtl" data-app-version="6.35.1-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.34.3.4 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.1 β</span>
           </p>
         </div>
       </div>
@@ -6108,6 +6108,245 @@
       const eduWeak=edu.filter(e=>e.severity>=2).length;
       status.textContent='V6.34.3.4: '+strokes.length+' ضربة → '+maps.length+' أجزاء → '+represented+'/'+zones.length+' glyphs • مطابقة الشكل والحبر '+contourPct+'% • '+eduWeak+' حروف تحتاج مراجعة.';
       renderShapingPracticeCanvas();
+    }
+
+    /* --- V6.35 Font → Brush Analyzer --- */
+    let lastFontBrushAnalysis=null;
+    const FONT_DERIVED_BRUSH_STORAGE_KEY='makhtuta-font-derived-brush-v1';
+
+    function brushQuantile(values,q){
+      const a=(values||[]).filter(Number.isFinite).sort((x,y)=>x-y);if(!a.length)return 0;
+      const p=clamp(q,0,1)*(a.length-1),i=Math.floor(p),f=p-i;
+      return i+1<a.length?a[i]*(1-f)+a[i+1]*f:a[i];
+    }
+
+    function brushMean(values){
+      const a=(values||[]).filter(Number.isFinite);return a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+    }
+
+    function brushStd(values,mean=brushMean(values)){
+      const a=(values||[]).filter(Number.isFinite);return a.length?Math.sqrt(a.reduce((n,v)=>n+(v-mean)*(v-mean),0)/a.length):0;
+    }
+
+    function glyphBrushBounds(g){
+      const e=g?.extents;
+      if(e&&Math.abs(Number(e.width)||0)>0&&Math.abs(Number(e.height)||0)>0){
+        const x1=Number(e.xBearing)||0,x2=x1+(Number(e.width)||0),y1=Number(e.yBearing)||0,y2=y1+(Number(e.height)||0);
+        return{left:Math.min(x1,x2),right:Math.max(x1,x2),bottom:Math.min(y1,y2),top:Math.max(y1,y2)};
+      }
+      const cs=parseGlyphSvgPath(g?.path||'',10),pts=cs.flatMap(c=>c.points||[]);
+      if(!pts.length)return null;
+      return{left:Math.min(...pts.map(p=>p.x)),right:Math.max(...pts.map(p=>p.x)),bottom:Math.min(...pts.map(p=>p.y)),top:Math.max(...pts.map(p=>p.y))};
+    }
+
+    function brushMaskFromContext(ctx,w,h){
+      const d=ctx.getImageData(0,0,w,h).data,m=new Uint8Array(w*h);
+      for(let i=0,j=3;i<m.length;i++,j+=4)m[i]=d[j]>32?1:0;
+      return m;
+    }
+
+    function brushDistanceTransform(mask,w,h){
+      const n=w*h,inf=1e6,d=new Float32Array(n),sq2=Math.SQRT2;
+      for(let i=0;i<n;i++)d[i]=mask[i]?inf:0;
+      for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+        const i=y*w+x;if(!mask[i])continue;let v=d[i];
+        if(x>0)v=Math.min(v,d[i-1]+1);
+        if(y>0)v=Math.min(v,d[i-w]+1);
+        if(x>0&&y>0)v=Math.min(v,d[i-w-1]+sq2);
+        if(x+1<w&&y>0)v=Math.min(v,d[i-w+1]+sq2);
+        d[i]=v;
+      }
+      for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){
+        const i=y*w+x;if(!mask[i])continue;let v=d[i];
+        if(x+1<w)v=Math.min(v,d[i+1]+1);
+        if(y+1<h)v=Math.min(v,d[i+w]+1);
+        if(x+1<w&&y+1<h)v=Math.min(v,d[i+w+1]+sq2);
+        if(x>0&&y+1<h)v=Math.min(v,d[i+w-1]+sq2);
+        d[i]=v;
+      }
+      return d;
+    }
+
+    function brushRidgeDiameters(mask,dist,w,h){
+      const out=[];
+      for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+        const i=y*w+x;if(!mask[i]||dist[i]<.9)continue;
+        const v=dist[i];let ridge=true;
+        for(let yy=-1;yy<=1&&ridge;yy++)for(let xx=-1;xx<=1;xx++){
+          if(!xx&&!yy)continue;if(dist[(y+yy)*w+x+xx]>v+.01){ridge=false;break}
+        }
+        if(ridge)out.push(2*v);
+      }
+      if(out.length<6){
+        for(let i=0;i<mask.length;i++)if(mask[i]&&dist[i]>=1)out.push(2*dist[i]);
+      }
+      return out;
+    }
+
+    function brushContourEvidence(g){
+      const contours=parseGlyphSvgPath(g?.path||'',10),hist=new Float64Array(31);
+      let sharp=0,turnCount=0,totalStableWeight=0;
+      contours.forEach(c=>{
+        const p=c.points||[];if(p.length<4)return;
+        const xs=p.map(q=>q.x),ys=p.map(q=>q.y),diag=Math.max(1,Math.hypot(Math.max(...xs)-Math.min(...xs),Math.max(...ys)-Math.min(...ys)));
+        for(let i=1;i<p.length-1;i++){
+          const a=p[i-1],b=p[i],d=p[i+1],v1x=b.x-a.x,v1y=b.y-a.y,v2x=d.x-b.x,v2y=d.y-b.y;
+          const l1=Math.hypot(v1x,v1y),l2=Math.hypot(v2x,v2y);if(l1<1e-6||l2<1e-6)continue;
+          const dot=clamp((v1x*v2x+v1y*v2y)/(l1*l2),-1,1),turn=Math.acos(dot);turnCount++;if(turn>.72)sharp++;
+          if(turn>.28)continue;
+          let angle=Math.atan2((v1y/l1+v2y/l2),(v1x/l1+v2x/l2))*180/Math.PI;
+          angle=((angle%180)+180)%180;if(angle>90)angle=180-angle;
+          if(angle<12||angle>78)continue;
+          const weight=Math.min((l1+l2)/2,diag*.06);
+          const bin=clamp(Math.round(angle/3),0,hist.length-1);hist[bin]+=weight;totalStableWeight+=weight;
+        }
+      });
+      return{hist,sharpFraction:turnCount?sharp/turnCount:0,totalStableWeight};
+    }
+
+    function rasterGlyphBrushMetrics(g,size=180){
+      const b=glyphBrushBounds(g),path=glyphPath2D(g);if(!b||!path)return null;
+      const bw=Math.max(1,b.right-b.left),bh=Math.max(1,b.top-b.bottom),pad=14,scale=Math.min((size-2*pad)/bw,(size-2*pad)/bh);
+      const c=document.createElement('canvas');c.width=size;c.height=size;const ctx=c.getContext('2d',{willReadFrequently:true});
+      ctx.clearRect(0,0,size,size);ctx.save();ctx.translate(pad-b.left*scale,pad+b.top*scale);ctx.scale(scale,-scale);ctx.fillStyle='#fff';ctx.fill(path,'nonzero');ctx.restore();
+      const mask=brushMaskFromContext(ctx,size,size),dist=brushDistanceTransform(mask,size,size),diam=brushRidgeDiameters(mask,dist,size,size);
+      let area=0,minX=size,minY=size,maxX=-1,maxY=-1;
+      for(let y=0;y<size;y++)for(let x=0;x<size;x++){if(!mask[y*size+x])continue;area++;minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y)}
+      if(area<20||!diam.length)return null;
+      const inkHeight=Math.max(1,maxY-minY+1),median=brushQuantile(diam,.50),p25=brushQuantile(diam,.25),p85=brushQuantile(diam,.85);
+      const mean=brushMean(diam),variation=mean>0?brushStd(diam,mean)/mean:0,aspect=clamp(p85>0?p25/p85:.18,.06,.60);
+      const edge=brushContourEvidence(g);
+      return{
+        glyphId:g.glyphId,area,inkHeight,strokeRatio:clamp(median/inkHeight,.025,.45),
+        aspect,variation:clamp(variation,0,1.5),sharpFraction:edge.sharpFraction,
+        angleHist:Array.from(edge.hist),angleWeight:edge.totalStableWeight
+      };
+    }
+
+    function deriveBrushProfileFromMetrics(metrics,fontName=''){
+      const valid=(metrics||[]).filter(Boolean);if(!valid.length)return null;
+      const strokeRatio=brushQuantile(valid.map(m=>m.strokeRatio),.50);
+      const aspect=clamp(brushQuantile(valid.map(m=>m.aspect),.50),.06,.45);
+      const variation=clamp(brushQuantile(valid.map(m=>m.variation),.50),0,1);
+      const sharp=clamp(brushQuantile(valid.map(m=>m.sharpFraction),.50),0,1);
+      const hist=new Float64Array(31);
+      valid.forEach(m=>(m.angleHist||[]).forEach((v,i)=>{hist[i]+=Number(v)||0}));
+      const smooth=new Float64Array(hist.length);let sum=0,best=-1,bestI=14,active=0;
+      for(let i=4;i<=26;i++){
+        smooth[i]=(hist[i-1]||0)*.25+(hist[i]||0)*.5+(hist[i+1]||0)*.25;
+        if(smooth[i]>0){sum+=smooth[i];active++}
+        if(smooth[i]>best){best=smooth[i];bestI=i}
+      }
+      let angle=bestI*3;
+      const meanBin=active?sum/active:0,peakRatio=meanBin>0?best/meanBin:0;
+      let angleConfidence=clamp((peakRatio-1)/3.2,0,1);
+      if(!Number.isFinite(angle)||angle<12||angle>78){angle=42;angleConfidence=0}
+      const brushSize=clamp(strokeRatio*112,5,30);
+      const roundness=clamp(Math.round(5+(1-sharp)*22),4,30);
+      const widthVariationPct=Math.round(variation*100);
+      const variationLabel=variation<.22?'منخفض':variation<.42?'متوسط':'مرتفع';
+      const terminalStyle=sharp>.17?'حادة/مقطوعة':sharp<.075?'ناعمة':'مختلطة';
+      const sampleConfidence=clamp(valid.length/26,0,1),consistency=clamp(1-variation/.95,0,1);
+      const confidence=clamp(.45*angleConfidence+.30*sampleConfidence+.25*consistency,0,1);
+      return{
+        fontName,glyphCount:valid.length,angle:clamp(angle,0,90),angleConfidence,
+        brushSize,aspect,nibThicknessPct:clamp(aspect*100,5,45),variation,widthVariationPct,variationLabel,
+        sharpFraction:sharp,roundness,terminalStyle,confidence,strokeRatio
+      };
+    }
+
+    function renderDerivedBrushPreview(a){
+      const c=document.getElementById('fontBrushPreviewCanvas');if(!c||!a)return;
+      const {ctx,W,H}=prepareHiDPICanvas(c);ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle='rgba(217,119,6,.16)';ctx.lineWidth=1;for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+      const major=clamp(a.brushSize*5.2,48,145),minor=Math.max(4,major*a.aspect),ang=-a.angle*Math.PI/180,cx=W*.50,cy=H*.50;
+      ctx.save();ctx.translate(cx,cy);ctx.rotate(ang);ctx.fillStyle='rgba(120,53,15,.82)';ctx.beginPath();
+      const r=Math.min(minor/2,major/2)*(a.roundness/100);
+      if(r<.8)ctx.rect(-major/2,-minor/2,major,minor);
+      else{
+        ctx.roundRect(-major/2,-minor/2,major,minor,r);
+      }
+      ctx.fill();ctx.restore();
+      ctx.strokeStyle='rgba(120,53,15,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(W*.16,H*.78);ctx.bezierCurveTo(W*.34,H*.42,W*.62,H*.70,W*.84,H*.30);ctx.stroke();
+      ctx.fillStyle='#78350f';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText('زاوية '+Math.round(a.angle)+'° • aspect '+a.aspect.toFixed(2),W/2,H-14);
+    }
+
+    function renderFontBrushAnalysis(a){
+      lastFontBrushAnalysis=a;
+      const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
+      set('derivedNibAngle',Math.round(a.angle)+'°');
+      set('derivedNibAngleConfidence','ثقة الزاوية '+Math.round(a.angleConfidence*100)+'%');
+      set('derivedNibSize',a.brushSize.toFixed(1));
+      set('derivedNibAspect',a.aspect.toFixed(2));
+      set('derivedWidthVariation',a.widthVariationPct+'%');
+      set('derivedWidthVariationText',a.variationLabel);
+      set('derivedTerminalStyle',a.terminalStyle);
+      set('derivedRoundness','Roundness مقترح '+a.roundness+'%');
+      set('derivedBrushConfidence',Math.round(a.confidence*100)+'%');
+      set('derivedGlyphCount',a.glyphCount+' Glyphs محللة');
+      set('derivedBrushLabel',(a.fontName||'Font')+' → preset');
+      const reasoning=document.getElementById('fontBrushReasoning');
+      if(reasoning)reasoning.innerHTML='النتيجة مبنية على <b>'+a.glyphCount+'</b> Glyphs: سماكات داخلية عبر Distance Transform، اتجاهات حواف مستقرة، تباين السماكة، وحدّة الزوايا. <b>زاوية القطّة استنتاج هندسي</b> وليست معلومة مخزنة داخل الخط.';
+      const btn=document.getElementById('applyDerivedBrushBtn');if(btn){btn.disabled=false;btn.className='px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold'}
+      renderDerivedBrushPreview(a);
+    }
+
+    async function analyzeFontBrush(){
+      const status=document.getElementById('fontBrushAnalyzerStatus');
+      if(!harfBuzzRuntime||!harfBuzzFontData){if(status)status.textContent='حمّل خط TTF/OTF أولًا حتى نستطيع تحليل Outlines الفعلية.';return}
+      const sample=String(document.getElementById('fontBrushSampleText')?.value||'').trim();
+      if(!sample){if(status)status.textContent='أدخل عينة عربية للتحليل.';return}
+      try{
+        if(status)status.textContent='جارٍ تشكيل العينة واستخراج هندسة الـGlyphs…';
+        const shaped=await shapeWithHarfBuzz(sample),seen=new Set(),glyphs=[];
+        for(const g of shaped||[]){
+          if(!g?.path||seen.has(g.glyphId))continue;
+          const b=glyphBrushBounds(g);if(!b||(b.right-b.left)<1||(b.top-b.bottom)<1)continue;
+          seen.add(g.glyphId);glyphs.push(g);if(glyphs.length>=48)break;
+        }
+        if(status)status.textContent='جارٍ قياس السماكات واتجاهات الحواف لـ '+glyphs.length+' Glyphs…';
+        const metrics=[];for(const g of glyphs){const m=rasterGlyphBrushMetrics(g,180);if(m)metrics.push(m)}
+        const profile=deriveBrushProfileFromMetrics(metrics,harfBuzzFontName||'Loaded font');
+        if(!profile)throw new Error('لم نحصل على Glyphs كافية قابلة للتحليل.');
+        renderFontBrushAnalysis(profile);
+        if(status)status.textContent='اكتمل التحليل ✓ • '+profile.glyphCount+' Glyphs • الثقة الإجمالية '+Math.round(profile.confidence*100)+'%. يمكنك الآن إنشاء Brush Preset مشتق من الخط.';
+      }catch(err){
+        lastFontBrushAnalysis=null;if(status)status.textContent='تعذر تحليل الفرشاة: '+(err?.message||err);
+      }
+    }
+
+    function derivedBrushPresetFromAnalysis(a){
+      return{
+        tool:'calligraphy',size:Number(a.brushSize.toFixed(2)),angle:Number(a.angle.toFixed(2)),
+        roundness:a.roundness,nibThickness:Number(a.nibThicknessPct.toFixed(2)),nibShape:'roundedRect',
+        spacing:4,smoothing:64,opacity:100,pressure:false,pressureSensitivity:25,minWidth:88,curve:'linear',
+        rotation:'fixed',twist:0,stabilizer:false,stabilizerRadius:10,stabilizerFriction:40,descenderFlip:false,
+        velocityDynamics:false,velocityStrength:0,startTaper:0,endTaper:0,taperLength:36,
+        source:'Font-derived/'+(a.fontName||'font')
+      };
+    }
+
+    function applyDerivedBrushPreset(){
+      const a=lastFontBrushAnalysis,status=document.getElementById('fontBrushAnalyzerStatus');if(!a){if(status)status.textContent='حلّل الخط أولًا.';return}
+      const preset=derivedBrushPresetFromAnalysis(a);BRUSH_PRESETS.font_derived=preset;
+      try{localStorage.setItem(FONT_DERIVED_BRUSH_STORAGE_KEY,JSON.stringify({analysis:a,preset,savedAt:new Date().toISOString()}))}catch(_){}
+      applyBrushPreset('font_derived');
+      if(status)status.textContent='تم إنشاء وتطبيق Brush Preset مشتق من '+(a.fontName||'الخط')+' ✓ • Angle '+Math.round(a.angle)+'° • Size '+a.brushSize.toFixed(1)+' • Aspect '+a.aspect.toFixed(2)+'.';
+    }
+
+    function runFontBrushAnalyzerSelfTests(){
+      const histAt=a=>{const h=Array(31).fill(0),i=clamp(Math.round(a/3),0,30);h[i]=12;if(i>0)h[i-1]=4;if(i+1<h.length)h[i+1]=4;return h};
+      const mk=(angle,ratio,aspect,variation,sharp)=>({strokeRatio:ratio,aspect,variation,sharpFraction:sharp,angleHist:histAt(angle),angleWeight:20});
+      const p1=deriveBrushProfileFromMetrics(Array.from({length:30},()=>mk(45,.12,.18,.18,.20)),'test');
+      const p2=deriveBrushProfileFromMetrics(Array.from({length:28},()=>mk(60,.16,.25,.38,.08)),'test');
+      const tests=[
+        {name:'angle-45',ok:!!p1&&Math.abs(p1.angle-45)<=3},
+        {name:'size-range',ok:!!p1&&p1.brushSize>=5&&p1.brushSize<=30},
+        {name:'aspect',ok:!!p1&&Math.abs(p1.aspect-.18)<.03},
+        {name:'angle-60',ok:!!p2&&Math.abs(p2.angle-60)<=3},
+        {name:'variation-order',ok:!!p1&&!!p2&&p2.widthVariationPct>p1.widthVariationPct}
+      ];
+      return{ok:tests.every(t=>t.ok),tests,p1,p2};
     }
 
     /* --- أوراق العمل --- */
