@@ -1,3 +1,19 @@
+# V6.34.2 β — Outline Distance Matching
+
+- Added point-to-contour distance analysis for student handwriting segments against the exact HarfBuzz Glyph outline.
+- Each student point is tested against the real Glyph ink area when Path2D hit testing is available, with sampled-contour fallback.
+- Added adjustable contour tolerance from 6–36 px.
+- Added an error heatmap on the handwriting canvas:
+  - green = inside the reference ink,
+  - amber = outside but within tolerance,
+  - red = outside beyond tolerance.
+- For the selected Glyph, the worst outside points draw connector lines to their nearest Outline location.
+- Added three contour metrics: inside-ink ratio, Outline coverage, and mean outside-ink error.
+- Added a separate Outline Match score alongside the existing 2D geometric confidence.
+- Glyph result cards now report both geometric and Outline scores.
+- V6.34.2 remains a geometric diagnostic score rather than a final educational grade.
+- App/PWA version bumped to V6.34.2 β.
+
 # V6.34.1 β — Outline Engine
 
 - Added an Outline Engine on top of HarfBuzz `glyphToPath()`.
