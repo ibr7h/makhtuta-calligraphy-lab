@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.33.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.34.1-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.33 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.34.1 β</span>
           </p>
         </div>
       </div>
@@ -610,13 +610,16 @@
           <div id="glyphReferencePanel" class="hidden bg-white rounded-2xl p-3 border border-sky-200 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div><strong class="text-xs text-sky-950"><i class="fa-solid fa-vector-square ml-1"></i>تحليل الكلمة هندسيًا</strong><div class="text-[9px] text-stone-500">انقر على أي إطار لتحديد الـGlyph. الخط الأزرق هو خط الأساس المرجعي.</div></div>
-              <div class="flex items-center gap-2">
+              <div class="flex flex-wrap items-center gap-2">
                 <label class="text-[9px] font-bold">شفافية النموذج <input id="glyphRefOpacity" type="range" min="8" max="70" value="24" oninput="setGlyphReferenceOpacity(this.value)" class="w-20 align-middle"></label>
+                <label class="px-2 py-1 rounded-lg bg-fuchsia-50 border border-fuchsia-200 text-[9px] font-bold text-fuchsia-800 cursor-pointer"><input id="outlineSamplesToggle" type="checkbox" checked onchange="toggleOutlineSamples(this.checked)" class="accent-fuchsia-700 ml-1">نقاط Outline</label>
+                <label class="text-[9px] font-bold text-fuchsia-800">الدقة <input id="outlineSampleDensity" type="range" min="5" max="28" value="12" oninput="setOutlineSampleDensity(this.value)" class="w-20 align-middle accent-fuchsia-700"></label>
                 <button type="button" onclick="toggleGlyphReference()" class="px-2 py-1 rounded-lg bg-white border border-sky-200 text-[9px] font-bold">إظهار/إخفاء</button>
               </div>
             </div>
             <canvas id="glyphReferenceCanvas" width="1000" height="260" class="mt-2 w-full h-[180px] rounded-xl bg-white border border-sky-100 cursor-pointer" title="انقر لتحديد Glyph"></canvas>
             <div id="glyphGeometrySummary" class="mt-1 text-[9px] text-stone-500"></div>
+            <div id="outlineEngineSummary" class="mt-2 rounded-xl border border-fuchsia-100 bg-fuchsia-50/60 px-3 py-2 text-[9px] text-fuchsia-900">Outline Engine: اختر Glyph لعرض المسارات والعينات الهندسية.</div>
             <div id="shapingGlyphCards" class="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2"></div>
           </div>
 
@@ -1766,6 +1769,7 @@
     let harfBuzzModulePromise=null,harfBuzzFontData=null,harfBuzzFontName='',harfBuzzRuntime=null; // harfbuzzjs v1 API
     let lastHarfBuzzGlyphs=[],lastHarfBuzzText='',glyphReferenceVisible=true,glyphReferenceOpacity=.24,glyphReferenceFontUrl='',glyphReferenceFamily='';
     let lastShapingZones=[],selectedShapingGlyphIndex=-1,lastShapingLayout=null;
+    let outlineSamplesVisible=true,outlineSampleDensity=12;
 
     async function getHarfBuzzModule(){
       if(!harfBuzzModulePromise)harfBuzzModulePromise=import('https://cdn.jsdelivr.net/npm/harfbuzzjs@1.6.2/dist/index.mjs');
@@ -1828,6 +1832,12 @@
 
     function setGlyphReferenceOpacity(v){glyphReferenceOpacity=clamp((Number(v)||24)/100,.08,.7);renderGlyphReferenceModel();renderShapingPracticeCanvas()}
     function toggleGlyphReference(){glyphReferenceVisible=!glyphReferenceVisible;renderGlyphReferenceModel();renderShapingPracticeCanvas()}
+    function toggleOutlineSamples(v){outlineSamplesVisible=!!v;renderGlyphReferenceModel();renderShapingPracticeCanvas()}
+    function setOutlineSampleDensity(v){
+      outlineSampleDensity=clamp(Math.round(Number(v)||12),5,28);
+      lastHarfBuzzGlyphs.forEach(g=>{if(g){delete g._outlineSamples;delete g._outlineSamplesDensity}});
+      renderGlyphReferenceModel();renderShapingPracticeCanvas();
+    }
 
     async function ensureReferenceFontFace(){
       if(!harfBuzzFontData)return null;
@@ -1931,6 +1941,84 @@
       try{g._path2d=new Path2D(g.path);return g._path2d}catch(_){return null}
     }
 
+    function parseGlyphSvgPath(path,density=outlineSampleDensity){
+      const tokens=String(path||'').match(/[MLCQZmlcqz]|[-+]?(?:\d*\.\d+|\d+\.?)(?:[eE][-+]?\d+)?/g)||[];
+      const contours=[];let cur=null,x=0,y=0,sx=0,sy=0,i=0,cmd='';
+      const num=()=>Number(tokens[i++]);
+      const push=(px,py)=>{if(!cur){cur={points:[],closed:false};contours.push(cur)}const a=cur.points,b=a[a.length-1];if(!b||Math.hypot(b.x-px,b.y-py)>.0001)a.push({x:px,y:py})};
+      const lineTo=(nx,ny)=>{push(nx,ny);x=nx;y=ny};
+      const sampleQ=(x0,y0,cx,cy,x1,y1)=>{
+        const rough=Math.hypot(cx-x0,cy-y0)+Math.hypot(x1-cx,y1-cy),steps=clamp(Math.ceil(rough/85),4,density);
+        for(let k=1;k<=steps;k++){const t=k/steps,u=1-t;push(u*u*x0+2*u*t*cx+t*t*x1,u*u*y0+2*u*t*cy+t*t*y1)}
+        x=x1;y=y1;
+      };
+      const sampleC=(x0,y0,c1x,c1y,c2x,c2y,x1,y1)=>{
+        const rough=Math.hypot(c1x-x0,c1y-y0)+Math.hypot(c2x-c1x,c2y-c1y)+Math.hypot(x1-c2x,y1-c2y),steps=clamp(Math.ceil(rough/75),5,density+4);
+        for(let k=1;k<=steps;k++){const t=k/steps,u=1-t;push(u*u*u*x0+3*u*u*t*c1x+3*u*t*t*c2x+t*t*t*x1,u*u*u*y0+3*u*u*t*c1y+3*u*t*t*c2y+t*t*t*y1)}
+        x=x1;y=y1;
+      };
+      while(i<tokens.length){
+        if(/[MLCQZmlcqz]/.test(tokens[i]))cmd=tokens[i++];
+        if(!cmd)break;
+        const rel=cmd===cmd.toLowerCase(),C=cmd.toUpperCase();
+        if(C==='M'){
+          if(i+1>=tokens.length)break;
+          let nx=num(),ny=num();if(rel){nx+=x;ny+=y}
+          cur={points:[],closed:false};contours.push(cur);x=nx;y=ny;sx=x;sy=y;push(x,y);cmd=rel?'l':'L';
+        }else if(C==='L'){
+          if(i+1>=tokens.length)break;
+          let nx=num(),ny=num();if(rel){nx+=x;ny+=y}lineTo(nx,ny);
+        }else if(C==='Q'){
+          if(i+3>=tokens.length)break;
+          let cx=num(),cy=num(),nx=num(),ny=num();if(rel){cx+=x;cy+=y;nx+=x;ny+=y}sampleQ(x,y,cx,cy,nx,ny);
+        }else if(C==='C'){
+          if(i+5>=tokens.length)break;
+          let c1x=num(),c1y=num(),c2x=num(),c2y=num(),nx=num(),ny=num();if(rel){c1x+=x;c1y+=y;c2x+=x;c2y+=y;nx+=x;ny+=y}sampleC(x,y,c1x,c1y,c2x,c2y,nx,ny);
+        }else if(C==='Z'){
+          if(cur){if(Math.hypot(x-sx,y-sy)>.0001)push(sx,sy);cur.closed=true}x=sx;y=sy;cmd='';
+        }else{break}
+      }
+      return contours.filter(c=>c.points.length>1);
+    }
+
+    function rawGlyphOutlineContours(g){
+      if(!g?.path)return[];
+      if(g._outlineSamples&&g._outlineSamplesDensity===outlineSampleDensity)return g._outlineSamples;
+      const contours=parseGlyphSvgPath(g.path,outlineSampleDensity);
+      g._outlineSamples=contours;g._outlineSamplesDensity=outlineSampleDensity;return contours;
+    }
+
+    function glyphOutlineContoursNormalized(z,W,H){
+      const raw=rawGlyphOutlineContours(z?.g),sx=(Number(z?.scaleNorm)||0)*W,ox=(Number(z?.drawOriginX)||0)*W,oy=(Number(z?.drawOriginY)||Number(z?.baseline)||.72)*H;
+      return raw.map(c=>({closed:c.closed,points:c.points.map(p=>({nx:(ox+p.x*sx)/W,ny:(oy-p.y*sx)/H}))}));
+    }
+
+    function outlineMetrics(z,W,H){
+      const contours=glyphOutlineContoursNormalized(z,W,H);let points=0,lengthPx=0,minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+      contours.forEach(c=>{points+=c.points.length;c.points.forEach((p,j)=>{minX=Math.min(minX,p.nx);maxX=Math.max(maxX,p.nx);minY=Math.min(minY,p.ny);maxY=Math.max(maxY,p.ny);if(j){const q=c.points[j-1];lengthPx+=Math.hypot((p.nx-q.nx)*W,(p.ny-q.ny)*H)}})});
+      return{contours:contours.length,points,lengthPx,bounds:points?{left:minX,right:maxX,top:minY,bottom:maxY}:null,normalized:contours};
+    }
+
+    function drawOutlineSamples(ctx,z,W,H,opts={}){
+      if(!z)return null;const m=outlineMetrics(z,W,H);if(!m.points)return m;
+      ctx.save();ctx.lineJoin='round';ctx.lineCap='round';ctx.strokeStyle=opts.strokeStyle||'rgba(192,38,211,.9)';ctx.lineWidth=opts.lineWidth||1.6;
+      m.normalized.forEach(c=>{
+        const pts=c.points;if(!pts.length)return;ctx.beginPath();ctx.moveTo(pts[0].nx*W,pts[0].ny*H);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].nx*W,pts[i].ny*H);if(c.closed)ctx.closePath();ctx.stroke();
+        if(opts.points!==false){ctx.fillStyle=opts.pointStyle||'rgba(6,182,212,.9)';for(let i=0;i<pts.length;i+=Math.max(1,Math.ceil(pts.length/80))){ctx.beginPath();ctx.arc(pts[i].nx*W,pts[i].ny*H,opts.pointRadius||1.8,0,Math.PI*2);ctx.fill()}}
+      });
+      ctx.restore();return m;
+    }
+
+    function updateOutlineEngineSummary(z,W,H){
+      const el=document.getElementById('outlineEngineSummary');if(!el||!z)return;
+      const m=outlineMetrics(z,W||1000,H||260),u=contextualUnitForCluster(z.g.cluster);
+      el.innerHTML='<strong>V6.34.1 Outline Engine</strong> • '+(u?(u.char+u.marks.join('')):'Glyph')+
+        ' • '+m.contours+' contour'+(m.contours===1?'':'s')+
+        ' • '+m.points+' sampled points • طول تقريبي '+Math.round(m.lengthPx)+'px'+
+        ' • الكثافة '+outlineSampleDensity+
+        '<br><span class="text-stone-500">تم تحويل أوامر M/L/Q/C/Z إلى نقاط هندسية في نفس إحداثيات Canvas. هذه البيانات جاهزة لـ Distance Matching في V6.34.2.</span>';
+    }
+
     function paintHarfBuzzGlyph(ctx,z,W,H,opts={}){
       const p=glyphPath2D(z?.g);if(!p)return false;
       const scalePx=Math.max(.0001,(Number(z.scaleNorm)||0)*W);
@@ -1982,6 +2070,7 @@
       const g=document.getElementById('shapingSelectedGlyph'),meta=document.getElementById('shapingSelectedMeta'),u=contextualUnitForCluster(z.g.cluster);
       if(g)g.textContent=u?(u.char+u.marks.join('')):'◌';
       if(meta)meta.innerHTML='<strong class="text-violet-950">gid '+z.g.glyphId+'</strong><br>cluster '+z.g.cluster+'<br>الموضع: '+Math.round(z.left*100)+'–'+Math.round(z.right*100)+'% من العرض<br>خط الأساس: '+Math.round(z.baseline*100)+'%';
+      const c=document.getElementById('glyphReferenceCanvas'),rr=c?.getBoundingClientRect();updateOutlineEngineSummary(z,rr?.width||1000,rr?.height||260);
     }
 
     async function renderGlyphReferenceModel(){
@@ -2005,6 +2094,10 @@
           ctx.save();ctx.globalAlpha=glyphReferenceOpacity;ctx.fillStyle='#111827';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.direction='rtl';
           ctx.font=lastShapingLayout.fontPx+'px "'+family+'"';ctx.fillText(lastHarfBuzzText,W/2,baselineY);ctx.restore();
         }
+      }
+      if(outlineSamplesVisible){
+        const selected=zones.find(z=>z.index===selectedShapingGlyphIndex);
+        if(selected){drawOutlineSamples(ctx,selected,W,H,{strokeStyle:'rgba(192,38,211,.95)',pointStyle:'rgba(6,182,212,.95)',lineWidth:1.7,pointRadius:1.9});updateOutlineEngineSummary(selected,W,H)}
       }
       c.onclick=(ev)=>{const rect=c.getBoundingClientRect(),nx=(ev.clientX-rect.left)/rect.width,ny=(ev.clientY-rect.top)/rect.height;const hit=zones.filter(z=>nx>=z.hitLeft&&nx<=z.hitRight&&ny>=z.top-.08&&ny<=z.bottom+.08).sort((a,b)=>Math.abs(nx-a.centerX)-Math.abs(nx-b.centerX))[0]||zones.reduce((a,b)=>Math.abs(nx-a.centerX)<Math.abs(nx-b.centerX)?a:b);if(hit)selectShapingGlyph(hit.index)};
       if(sum)sum.textContent='الإطار الآن يمثل Ink Bounds الفعلية للـGlyph عند توفر extents، بينما HarfBuzz xAdvance/xOffset يحدد موضعه داخل العرض الطبيعي للكلمة. تم تصحيح حقول harfbuzzjs v1.x إلى camelCase.';
@@ -5299,6 +5392,7 @@
         }
       }
 
+      if(outlineSamplesVisible&&sel)drawOutlineSamples(ctx,sel,W,H,{strokeStyle:'rgba(192,38,211,.48)',pointStyle:'rgba(6,182,212,.55)',lineWidth:1.25,pointRadius:1.5});
       const all=[...shapingPracticeStrokes,...(shapingPracticeActive?[shapingPracticeActive]:[])];
       ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#2563eb';ctx.lineWidth=7;
       all.forEach(st=>{const p=st.points||[];if(!p.length)return;ctx.beginPath();ctx.moveTo(p[0].nx*W,p[0].ny*H);for(let i=1;i<p.length;i++)ctx.lineTo(p[i].nx*W,p[i].ny*H);ctx.stroke()});
@@ -5431,7 +5525,7 @@
       notes.push(avgBaseline>=.72?['check','محاذاة خط الأساس جيدة هندسيًا.']:['warn','محاذاة خط الأساس تحتاج ضبطًا أكثر.']);
       notes.push(avgOverlap>=.58?['check','الأجزاء تقع غالبًا داخل الحدود المرجعية المناسبة.']:['warn','بعض أجزاء المسار تخرج عن Ink Bounds المرجعية.']);
       notes.push(avgCluster>=.72?['check','تقسيم المسار بين الـClusters متسق مع موضعه.']:['warn','هناك انتقالات قريبة من حدود Cluster؛ راجع مناطق الوصل بين الحروف.']);
-      notes.push(['info','تم الانتقال من Stroke→Glyph إلى Segment→Glyph؛ الخطوة التالية هي مقارنة هذه الأجزاء بحدود الـOutline نفسها.']);
+      notes.push(['info','V6.34.1 فعّل Outline Engine وحوّل منحنيات الـGlyph إلى عينات هندسية؛ Distance Matching التفصيلي هو V6.34.2.']);
       if(fb)fb.innerHTML=notes.map(n=>'<div class="rounded-xl border p-2 '+(n[0]==='check'?'bg-emerald-50 border-emerald-100 text-emerald-800':n[0]==='warn'?'bg-amber-50 border-amber-100 text-amber-800':'bg-sky-50 border-sky-100 text-sky-800')+'"><i class="fa-solid '+(n[0]==='check'?'fa-circle-check':n[0]==='warn'?'fa-triangle-exclamation':'fa-circle-info')+' ml-1"></i>'+n[1]+'</div>').join('');
       status.textContent='تم تقسيم '+strokes.length+' ضربة فعلية إلى '+maps.length+' أجزاء وربطها بـ '+represented+' من '+zones.length+' glyphs. متوسط الثقة الهندسية '+pct+'%.';
       renderShapingPracticeCanvas();
