@@ -1,3 +1,17 @@
+# V6.34.3.4 β — Result Semantics & Clean Heatmap
+
+- Made "مطابقة الشكل والحبر" the only primary large score.
+- Moved position, reference coverage, IoU, and extra ink into compact diagnostic cards.
+- Added semantic interpretation of metric combinations instead of treating reference coverage as independently "good".
+- Explicit overpaint rule: high coverage + low IoU + high extra ink is classified as "تغطية زائدة", with the explanation that the attempt covered the glyph rather than followed its shape.
+- Coverage card changes tone and label according to context; high coverage can now appear as an error rather than a success.
+- Ink heatmap is cleaner: while the ink mask is visible, the older contour sample dots are suppressed.
+- Per-Glyph geometry annotations remain aggregated to one box/label per Glyph.
+- Overall word shape scores are weighted by reference Glyph area; extra ink is weighted by actual student ink area.
+- Added deterministic semantic regression tests for good, overpaint, incomplete, low-IoU, and excess-ink cases.
+- Added deterministic score regression tests, including the user's 99% coverage / 24% IoU / 76% extra-ink scenario; it is capped at 18%.
+- App/PWA version bumped to V6.34.3.4 β.
+
 # V6.34.3.3 β — Gross-Shape Validation
 
 - Added hard validation gates for high reference coverage with excessive extra ink / low IoU.
