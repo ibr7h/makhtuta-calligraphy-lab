@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.32.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.32.1-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.32 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.32.1 β</span>
           </p>
         </div>
       </div>
@@ -1765,7 +1765,7 @@
 
     let harfBuzzModulePromise=null,harfBuzzFontData=null,harfBuzzFontName='',harfBuzzRuntime=null; // harfbuzzjs v1 API
     let lastHarfBuzzGlyphs=[],lastHarfBuzzText='',glyphReferenceVisible=true,glyphReferenceOpacity=.24,glyphReferenceFontUrl='',glyphReferenceFamily='';
-    let lastShapingZones=[],selectedShapingGlyphIndex=-1;
+    let lastShapingZones=[],selectedShapingGlyphIndex=-1,lastShapingLayout=null;
 
     async function getHarfBuzzModule(){
       if(!harfBuzzModulePromise)harfBuzzModulePromise=import('https://cdn.jsdelivr.net/npm/harfbuzzjs@1.6.2/dist/index.mjs');
@@ -1822,13 +1822,37 @@
       }catch(_){return null}
     }
 
-    function buildShapingGlyphZones(){
+    function prepareHiDPICanvas(c){
+      const rect=c.getBoundingClientRect(),W=Math.max(1,rect.width),H=Math.max(1,rect.height),dpr=Math.min(3,Math.max(1,window.devicePixelRatio||1));
+      const bw=Math.max(1,Math.round(W*dpr)),bh=Math.max(1,Math.round(H*dpr));
+      if(c.width!==bw||c.height!==bh){c.width=bw;c.height=bh}
+      const ctx=c.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);
+      return{ctx,W,H,dpr};
+    }
+
+    function computeNaturalShapingLayout(ctx,W,H,family){
+      const fam=family?('"'+family+'"'):'Amiri, serif';
+      let fontPx=clamp(W*.12,58,150);
+      ctx.font=fontPx+'px '+fam;
+      let naturalWidth=Math.max(1,ctx.measureText(lastHarfBuzzText||'').width);
+      const maxWidth=W*.86;
+      if(naturalWidth>maxWidth){
+        fontPx=Math.max(42,fontPx*(maxWidth/naturalWidth));
+        ctx.font=fontPx+'px '+fam;
+        naturalWidth=Math.max(1,ctx.measureText(lastHarfBuzzText||'').width);
+      }
+      const span=clamp(naturalWidth/W,.10,.86),left=(1-span)/2;
+      return{span,left,right:left+span,fontPx,fontRatio:fontPx/W,baseline:.72,naturalWidth};
+    }
+
+    function buildShapingGlyphZones(layout=lastShapingLayout){
       const glyphs=lastHarfBuzzGlyphs||[];if(!glyphs.length)return[];
       const advances=glyphs.map(g=>Math.max(1,Math.abs(Number(g.xAdvance)||0)));
-      const total=Math.max(1,advances.reduce((a,b)=>a+b,0)),span=.88,edge=.06,baseline=.72;
+      const total=Math.max(1,advances.reduce((a,b)=>a+b,0));
+      const span=clamp(Number(layout?.span)||.62,.10,.90),edge=clamp(Number(layout?.left)??((1-span)/2),0,1-span),baseline=.72;
       const firstCluster=Number(glyphs[0]?.cluster),lastCluster=Number(glyphs[glyphs.length-1]?.cluster);
       const visualLTR=!Number.isFinite(firstCluster)||!Number.isFinite(lastCluster)||firstCluster>=lastCluster;
-      let cursor=visualLTR?edge:1-edge;
+      let cursor=visualLTR?edge:edge+span;
       const verticalUnits=Math.max(1,...glyphs.flatMap(g=>{
         const e=g.extents;if(!e)return[0];
         return[Math.abs(Number(e.yBearing)||0),Math.abs((Number(e.yBearing)||0)+(Number(e.height)||0))];
@@ -1837,6 +1861,7 @@
         const w=span*advances[i]/total;
         let left,right;
         if(visualLTR){left=cursor;right=cursor+w;cursor=right}else{right=cursor;left=cursor-w;cursor=left}
+        const shift=(Number(g.xOffset)||0)/total*span;left+=shift;right+=shift;
         let top=.18,bottom=.82;
         const e=g.extents;
         if(e&&verticalUnits>1){
@@ -1846,7 +1871,8 @@
           top=clamp(Math.min(y1,y2),.08,.86);bottom=clamp(Math.max(y1,y2),.14,.90);
           if(bottom-top<.10){const c=(top+bottom)/2;top=clamp(c-.05,.08,.84);bottom=clamp(c+.05,.16,.92)}
         }
-        return{index:i,g,left:clamp(left,0,1),right:clamp(right,0,1),top,bottom,baseline,centerX:(left+right)/2,centerY:(top+bottom)/2};
+        left=clamp(left,0,1);right=clamp(right,0,1);
+        return{index:i,g,left,right,top,bottom,baseline,centerX:(left+right)/2,centerY:(top+bottom)/2};
       });
       lastShapingZones=zones;return zones;
     }
@@ -1884,22 +1910,26 @@
     async function renderGlyphReferenceModel(){
       const panel=document.getElementById('glyphReferencePanel'),c=document.getElementById('glyphReferenceCanvas'),sum=document.getElementById('glyphGeometrySummary');
       if(!panel||!c||!lastHarfBuzzGlyphs.length)return;
-      panel.classList.remove('hidden');const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
-      const zones=buildShapingGlyphZones(),baselineY=.72*c.height;
-      ctx.fillStyle='#ffffff';ctx.fillRect(0,0,c.width,c.height);
-      ctx.strokeStyle='rgba(2,132,199,.35)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(25,baselineY);ctx.lineTo(c.width-25,baselineY);ctx.stroke();
+      panel.classList.remove('hidden');
+      const {ctx,W,H}=prepareHiDPICanvas(c);ctx.clearRect(0,0,W,H);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+      const family=await ensureReferenceFontFace();
+      lastShapingLayout=computeNaturalShapingLayout(ctx,W,H,family);
+      const zones=buildShapingGlyphZones(lastShapingLayout),baselineY=lastShapingLayout.baseline*H;
+      ctx.strokeStyle='rgba(2,132,199,.35)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(20,baselineY);ctx.lineTo(W-20,baselineY);ctx.stroke();
       zones.forEach(z=>{
-        const x=z.left*c.width,y=z.top*c.height,w=(z.right-z.left)*c.width,h=(z.bottom-z.top)*c.height,sel=z.index===selectedShapingGlyphIndex;
-        ctx.fillStyle=sel?'rgba(124,58,237,.12)':'rgba(2,132,199,.05)';ctx.fillRect(x,y,w,h);
-        ctx.strokeStyle=sel?'rgba(124,58,237,.9)':'rgba(2,132,199,.35)';ctx.lineWidth=sel?3:1.5;ctx.setLineDash(sel?[]:[6,5]);ctx.strokeRect(x,y,w,h);ctx.setLineDash([]);
-        ctx.fillStyle=sel?'#6d28d9':'#0369a1';ctx.font='bold 12px sans-serif';ctx.textAlign='left';ctx.fillText('g'+(z.index+1)+' · c'+z.g.cluster,x+4,Math.max(14,y+14));
+        const x=z.left*W,y=z.top*H,w=(z.right-z.left)*W,h=(z.bottom-z.top)*H,sel=z.index===selectedShapingGlyphIndex;
+        ctx.fillStyle=sel?'rgba(124,58,237,.12)':'rgba(2,132,199,.045)';ctx.fillRect(x,y,w,h);
+        ctx.strokeStyle=sel?'rgba(124,58,237,.9)':'rgba(2,132,199,.35)';ctx.lineWidth=sel?2.5:1.25;ctx.setLineDash(sel?[]:[6,5]);ctx.strokeRect(x,y,w,h);ctx.setLineDash([]);
+        ctx.fillStyle=sel?'#6d28d9':'#0369a1';ctx.font='bold 11px sans-serif';ctx.textAlign='left';ctx.fillText('g'+(z.index+1)+' · c'+z.g.cluster,x+4,Math.max(13,y+13));
       });
-      if(glyphReferenceVisible){
-        const family=await ensureReferenceFontFace();
-        if(family){ctx.save();ctx.globalAlpha=glyphReferenceOpacity;ctx.fillStyle='#111827';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.direction='rtl';ctx.font='138px "'+family+'"';ctx.fillText(lastHarfBuzzText,c.width/2,baselineY,c.width-90);ctx.restore()}
+      if(glyphReferenceVisible&&family){
+        ctx.save();ctx.globalAlpha=glyphReferenceOpacity;ctx.fillStyle='#111827';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.direction='rtl';
+        ctx.font=lastShapingLayout.fontPx+'px "'+family+'"';
+        ctx.fillText(lastHarfBuzzText,W/2,baselineY);
+        ctx.restore();
       }
       c.onclick=(ev)=>{const rect=c.getBoundingClientRect(),nx=(ev.clientX-rect.left)/rect.width,ny=(ev.clientY-rect.top)/rect.height;const hit=zones.filter(z=>nx>=z.left&&nx<=z.right&&ny>=z.top-.08&&ny<=z.bottom+.08).sort((a,b)=>Math.abs(nx-a.centerX)-Math.abs(nx-b.centerX))[0]||zones.reduce((a,b)=>Math.abs(nx-a.centerX)<Math.abs(nx-b.centerX)?a:b);if(hit)selectShapingGlyph(hit.index)};
-      if(sum)sum.textContent='الإطارات تستخدم HarfBuzz advances، ومع توفر glyph extents تُستخدم الحدود الرأسية الحقيقية تقريبياً حول خط الأساس. انقر على أي إطار لتحديده.';
+      if(sum)sum.textContent='تمت معايرة الإطارات على العرض الطبيعي للكلمة نفسها؛ لا يوجد تمديد أفقي. HarfBuzz advances/xOffset يحددان موضع كل Glyph داخل العرض الحقيقي للنص.';
       renderShapingGlyphCards();
     }
 
@@ -1908,7 +1938,7 @@
       if(!glyphs?.length){box.classList.add('hidden');lastHarfBuzzGlyphs=[];lastShapingZones=[];return}
       box.innerHTML='<div class="text-[9px] font-black text-violet-950 mb-1">HarfBuzz OpenType output — glyph IDs / clusters / advances / offsets</div><div class="flex gap-1.5 min-w-max" dir="ltr">'+glyphs.map(g=>'<div class="w-28 rounded-xl border border-violet-100 bg-white p-2 text-[8px]"><div class="font-black text-violet-900">gid '+g.glyphId+(g.name?' · '+g.name:'')+'</div><div>cluster '+g.cluster+'</div><div>adv '+g.xAdvance+', '+g.yAdvance+'</div><div>off '+g.xOffset+', '+g.yOffset+'</div></div>').join('')+'</div>';
       box.classList.remove('hidden');if(status)status.textContent='HarfBuzz shaping فعلي ✓ • '+harfBuzzFontName+' • '+glyphs.length+' glyphs';
-      lastHarfBuzzGlyphs=glyphs.map(g=>({...g}));lastHarfBuzzText=String(text||document.getElementById('shapingInspectorInput')?.value||'');
+      lastHarfBuzzGlyphs=glyphs.map(g=>({...g}));lastHarfBuzzText=String(text||document.getElementById('shapingInspectorInput')?.value||'');lastShapingLayout=null;lastShapingZones=[];shapingLastMappings=[];
       selectedShapingGlyphIndex=Math.min(Math.max(selectedShapingGlyphIndex,0),glyphs.length-1);
       if(selectedShapingGlyphIndex<0)selectedShapingGlyphIndex=0;
       renderGlyphReferenceModel();renderShapingPracticeCanvas();
@@ -5145,7 +5175,7 @@
       if(show){window.scrollTo(0,0);initShapingPracticeCanvas();runShapingAnalysis()}else window.scrollTo(0,0);
     }
 
-    let shapingPracticeStrokes=[],shapingPracticeActive=null,shapingPracticeInitialized=false,shapingLastMappings=[];
+    let shapingPracticeStrokes=[],shapingPracticeActive=null,shapingPracticeInitialized=false,shapingResizeBound=false,shapingLastMappings=[];
 
     function initShapingPracticeCanvas(){
       const c=document.getElementById('shapingPracticeCanvas');if(!c)return;
@@ -5157,11 +5187,12 @@
         c.addEventListener('pointerup',finish);c.addEventListener('pointercancel',finish);c.addEventListener('pointerleave',e=>{if(e.buttons===0&&shapingPracticeActive)finish(e)});
         shapingPracticeInitialized=true;
       }
+      if(!shapingResizeBound){let rt=null;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{renderGlyphReferenceModel();renderShapingPracticeCanvas()},120)});shapingResizeBound=true}
       renderShapingPracticeCanvas();
     }
 
     async function renderShapingPracticeCanvas(){
-      const c=document.getElementById('shapingPracticeCanvas');if(!c)return;const ctx=c.getContext('2d'),W=c.width,H=c.height,baseline=.72*H;
+      const c=document.getElementById('shapingPracticeCanvas');if(!c)return;const {ctx,W,H}=prepareHiDPICanvas(c),baseline=.72*H;
       ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
       ctx.strokeStyle='rgba(14,165,233,.08)';ctx.lineWidth=1;
       for(let x=0;x<W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
@@ -5174,7 +5205,13 @@
 
       if(glyphReferenceVisible&&lastHarfBuzzText&&harfBuzzFontData){
         const family=await ensureReferenceFontFace();
-        if(family){ctx.save();ctx.globalAlpha=Math.min(.16,glyphReferenceOpacity);ctx.fillStyle='#6d28d9';ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.font='165px "'+family+'"';ctx.fillText(lastHarfBuzzText,W/2,baseline,W-100);ctx.restore()}
+        if(family){
+          if(!lastShapingLayout)lastShapingLayout=computeNaturalShapingLayout(ctx,W,H,family);
+          ctx.save();ctx.globalAlpha=Math.min(.16,glyphReferenceOpacity);ctx.fillStyle='#6d28d9';ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+          ctx.font=(lastShapingLayout.fontRatio*W)+'px "'+family+'"';
+          ctx.fillText(lastHarfBuzzText,W/2,baseline);
+          ctx.restore();
+        }
       }
 
       const all=[...shapingPracticeStrokes,...(shapingPracticeActive?[shapingPracticeActive]:[])];
