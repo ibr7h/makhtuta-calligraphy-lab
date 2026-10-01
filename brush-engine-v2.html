@@ -5558,23 +5558,29 @@
       }
 
       if(shapingLastMappings.length){
-        shapingLastMappings.forEach((m,i)=>{
+        shapingLastMappings.forEach((m)=>{
           if(contourHeatmapVisible&&m.contour?.samples?.length){
             const selected=m.zone?.index===selectedShapingGlyphIndex;
-            m.contour.samples.forEach((sp,si)=>{
+            m.contour.samples.forEach((sp)=>{
               const d=Number(sp.distance)||0;
-              const fill=sp.inside?'rgba(5,150,105,.92)':d<=contourTolerancePx?'rgba(245,158,11,.92)':'rgba(220,38,38,.92)';
-              ctx.fillStyle=fill;ctx.beginPath();ctx.arc(sp.nx*W,sp.ny*H,selected?2.8:2.1,0,Math.PI*2);ctx.fill();
+              const fill=sp.inside?'rgba(5,150,105,.74)':d<=contourTolerancePx?'rgba(245,158,11,.82)':'rgba(220,38,38,.86)';
+              ctx.fillStyle=fill;ctx.beginPath();ctx.arc(sp.nx*W,sp.ny*H,selected?2.3:1.6,0,Math.PI*2);ctx.fill();
             });
-            if(selected){
-              const worst=[...m.contour.samples].filter(sp=>!sp.inside).sort((a,b)=>b.distance-a.distance).slice(0,5);
-              worst.forEach(sp=>{ctx.strokeStyle=sp.distance<=contourTolerancePx?'rgba(245,158,11,.55)':'rgba(220,38,38,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(sp.nx*W,sp.ny*H);ctx.lineTo(sp.nearestNx*W,sp.nearestNy*H);ctx.stroke()});
-            }
           }
-          const b=m.bounds,z=m.zone,good=(m.contour?.score??m.score)>=.7;ctx.save();
-          ctx.strokeStyle=good?'rgba(5,150,105,.9)':'rgba(245,158,11,.9)';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.strokeRect(b.left*W,b.top*H,(b.right-b.left)*W,(b.bottom-b.top)*H);ctx.setLineDash([]);
-          const sx=(b.left+b.right)/2*W,sy=(b.top+b.bottom)/2*H,gx=z.centerX*W,gy=z.centerY*H;ctx.strokeStyle=good?'rgba(5,150,105,.45)':'rgba(245,158,11,.45)';ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(gx,gy);ctx.stroke();
-          ctx.fillStyle=good?'#047857':'#b45309';ctx.font='bold 11px sans-serif';ctx.fillText('g'+(z.index+1)+' '+Math.round(m.score*100)+'%',b.right*W,Math.max(12,b.top*H-4));ctx.restore();
+        });
+        const byGlyph=new Map();
+        shapingLastMappings.forEach(m=>{const a=byGlyph.get(m.zone.index)||[];a.push(m);byGlyph.set(m.zone.index,a)});
+        byGlyph.forEach((arr,glyphIndex)=>{
+          const z=arr[0]?.zone,b=unionStrokeBounds(arr);if(!z||!b)return;
+          const ink=lastInkFootprintByGlyph.get(glyphIndex),shapeScore=ink?.score??0,selected=glyphIndex===selectedShapingGlyphIndex;
+          const good=shapeScore>=.70;
+          ctx.save();
+          ctx.strokeStyle=selected?(good?'rgba(5,150,105,.9)':'rgba(220,38,38,.85)'):(good?'rgba(5,150,105,.45)':'rgba(245,158,11,.48)');
+          ctx.lineWidth=selected?2:1.2;ctx.setLineDash(selected?[6,4]:[4,5]);
+          ctx.strokeRect(b.left*W,b.top*H,(b.right-b.left)*W,(b.bottom-b.top)*H);ctx.setLineDash([]);
+          ctx.fillStyle=good?'#047857':shapeScore<.35?'#be123c':'#b45309';ctx.font='bold 11px sans-serif';ctx.textAlign='left';
+          ctx.fillText('g'+(z.index+1)+' • شكل '+Math.round(shapeScore*100)+'%',b.left*W,Math.max(14,b.top*H-5));
+          ctx.restore();
         });
       }
     }
