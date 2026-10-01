@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-31-beta-shaping-lab-stroke-map-2026-10-01-7';
+const CACHE_VERSION = 'makhtuta-pwa-v6-31-1-beta-full-shaping-page-2026-10-01-8';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
