@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-34-1-outline-engine-2026-10-01-13';
+const CACHE_VERSION = 'makhtuta-pwa-v6-34-2-outline-distance-matching-2026-10-01-14';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
