@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-29-1-beta-harfbuzz-v1-fix-2026-10-01-5';
+const CACHE_VERSION = 'makhtuta-pwa-v6-30-beta-glyph-reference-2026-10-01-6';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
