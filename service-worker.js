@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-30-beta-glyph-reference-2026-10-01-6';
+const CACHE_VERSION = 'makhtuta-pwa-v6-31-beta-shaping-lab-stroke-map-2026-10-01-7';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
