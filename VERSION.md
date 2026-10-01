@@ -1,3 +1,41 @@
+# V6.35.4 β — Brush Motion Engine
+
+Reference snapshot remains frozen:
+- Branch: `reference-v6.34.3.4`
+- Commit: `ed65ea62735bbf68821f16b1097a1d8be93c5f38`
+
+New in V6.35.4:
+- Implemented the missing AliQaseef-style motion layer separately from nib geometry.
+- Added a real trailing weighted Moving Average filter for calligraphy input.
+- Added Uniform Path Resampling so final path density is much less dependent on pointer/coalesced-event rate.
+- AliQaseef Brush.archive values now map to the effective engine:
+  - Plot smoothing = 0.80,
+  - Moving average = 0.30,
+  - Spacing = 1%,
+  - Uniform resampling = ON.
+- Added Brush Motion Engine controls:
+  - Moving Average slider,
+  - Uniform Path Resampling toggle,
+  - Raw / Balanced / AliQaseef A/B motion profiles.
+- Existing non-Ali presets stay conservative unless the user enables the new motion processing.
+- Font-derived brushes now use:
+  - inferred nib geometry,
+  - smoothing 80%,
+  - moving average 30%,
+  - spacing 1%,
+  - uniform resampling ON.
+- Motion settings are persisted through named brushes, app settings, calibration snapshots and personal presets.
+- Old saved font-derived presets are migrated to the new motion baseline.
+- Font-derived analysis storage was compacted to avoid persisting large per-Glyph ridge arrays in localStorage.
+- Brush preview now reports smoothing / moving average / resampling state.
+- Regression tests:
+  - Moving Average reduces synthetic jitter.
+  - Uniform resampling produces exact constant spacing on a straight path.
+  - Sparse (5-event) and dense (50-event) input of the same path produce the same 10 resampled points; maximum positional difference ≈ 1.1e-14 px.
+  - All V6.35 nib/calibration tests still pass.
+  - All frozen V6.34 ink/scoring regressions still pass.
+- App/PWA version bumped to V6.35.4 β.
+
 # V6.35.3 β — Real Font Calibration
 
 Reference snapshot remains frozen:
