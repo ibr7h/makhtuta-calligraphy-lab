@@ -1,3 +1,15 @@
+# V6.34.1 β — Outline Engine
+
+- Added an Outline Engine on top of HarfBuzz `glyphToPath()`.
+- Parses SVG glyph commands M/L/Q/C/Z and samples quadratic/cubic Bézier contours into geometry points.
+- Transforms sampled outline points into the exact same normalized Canvas coordinate system used by the shaped word and handwriting canvas.
+- Added selectable Outline visualization with contour lines and sampled points for the active Glyph.
+- Added an adjustable sampling-density control.
+- Added per-Glyph Outline diagnostics: contour count, sampled point count, and approximate contour length.
+- The same selected Glyph outline is shown in the handwriting canvas, preparing the pipeline for point-to-contour distance scoring.
+- V6.34.1 intentionally does not assign a contour-quality score yet; that is reserved for V6.34.2 Distance Matching.
+- App/PWA version bumped to V6.34.1 β.
+
 # V6.33 β — Segment-level Glyph Mapping
 
 - Fixed a structural limitation in the 2D matcher: one physical handwriting stroke can span several connected Arabic glyphs.
