@@ -1,3 +1,14 @@
+# V6.34.3.2 β — Ink Footprint Calibration
+
+- Corrected an important scoring flaw exposed by an oversized filled handwriting blob receiving an unrealistically high shape score.
+- Ink matching now reports strict reference coverage, strict extra ink, and strict IoU separately from tolerant edge metrics.
+- The primary shape score is now dominated by strict IoU / strict ink precision, while tolerance only softens edge noise.
+- Added a size-balance term so oversized or undersized student ink is penalized even if it covers the reference completely.
+- Educational feedback now flags grossly oversized ink and excessive ink outside the reference.
+- A 100% reference coverage result can no longer mask poor shape quality when the student ink extends far beyond the Glyph.
+- The default shaping-lab pen width was restored from 15 px to 7 px; evaluation and visible lab stroke still share the same width.
+- App/PWA version bumped to V6.34.3.2 β.
+
 # V6.34.3.1 β — Ink Footprint Matching
 
 - Replaced the misleading centerline-vs-filled-Glyph comparison with rasterized ink-footprint comparison.
