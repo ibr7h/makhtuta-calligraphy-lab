@@ -1849,7 +1849,7 @@
       const glyphs=lastHarfBuzzGlyphs||[];if(!glyphs.length)return[];
       const advances=glyphs.map(g=>Math.max(1,Math.abs(Number(g.xAdvance)||0)));
       const total=Math.max(1,advances.reduce((a,b)=>a+b,0));
-      const span=clamp(Number(layout?.span)||.62,.10,.90),edge=clamp(Number(layout?.left)??((1-span)/2),0,1-span),baseline=.72;
+      const span=clamp(Number(layout?.span)||.62,.10,.90),rawLeft=Number(layout?.left),edge=clamp(Number.isFinite(rawLeft)?rawLeft:((1-span)/2),0,1-span),baseline=.72;
       const firstCluster=Number(glyphs[0]?.cluster),lastCluster=Number(glyphs[glyphs.length-1]?.cluster);
       const visualLTR=!Number.isFinite(firstCluster)||!Number.isFinite(lastCluster)||firstCluster>=lastCluster;
       let cursor=visualLTR?edge:edge+span;
