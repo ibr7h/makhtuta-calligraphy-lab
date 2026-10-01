@@ -1,3 +1,37 @@
+# V6.35.3 β — Real Font Calibration
+
+Reference snapshot remains frozen:
+- Branch: `reference-v6.34.3.4`
+- Commit: `ed65ea62735bbf68821f16b1097a1d8be93c5f38`
+
+New in V6.35.3:
+- Added per-Glyph flat-nib fitting instead of trusting one aggregate font estimate.
+- Added robust calibration with median/MAD bands for:
+  - per-Glyph nib angle,
+  - aspect ratio,
+  - model fitting error.
+- Automatically rejects outlier Glyphs before deriving the final brush.
+- Added structural Glyph groups:
+  - vertical,
+  - teeth/horizontal,
+  - bowls/loops,
+  - descenders/non-joining,
+  - other.
+- Final calibration balances accepted Glyphs across structural groups so one family of shapes cannot dominate the inferred brush.
+- Added group-level profiles and group-angle agreement.
+- Added per-Glyph diagnostics showing accepted/rejected status, individual angle, aspect, fit error and ridge sample count.
+- Final Brush Preset is derived only from the calibrated/balanced Glyph set.
+- Overall confidence now combines model confidence with acceptance ratio and cross-group agreement.
+- Deterministic regression test:
+  - 16 in-family synthetic Glyphs,
+  - 3 deliberate outliers,
+  - all 3 outliers rejected,
+  - calibrated angle ≈45.8°,
+  - calibrated aspect ≈0.181.
+- All V6.35 analyzer tests and frozen V6.34 ink-evaluation regressions remain passing.
+- No TTF/OTF files are stored in this repository, so live real-font validation continues with the user's uploaded font in the analyzer.
+- App/PWA version bumped to V6.35.3 β.
+
 # V6.35.2 β — Nib Model Fitting
 
 Reference snapshot remains frozen:
