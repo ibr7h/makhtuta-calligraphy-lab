@@ -6891,7 +6891,7 @@
       const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
       if(!r)return;
       const before=r.fullBefore?.score||0,after=r.fullAfter?.score||0,gain=after-before,p0=r.initialProfile,p1=r.optimizedProfile;
-      set('reconAutoBefore',Math.round(before*100)+'%');set('reconAutoAfter',Math.round(after*100)+'%');set('reconAutoGain',(gain>=0?'+':'')+Math.round(gain*100)+'');
+      set('reconAutoBefore',Math.round(before*100)+'%');set('reconAutoAfter',Math.round(after*100)+'%');set('reconAutoGain',(gain>=0?'+':'')+Math.round(gain*100)+' نقطة');
       const params=document.getElementById('reconAutoParams');
       if(params)params.innerHTML='<b>Angle</b> '+Math.round(p0.angle)+'° → <b>'+Math.round(p1.angle)+'°</b> • <b>Aspect</b> '+Number(p0.aspect).toFixed(2)+' → <b>'+p1.aspect.toFixed(2)+'</b> • <b>Nib</b> '+Math.round(p0.fitMajorUnits||0)+' → <b>'+Math.round(p1.fitMajorUnits||0)+'</b> units.';
       const verdict=document.getElementById('reconAutoModelVerdict'),badge=document.getElementById('reconAutoCalBadge');
@@ -7118,7 +7118,10 @@
         renderFontBrushAnalysis(profile);
         const reconstruction=validateBrushReconstruction(profile,calibration);
         renderBrushReconstructionValidation(reconstruction);
-        if(status)status.textContent='اكتملت المعايرة ✓ • قبل '+calibration.accepted.length+'/'+calibration.all.length+' Glyphs • استبعد '+calibration.rejected.length+' • اتفاق المجموعات '+Math.round(calibration.groupAgreement*100)+'% • Reconstruction '+(reconstruction?Math.round(reconstruction.score*100)+'%':'—')+' • الثقة النهائية '+Math.round(profile.confidence*100)+'%.';
+        if(status)status.textContent='اكتمل التحليل الأولي ✓ • Reconstruction '+(reconstruction?Math.round(reconstruction.score*100)+'%':'—')+' • يبدأ الآن Reconstruction-Guided Auto Calibration…';
+        await new Promise(r=>setTimeout(r,25));
+        const autoCal=await runReconstructionGuidedAutoCalibration(true);
+        if(status&&autoCal)status.textContent='اكتمل التحليل والمعايرة ✓ • Reconstruction '+Math.round((autoCal.fullBefore?.score||0)*100)+'% → '+Math.round((autoCal.fullAfter?.score||0)*100)+'% • '+autoCal.verdict.label+' • اضغط «اعتماد أفضل قصبة» لتطبيق القيم المحسنة.';
       }catch(err){
         lastFontBrushAnalysis=null;if(status)status.textContent='تعذر تحليل الفرشاة: '+(err?.message||err);
       }
@@ -7143,6 +7146,22 @@
         widthVariationPct:a.widthVariationPct,variationLabel:a.variationLabel,terminalStyle:a.terminalStyle,roundness:a.roundness,
         confidence:a.confidence,fitAngle:a.fitAngle,fitAspect:a.fitAspect,fitError:a.fitError,fitSampleCount:a.fitSampleCount,angleAgreement:a.angleAgreement,
         fitMajorUnits:a.fitMajorUnits,fitUnitsError:a.fitUnitsError,fitUnitsConfidence:a.fitUnitsConfidence,
+        reconstructionAutoCalibration:a.reconstructionAutoCalibration?{
+          verdict:a.reconstructionAutoCalibration.verdict,
+          initialProfile:a.reconstructionAutoCalibration.initialProfile,
+          optimizedProfile:{
+            angle:a.reconstructionAutoCalibration.optimizedProfile?.angle,
+            aspect:a.reconstructionAutoCalibration.optimizedProfile?.aspect,
+            fitMajorUnits:a.reconstructionAutoCalibration.optimizedProfile?.fitMajorUnits,
+            brushSize:a.reconstructionAutoCalibration.optimizedProfile?.brushSize
+          },
+          beforeScore:a.reconstructionAutoCalibration.fullBefore?.score,
+          afterScore:a.reconstructionAutoCalibration.fullAfter?.score,
+          groups:(a.reconstructionAutoCalibration.groups||[]).map(g=>({
+            key:g.key,label:g.label,count:g.count,gain:g.gain,
+            angle:g.best?.profile?.angle,aspect:g.best?.profile?.aspect,fitMajorUnits:g.best?.profile?.fitMajorUnits
+          }))
+        }:null,
         calibration:a.calibration?{
           acceptanceRatio:a.calibration.acceptanceRatio,groupAgreement:a.calibration.groupAgreement,confidence:a.calibration.confidence,
           acceptedCount:a.calibration.accepted?.length||0,rejectedCount:a.calibration.rejected?.length||0,
