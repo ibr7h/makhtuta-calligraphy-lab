@@ -1,3 +1,13 @@
+# V6.34.3.3 β — Gross-Shape Validation
+
+- Added hard validation gates for high reference coverage with excessive extra ink / low IoU.
+- Large overpainted shapes can no longer receive a moderate/high shape score merely because they cover most of the reference.
+- The position score is now explicitly labeled as a diagnostic-only indicator.
+- Educational feedback now warns when coverage is high but the actual ink shape is not close to the glyph.
+- Per-segment debug boxes/labels were replaced by one aggregate geometry annotation per Glyph to reduce visual clutter.
+- Educational per-Glyph percentages now use the same primary shape score shown in the main result card.
+- App/PWA version bumped to V6.34.3.3 β.
+
 # V6.34.3.2 β — Ink Footprint Calibration
 
 - Corrected an important scoring flaw exposed by an oversized filled handwriting blob receiving an unrealistically high shape score.
