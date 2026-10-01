@@ -5594,6 +5594,11 @@
       const cv=document.getElementById('contourMatchValue'),cb=document.getElementById('contourMatchBar'),ci=document.getElementById('contourInsideValue'),cc=document.getElementById('contourCoverageValue'),ce=document.getElementById('contourErrorValue');
       if(status)status.textContent='اكتب المحاولة في المساحة ثم اضغط «شاهد المطابقة».';
       if(grid)grid.innerHTML='';if(val)val.textContent='—';if(bar)bar.style.width='0%';if(cv)cv.textContent='—';if(cb)cb.style.width='0%';if(ci)ci.textContent='—';if(cc)cc.textContent='—';if(ce)ce.textContent='—';
+      const vb=document.getElementById('inkVerdictBadge'),vt=document.getElementById('inkVerdictText'),cl=document.getElementById('coverageMetricLabel');
+      if(vb){vb.className='px-2 py-1 rounded-full border border-stone-200 bg-stone-50 text-[9px] font-black text-stone-600';vb.textContent='بانتظار المحاولة'}
+      if(vt)vt.textContent='هذه هي النتيجة الأساسية. المؤشرات أدناه للتشخيص فقط.';
+      if(cl)cl.textContent='تغطية المرجع';
+      setMetricCardTone(document.getElementById('coverageMetricCard'),'neutral');setMetricCardTone(document.getElementById('iouMetricCard'),'neutral');setMetricCardTone(document.getElementById('extraInkMetricCard'),'neutral');
       lastEducationalFeedback=[];const eh=document.getElementById('educationalFeedbackHeadline'),el=document.getElementById('educationalFeedbackList');if(eh)eh.textContent='اكتب المحاولة ثم اضغط «شاهد المطابقة» للحصول على ملاحظات لكل حرف.';if(el)el.innerHTML='';
       if(fb)fb.innerHTML='<div class="rounded-xl bg-stone-50 border border-stone-100 p-2">ستظهر هنا ملاحظات الموضع، الحدود، والمسافة إلى الـOutline بعد المطابقة.</div>';
       renderShapingPracticeCanvas();
@@ -6003,11 +6008,12 @@
       }).join('');
 
       const avg=maps.length?maps.reduce((n,m)=>n+m.score,0)/maps.length:0,avgBaseline=maps.length?maps.reduce((n,m)=>n+m.parts.baseline,0)/maps.length:0;
-      const activeInk=[...lastInkFootprintByGlyph.values()].filter(x=>x.studentArea>0),inkWeight=activeInk.reduce((n,x)=>n+x.studentArea,0);
-      const contourAvg=inkWeight?activeInk.reduce((n,x)=>n+x.score*x.studentArea,0)/inkWeight:0;
-      const insideAvg=inkWeight?activeInk.reduce((n,x)=>n+x.strictCoverage*x.studentArea,0)/inkWeight:0;
-      const coverageAvg=inkWeight?activeInk.reduce((n,x)=>n+x.iou*x.studentArea,0)/inkWeight:0;
-      const meanOutside=inkWeight?activeInk.reduce((n,x)=>n+x.extraRatio*x.studentArea,0)/inkWeight:0;
+      const activeInk=[...lastInkFootprintByGlyph.values()].filter(x=>x.studentArea>0);
+      const refWeight=activeInk.reduce((n,x)=>n+(x.refArea||0),0),studentWeight=activeInk.reduce((n,x)=>n+(x.studentArea||0),0);
+      const contourAvg=refWeight?activeInk.reduce((n,x)=>n+x.score*(x.refArea||0),0)/refWeight:0;
+      const insideAvg=refWeight?activeInk.reduce((n,x)=>n+x.strictCoverage*(x.refArea||0),0)/refWeight:0;
+      const coverageAvg=refWeight?activeInk.reduce((n,x)=>n+x.iou*(x.refArea||0),0)/refWeight:0;
+      const meanOutside=studentWeight?activeInk.reduce((n,x)=>n+x.extraRatio*(x.studentArea||0),0)/studentWeight:0;
       const pct=Math.round(avg*100),contourPct=Math.round(contourAvg*100),val=document.getElementById('shapingConfidenceValue'),bar=document.getElementById('shapingConfidenceBar'),fb=document.getElementById('shapingFeedbackList');
       const cv=document.getElementById('contourMatchValue'),cb=document.getElementById('contourMatchBar'),ci=document.getElementById('contourInsideValue'),cc=document.getElementById('contourCoverageValue'),ce=document.getElementById('contourErrorValue');
       if(val)val.textContent=pct+'%';if(bar)bar.style.width=pct+'%';
