@@ -1,3 +1,27 @@
+# V6.35.2 β — Nib Model Fitting
+
+Reference snapshot remains frozen:
+- Branch: `reference-v6.34.3.4`
+- Commit: `ed65ea62735bbf68821f16b1097a1d8be93c5f38`
+
+New in V6.35.2:
+- Added medial-ridge extraction from rasterized Glyph ink using the interior distance transform.
+- Estimates local stroke-centerline direction from ridge neighborhoods with covariance / principal-axis analysis.
+- Fits a flat-nib model across many ridge samples:
+  - candidate nib angle,
+  - nib aspect ratio,
+  - major nib width,
+  - robust median/p75 relative fitting error.
+- Combines two independent angle signals:
+  1. stable contour-direction evidence,
+  2. medial-ridge flat-nib model fit.
+- Added angle-agreement and Nib Model error diagnostics to the analyzer UI.
+- Brush size and aspect are now blended with the fitted nib model when model confidence is sufficient.
+- Low-confidence model fits fall back toward the contour/distance-transform estimate rather than overriding it.
+- Added deterministic synthetic regression tests for a known 48° / 0.18 aspect / 0.145 major-ratio nib model.
+- All analyzer regression tests pass.
+- App/PWA version bumped to V6.35.2 β.
+
 # V6.35.1 β — Font → Brush Analyzer
 
 Reference snapshot preserved before this phase:
