@@ -835,6 +835,7 @@
               <button onclick="applyBrushPreset('thuluth')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">ثلث عريض</button>
               <button onclick="applyBrushPreset('kufi')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">كوفي هندسي</button>
               <button onclick="applyBrushPreset('soft')" class="brush-preset px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold hover:bg-amber-50">قلم ناعم</button>
+              <button id="fontDerivedPresetButton" onclick="applyStoredFontDerivedBrushPreset()" class="hidden brush-preset px-3 py-2 rounded-xl bg-amber-900 text-white border border-amber-950 text-xs font-bold hover:bg-amber-950">مشتقة من الخط</button>
             </div>
 
             <div class="mt-3 pt-3 border-t border-amber-200">
@@ -3934,6 +3935,8 @@
       ali_diwani: { tool:'calligraphy', size:8.1856,  angle:86.6242, roundness:100, nibThickness:5.6586, nibShape:'ellipse', spacing:1, smoothing:80, opacity:100, pressure:false, pressureSensitivity:0,  minWidth:100, curve:'linear', rotation:'fixed', twist:0, stabilizer:false, stabilizerRadius:4, stabilizerFriction:30, descenderFlip:false, source:'AliQaseef/Diwani', archive:{paintSize:0.0818564743,shapeAngle:-1.5118772984,shapeRoundness:0.0565863922,pressureSize:0,plotSmoothing:0.8,movingAverage:0.3,minSize:0.0068562846,wetEdges:0.0020295065} }
     };
 
+    setTimeout(()=>{try{hydrateStoredFontDerivedBrushPreset()}catch(_){}},0);
+
     function isAliPresetKey(key) {
       return typeof key === 'string' && key.startsWith('ali_') && !!BRUSH_PRESETS[key]?.archive;
     }
@@ -6330,8 +6333,23 @@
       const a=lastFontBrushAnalysis,status=document.getElementById('fontBrushAnalyzerStatus');if(!a){if(status)status.textContent='حلّل الخط أولًا.';return}
       const preset=derivedBrushPresetFromAnalysis(a);BRUSH_PRESETS.font_derived=preset;
       try{localStorage.setItem(FONT_DERIVED_BRUSH_STORAGE_KEY,JSON.stringify({analysis:a,preset,savedAt:new Date().toISOString()}))}catch(_){}
-      applyBrushPreset('font_derived');
+      BRUSH_PRESETS.font_derived=preset;applyBrushPreset('font_derived');
+      const storedBtn=document.getElementById('fontDerivedPresetButton');if(storedBtn){storedBtn.classList.remove('hidden');storedBtn.textContent='مشتقة من '+(a.fontName||'الخط')}
       if(status)status.textContent='تم إنشاء وتطبيق Brush Preset مشتق من '+(a.fontName||'الخط')+' ✓ • Angle '+Math.round(a.angle)+'° • Size '+a.brushSize.toFixed(1)+' • Aspect '+a.aspect.toFixed(2)+'.';
+    }
+
+    function hydrateStoredFontDerivedBrushPreset(){
+      try{
+        const saved=JSON.parse(localStorage.getItem(FONT_DERIVED_BRUSH_STORAGE_KEY)||'null');if(!saved?.preset)return false;
+        BRUSH_PRESETS.font_derived=saved.preset;
+        const btn=document.getElementById('fontDerivedPresetButton');if(btn){btn.classList.remove('hidden');btn.textContent='مشتقة من '+(saved.analysis?.fontName||'الخط')}
+        return true;
+      }catch(_){return false}
+    }
+
+    function applyStoredFontDerivedBrushPreset(){
+      if(!BRUSH_PRESETS.font_derived&&!hydrateStoredFontDerivedBrushPreset())return;
+      applyBrushPreset('font_derived');
     }
 
     function runFontBrushAnalyzerSelfTests(){
