@@ -1766,6 +1766,115 @@
       };
     }
 
+    function resetQalamMotionEngine(seed=null){
+      qalamMotionBuffer=seed?[seed]:[];
+      qalamMotionPrevPoint=seed||null;
+      qalamResampleState=seed?{lastSource:seed,lastOutput:seed,distanceSinceLast:0}:null;
+    }
+
+    function weightedMotionAverage(buffer,strength){
+      const a=(buffer||[]).filter(Boolean);if(!a.length)return null;
+      const k=clamp(Number(strength)||0,0,.95),n=a.length;
+      let sw=0,nx=0,ny=0,pressure=0,twist=0,tiltX=0,tiltY=0;
+      for(let i=0;i<n;i++){
+        const w=1+i*(.35+1.65*(1-k));sw+=w;
+        const p=a[i];nx+=(Number(p.nx)||0)*w;ny+=(Number(p.ny)||0)*w;
+        pressure+=(Number(p.pressure??.5))*w;twist+=(Number(p.twist)||0)*w;
+        tiltX+=(Number(p.tiltX)||0)*w;tiltY+=(Number(p.tiltY)||0)*w;
+      }
+      return{nx:nx/sw,ny:ny/sw,pressure:pressure/sw,twist:twist/sw,tiltX:tiltX/sw,tiltY:tiltY/sw};
+    }
+
+    function applyQalamMovingAverage(point,strength=qalamMovingAverage){
+      const k=clamp(Number(strength)||0,0,.70);if(k<=.001)return point;
+      qalamMotionBuffer.push(point);
+      const windowSize=clamp(Math.round(2+k*11),2,10);
+      while(qalamMotionBuffer.length>windowSize)qalamMotionBuffer.shift();
+      const avg=weightedMotionAverage(qalamMotionBuffer,k);if(!avg)return point;
+      const blend=clamp(k*.92,0,.72);
+      return{
+        ...point,
+        nx:point.nx*(1-blend)+avg.nx*blend,
+        ny:point.ny*(1-blend)+avg.ny*blend,
+        pressure:(point.pressure??.5)*(1-blend*.55)+avg.pressure*(blend*.55),
+        twist:(point.twist??0)*(1-blend*.40)+avg.twist*(blend*.40),
+        tiltX:(point.tiltX??0)*(1-blend*.35)+avg.tiltX*(blend*.35),
+        tiltY:(point.tiltY??0)*(1-blend*.35)+avg.tiltY*(blend*.35)
+      };
+    }
+
+    function interpolateMotionPoint(a,b,t){
+      const lerp=(x,y)=>Number(x??0)+(Number(y??0)-Number(x??0))*t;
+      return{
+        ...b,
+        nx:lerp(a.nx,b.nx),ny:lerp(a.ny,b.ny),
+        rawNx:lerp(a.rawNx??a.nx,b.rawNx??b.nx),rawNy:lerp(a.rawNy??a.ny,b.rawNy??b.ny),
+        pressure:lerp(a.pressure??.5,b.pressure??.5),tiltX:lerp(a.tiltX,b.tiltX),tiltY:lerp(a.tiltY,b.tiltY),
+        twist:lerp(a.twist,b.twist),t:lerp(a.t,b.t),pointerType:b.pointerType||a.pointerType||'unknown'
+      };
+    }
+
+    function motionResampleStepPx(stroke){
+      const major=Math.max(1,(stroke?.sizeNorm||0)*Math.min(canvasCssWidth,canvasCssHeight));
+      const spacing=clamp(Number(stroke?.spacing??brushSpacing),.01,.30);
+      return clamp(major*(.05+spacing*.45),.75,2.4);
+    }
+
+    function resampleMotionSegment(state,point,stepPx,W,H,forceFinal=false){
+      if(!state?.lastSource)return{state:{lastSource:point,lastOutput:point,distanceSinceLast:0},points:[point]};
+      const A=state.lastSource,B=point,dx=(B.nx-A.nx)*W,dy=(B.ny-A.ny)*H,len=Math.hypot(dx,dy),out=[];
+      if(len>1e-6){
+        let travelled=0,need=Math.max(.01,stepPx-state.distanceSinceLast);
+        while(len-travelled>=need-1e-7&&out.length<600){
+          travelled+=need;
+          const t=clamp(travelled/len,0,1),p=interpolateMotionPoint(A,B,t);
+          out.push(p);state.lastOutput=p;state.distanceSinceLast=0;need=stepPx;
+        }
+        state.distanceSinceLast+=Math.max(0,len-travelled);
+      }
+      state.lastSource=B;
+      if(forceFinal){
+        const last=out[out.length-1]||state.lastOutput||A;
+        const endDist=Math.hypot((B.nx-last.nx)*W,(B.ny-last.ny)*H);
+        if(endDist>.18){out.push(B);state.lastOutput=B}
+        state.distanceSinceLast=0;
+      }
+      return{state,points:out};
+    }
+
+    function resampleQalamMotionPoint(point,stroke,forceFinal=false){
+      if(!stroke?.uniformResampling)return[point];
+      if(!qalamResampleState)qalamResampleState={lastSource:stroke.points?.[0]||point,lastOutput:stroke.points?.[0]||point,distanceSinceLast:0};
+      const r=resampleMotionSegment(qalamResampleState,point,motionResampleStepPx(stroke),canvasCssWidth,canvasCssHeight,forceFinal);
+      qalamResampleState=r.state;return r.points;
+    }
+
+    function appendProcessedStrokePoint(point,stroke){
+      const prev=stroke.points[stroke.points.length-1];if(!prev)return;
+      const dx=(point.nx-prev.nx)*canvasCssWidth,dy=(point.ny-prev.ny)*canvasCssHeight,distPx=Math.hypot(dx,dy);
+      if(distPx<.05)return;
+      const dtMs=Math.max(1,(point.t??0)-(prev.t??0));
+      point._pathPx=(prev._pathPx??prev.pathPx??0)+distPx;point._velocityPxMs=distPx/dtMs;
+      renderStrokeSegment(prev,point,stroke);stroke.points.push(point);
+    }
+
+    function runBrushMotionSelfTests(){
+      const noisy=[];for(let i=0;i<50;i++)noisy.push({nx:i/49,ny:.5+(i%2?.012:-.012),pressure:.5,t:i*8});
+      let buf=[],smoothed=[];
+      for(const p of noisy){buf.push(p);while(buf.length>5)buf.shift();const a=weightedMotionAverage(buf,.30);smoothed.push({...p,nx:p.nx*.724+a.nx*.276,ny:p.ny*.724+a.ny*.276})}
+      const jitter=a=>{let sum=0,n=0;for(let i=1;i<a.length-1;i++){const d=a[i].ny-(a[i-1].ny+a[i+1].ny)/2;sum+=d*d;n++}return Math.sqrt(sum/Math.max(1,n))};
+      const state={lastSource:{nx:0,ny:.2,t:0,pressure:.5},lastOutput:{nx:0,ny:.2,t:0,pressure:.5},distanceSinceLast:0};
+      const r=resampleMotionSegment(state,{nx:1,ny:.2,t:100,pressure:.5},10,100,100,false),xs=r.points.map(p=>p.nx*100);
+      const gaps=[];for(let i=1;i<xs.length;i++)gaps.push(xs[i]-xs[i-1]);
+      const mean=brushMean(gaps),sd=brushStd(gaps,mean);
+      const tests=[
+        {name:'moving-average-reduces-jitter',ok:jitter(smoothed)<jitter(noisy)*.85,raw:jitter(noisy),smooth:jitter(smoothed)},
+        {name:'uniform-resampling-count',ok:r.points.length===10,count:r.points.length},
+        {name:'uniform-resampling-spacing',ok:gaps.length?sd<.001:false,mean,sd}
+      ];
+      return{ok:tests.every(t=>t.ok),tests};
+    }
+
     function denormalizePoint(p) {
       return {
         x: p.nx * canvasCssWidth,
@@ -3710,6 +3819,7 @@
       const rawPoint = pointerPoint(e);
       resetStrokeStabilizer(rawPoint);
       const point = stabilizerEnabled ? applyStrokeStabilizer(rawPoint) : rawPoint;
+      resetQalamMotionEngine(point);
       currentStroke = {
         kind: 'stroke',
         strokeId: `stroke-${++strokeIdentityCounter}`,
@@ -3732,6 +3842,8 @@
         spacing: brushSpacing,
         opacity: brushOpacity,
         smoothing: qalamSmoothing,
+        movingAverage: qalamMovingAverage,
+        uniformResampling: qalamUniformResampling,
         stabilizerEnabled,
         stabilizerRadiusPx,
         stabilizerFriction,
@@ -3751,27 +3863,33 @@
       renderDot(point, currentStroke);
     }
 
-    function appendPointFromEvent(e) {
+    function appendPointFromEvent(e,forceFinal=false) {
       if (!currentStroke) return;
-      const prev = currentStroke.points[currentStroke.points.length - 1];
-      const rawInput = pointerPoint(e);
-      const raw = stabilizerEnabled ? applyStrokeStabilizer(rawInput) : rawInput;
-      const point = smoothStrokePoint(raw, prev);
-      if (prev) {
-        const dx = (point.nx - prev.nx) * canvasCssWidth;
-        const dy = (point.ny - prev.ny) * canvasCssHeight;
-        const spacingPx = Math.max(0.28, brushSize * brushSpacing);
-        const distPx = Math.hypot(dx, dy);
-        if (distPx < spacingPx) return;
-        const dtMs = Math.max(1, (point.t ?? 0) - (prev.t ?? 0));
-        point._pathPx = (prev._pathPx ?? prev.pathPx ?? 0) + distPx;
-        point._velocityPxMs = distPx / dtMs;
-        renderStrokeSegment(prev, point, currentStroke);
-        // 2D footprint dabs overlap continuously; no legacy line-edge join needed.
-      } else {
-        renderDot(point, currentStroke);
+      const rawInput=pointerPoint(e);
+      const raw=stabilizerEnabled?applyStrokeStabilizer(rawInput):rawInput;
+      const lowPass=smoothStrokePoint(raw,qalamMotionPrevPoint||currentStroke.points[currentStroke.points.length-1]);
+      qalamMotionPrevPoint=lowPass;
+
+      if(currentStroke.tool==='calligraphy'){
+        const candidate=applyQalamMovingAverage(lowPass,currentStroke.movingAverage??qalamMovingAverage);
+        if(currentStroke.uniformResampling){
+          const outputs=resampleQalamMotionPoint(candidate,currentStroke,forceFinal);
+          outputs.forEach(p=>appendProcessedStrokePoint(p,currentStroke));
+          return;
+        }
+        const prev=currentStroke.points[currentStroke.points.length-1];
+        const dx=(candidate.nx-prev.nx)*canvasCssWidth,dy=(candidate.ny-prev.ny)*canvasCssHeight;
+        const spacingPx=Math.max(.28,brushSize*brushSpacing),distPx=Math.hypot(dx,dy);
+        if(distPx<spacingPx&&!forceFinal)return;
+        appendProcessedStrokePoint(candidate,currentStroke);
+        return;
       }
-      currentStroke.points.push(point);
+
+      const prev=currentStroke.points[currentStroke.points.length-1],point=lowPass;
+      const dx=(point.nx-prev.nx)*canvasCssWidth,dy=(point.ny-prev.ny)*canvasCssHeight;
+      const spacingPx=Math.max(.28,brushSize*brushSpacing),distPx=Math.hypot(dx,dy);
+      if(distPx<spacingPx&&!forceFinal)return;
+      appendProcessedStrokePoint(point,currentStroke);
     }
 
     function startDrawing(e) {
@@ -3816,7 +3934,7 @@
         if(objectTransformGesture){if(e&&e.type==='pointerup')updateObjectTransform(e);finishObjectTransform()}
         else{if(e&&e.type==='pointerup')appendLassoFromEvent(e);finishLasso()}
       } else {
-        if (e && currentStroke && e.type === 'pointerup') appendPointFromEvent(e);
+        if (e && currentStroke && e.type === 'pointerup') appendPointFromEvent(e,true);
         if (currentStroke?.points?.length) {
           pushHistory(currentStroke);
           queueAutoGroup(currentStroke);
@@ -3832,7 +3950,7 @@
         }
       } catch (_) {}
 
-      resetStrokeStabilizer();
+      resetStrokeStabilizer();resetQalamMotionEngine();
       currentStroke = null;
       activePointerId = null;
       isDrawing = false;
