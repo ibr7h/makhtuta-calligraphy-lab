@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.25.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.26.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.25 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.26 β</span>
           </p>
         </div>
       </div>
@@ -470,7 +470,15 @@
           </div>
           <div id="assessmentResults" class="hidden mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
           <div id="assessmentFeedback" class="hidden mt-2 p-2.5 rounded-xl bg-white border border-emerald-200 text-xs text-stone-700 leading-6"></div>
-          <div class="mt-2 rounded-xl bg-white border border-emerald-200 overflow-hidden"><div class="px-2.5 py-2 flex items-center justify-between gap-2 border-b border-emerald-100"><strong class="text-[10px] text-emerald-900"><i class="fa-solid fa-clock-rotate-left ml-1"></i>سجل المحاولات</strong><button type="button" onclick="clearAttemptHistory()" class="text-[9px] font-bold text-rose-700">مسح السجل</button></div><div id="attemptHistoryList" class="max-h-32 overflow-y-auto custom-scrollbar p-2 text-[9px] text-stone-600">لا توجد محاولات مسجلة.</div></div>
+          <div class="mt-2 rounded-xl bg-white border border-emerald-200 overflow-hidden">
+            <div class="px-2.5 py-2 flex items-center justify-between gap-2 border-b border-emerald-100"><strong class="text-[10px] text-emerald-900"><i class="fa-solid fa-chart-line ml-1"></i>تقدم الطالب</strong><button type="button" onclick="clearAttemptHistory()" class="text-[9px] font-bold text-rose-700">مسح السجل</button></div>
+            <div id="progressSummary" class="grid grid-cols-3 gap-1.5 p-2 border-b border-emerald-100"></div>
+            <div class="px-2 pt-2"><canvas id="progressChart" width="720" height="150" class="w-full h-[92px] rounded-lg bg-emerald-50/40"></canvas></div>
+            <div id="metricTrendGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-1.5 p-2"></div>
+            <div class="px-2 py-1.5 border-y border-emerald-100 flex flex-wrap items-center gap-1.5"><span class="text-[9px] font-bold text-stone-500">مقارنة:</span><select id="compareAttemptA" class="text-[9px] border rounded-lg px-1.5 py-1 bg-white" onchange="renderAttemptComparison()"></select><span class="text-[9px]">↔</span><select id="compareAttemptB" class="text-[9px] border rounded-lg px-1.5 py-1 bg-white" onchange="renderAttemptComparison()"></select></div>
+            <div id="attemptComparison" class="px-2 py-1.5 text-[9px] text-stone-600"></div>
+            <div id="attemptHistoryList" class="max-h-40 overflow-y-auto custom-scrollbar p-2 text-[9px] text-stone-600">لا توجد محاولات مسجلة.</div>
+          </div>
         </div>
       </div>
 
@@ -722,7 +730,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.25.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.26.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -2371,7 +2379,35 @@
       return '<div class="rounded-xl bg-white border border-emerald-200 p-2 text-center"><div class="text-[9px] text-stone-500 font-bold">'+label+'</div><div class="text-lg font-black text-emerald-800">'+value+'%</div><div class="text-[9px] text-stone-500">'+detail+'</div></div>';
     }
 
-    function renderAttemptHistory(){const el=document.getElementById('attemptHistoryList');if(!el)return;const attempts=activePracticeArea()?.attempts||[];if(!attempts.length){el.textContent='لا توجد محاولات مسجلة.';return}el.innerHTML=attempts.slice(-12).reverse().map(a=>{const idx=attempts.indexOf(a),prev=idx>0?attempts[idx-1]:null,delta=prev?Number(a.overall)-Number(prev.overall):0,trend=prev?(delta>0?'▲ +'+delta:delta<0?'▼ '+delta:'— 0'):'الأولى',dt=new Date(a.at);return '<div class="flex items-center justify-between gap-2 py-1.5 border-b border-stone-100 last:border-0"><span>'+(a.letter||'—')+' • '+dt.toLocaleString('ar-SA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</span><span class="font-black text-emerald-800">'+a.overall+'%</span><span class="font-bold '+(delta>0?'text-emerald-700':delta<0?'text-rose-700':'text-stone-400')+'">'+trend+'</span></div>'}).join('')}
+    const ATTEMPT_METRIC_LABELS={alignment:'المحاذاة',size:'الحجم',baseline:'خط الأساس',angle:'الميل',extension:'الامتداد',shape:'الشكل'};
+    function attemptById(id){return (activePracticeArea()?.attempts||[]).find(a=>a.id===id)}
+    function renderProgressChart(attempts){
+      const c=document.getElementById('progressChart');if(!c)return;const ctx=c.getContext('2d'),w=c.width,h=c.height;ctx.clearRect(0,0,w,h);ctx.strokeStyle='#d1fae5';ctx.lineWidth=1;
+      [0,25,50,75,100].forEach(v=>{const y=h-12-(v/100)*(h-24);ctx.beginPath();ctx.moveTo(24,y);ctx.lineTo(w-8,y);ctx.stroke()});
+      if(!attempts.length)return;const pts=attempts.slice(-20),span=Math.max(1,pts.length-1);ctx.strokeStyle='#047857';ctx.lineWidth=4;ctx.lineJoin='round';ctx.beginPath();
+      pts.forEach((a,i)=>{const x=24+i*(w-38)/span,y=h-12-clamp(Number(a.overall)||0,0,100)/100*(h-24);if(i)ctx.lineTo(x,y);else ctx.moveTo(x,y)});ctx.stroke();
+      pts.forEach((a,i)=>{const x=24+i*(w-38)/span,y=h-12-clamp(Number(a.overall)||0,0,100)/100*(h-24);ctx.fillStyle='#065f46';ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill()});
+    }
+    function renderAttemptComparison(){
+      const box=document.getElementById('attemptComparison'),sa=document.getElementById('compareAttemptA'),sb=document.getElementById('compareAttemptB');if(!box||!sa||!sb)return;
+      const a=attemptById(sa.value),b=attemptById(sb.value);if(!a||!b){box.textContent='اختر محاولتين للمقارنة.';return}
+      const rows=Object.keys(ATTEMPT_METRIC_LABELS).map(k=>{const d=(b.metrics?.[k]||0)-(a.metrics?.[k]||0);return ATTEMPT_METRIC_LABELS[k]+' '+(d>0?'▲ +':d<0?'▼ ':'— ')+d}).join(' • ');
+      const d=b.overall-a.overall;box.innerHTML='<strong>الدرجة العامة: '+a.overall+'% ← '+b.overall+'% ('+(d>0?'+':'')+d+')</strong><br>'+rows;
+    }
+    function renderAttemptHistory(){
+      const area=activePracticeArea(),attempts=area?.attempts||[],el=document.getElementById('attemptHistoryList'),sum=document.getElementById('progressSummary'),trend=document.getElementById('metricTrendGrid'),sa=document.getElementById('compareAttemptA'),sb=document.getElementById('compareAttemptB');
+      if(!el)return;if(!attempts.length){el.textContent='لا توجد محاولات مسجلة.';if(sum)sum.innerHTML='';if(trend)trend.innerHTML='';renderProgressChart([]);if(sa)sa.innerHTML='';if(sb)sb.innerHTML='';return}
+      const latest=attempts[attempts.length-1],best=attempts.reduce((a,b)=>b.overall>a.overall?b:a,attempts[0]),first=attempts[0],change=latest.overall-first.overall;
+      if(sum)sum.innerHTML=[['أحدث',latest.overall+'%'],['أفضل',best.overall+'%'],['التغير',(change>0?'+':'')+change]].map(x=>'<div class="rounded-lg bg-emerald-50 p-1.5 text-center"><div class="text-[8px] text-stone-500">'+x[0]+'</div><div class="font-black text-emerald-800">'+x[1]+'</div></div>').join('');
+      renderProgressChart(attempts);
+      if(trend)trend.innerHTML=Object.keys(ATTEMPT_METRIC_LABELS).map(k=>{const vals=attempts.slice(-5).map(a=>Number(a.metrics?.[k])||0),d=vals.length>1?vals[vals.length-1]-vals[0]:0;return '<div class="rounded-lg border border-emerald-100 p-1.5"><span class="font-bold">'+ATTEMPT_METRIC_LABELS[k]+'</span><span class="float-left '+(d>0?'text-emerald-700':d<0?'text-rose-700':'text-stone-400')+'">'+(d>0?'▲ +':d<0?'▼ ':'— ')+d+'</span></div>'}).join('');
+      const opts=attempts.map((a,i)=>'<option value="'+a.id+'">#'+(i+1)+' • '+a.overall+'%</option>').join('');if(sa){sa.innerHTML=opts;sa.value=attempts[Math.max(0,attempts.length-2)].id}if(sb){sb.innerHTML=opts;sb.value=latest.id}renderAttemptComparison();
+      el.innerHTML=attempts.slice(-12).reverse().map(a=>{const idx=attempts.indexOf(a),prev=idx>0?attempts[idx-1]:null,delta=prev?a.overall-prev.overall:0,trendTxt=prev?(delta>0?'▲ +'+delta:delta<0?'▼ '+delta:'— 0'):'الأولى',dt=new Date(a.at),canOpen=Array.isArray(a.studentSnapshot)&&a.studentSnapshot.length;return '<div class="flex items-center gap-2 py-1.5 border-b border-stone-100 last:border-0"><span class="flex-1">'+(a.letter||'—')+' • '+dt.toLocaleString('ar-SA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</span><strong class="text-emerald-800">'+a.overall+'%</strong><span>' +trendTxt+'</span>'+(canOpen?'<button onclick="openAttemptSnapshot(\''+a.id+'\')" class="px-1.5 py-0.5 rounded border border-sky-200 text-sky-700 font-bold">فتح</button>':'')+'</div>'}).join('');
+    }
+    function openAttemptSnapshot(id){
+      const a=attemptById(id);if(!a?.studentSnapshot?.length)return;const before=cloneHistoryState(),models=activeVisibleStrokesIncludingModel().filter(s=>s.isTrainingModel).map(s=>cloneHistoryState([s])[0]),students=cloneHistoryState(a.studentSnapshot);
+      strokeHistory.splice(0,strokeHistory.length,...models,...students);recordEditSnapshot('open-attempt',before,cloneHistoryState());clearObjectSelection();redrawAllStrokes();scheduleWorkspaceSave();const st=document.getElementById('assessmentStatus');if(st)st.textContent='تم فتح المحاولة المحفوظة '+a.overall+'%.';
+    }
     function clearAttemptHistory(){const area=activePracticeArea();if(!area?.attempts?.length)return;area.attempts=[];renderAttemptHistory();scheduleWorkspaceSave()}
     function assessStudentAgainstModel(){
       const all=activeVisibleStrokesIncludingModel(),model=all.filter(s=>s.isTrainingModel),student=all.filter(s=>!s.isTrainingModel);
@@ -2390,7 +2426,7 @@
         angle:metricScore(angleErr,35),extension:metricScore(extensionErr,.18),shape:metricScore(shapeErr,.55)
       };
       const overall=Math.round(metrics.alignment*.17+metrics.size*.16+metrics.baseline*.17+metrics.angle*.14+metrics.extension*.14+metrics.shape*.22);
-      const area=activePracticeArea();if(area){area.attempts=area.attempts||[];area.attempts.push({id:(crypto.randomUUID?crypto.randomUUID():'attempt-'+Date.now()),at:new Date().toISOString(),overall,metrics:{...metrics},letter:currentPracticeLetter(),modelStrokeCount:model.length,studentStrokeCount:student.length});if(area.attempts.length>50)area.attempts.splice(0,area.attempts.length-50);scheduleWorkspaceSave();renderAttemptHistory()}
+      const area=activePracticeArea();if(area){area.attempts=area.attempts||[];area.attempts.push({id:(crypto.randomUUID?crypto.randomUUID():'attempt-'+Date.now()),at:new Date().toISOString(),overall,metrics:{...metrics},letter:currentPracticeLetter(),modelStrokeCount:model.length,studentStrokeCount:student.length,studentSnapshot:cloneHistoryState(student)});if(area.attempts.length>50)area.attempts.splice(0,area.attempts.length-50);scheduleWorkspaceSave();renderAttemptHistory()}
       results.innerHTML=assessmentCard('المحاذاة',metrics.alignment,Math.round(alignErr*canvasCssWidth)+'px')+
         assessmentCard('الحجم',metrics.size,Math.round(sizeErr*100)+'% فرق')+
         assessmentCard('خط الأساس',metrics.baseline,Math.round(baselineErr*canvasCssHeight)+'px')+
