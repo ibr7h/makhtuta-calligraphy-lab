@@ -1,3 +1,12 @@
+# V6.32.2 β — Correct HarfBuzz positions & Glyph selection
+
+- Fixed the main selection bug: harfbuzzjs v1.x exposes xAdvance/yAdvance/xOffset/yOffset in camelCase; the lab had still been reading the old snake_case fields, which produced undefined advances and effectively equal-width Glyph regions.
+- Added backwards-compatible snake_case fallbacks.
+- Glyph selection boxes now prefer the actual HarfBuzz glyph ink extents (xBearing/yBearing/width/height) instead of only the advance cell.
+- The advance cell is retained as a larger hit target when glyph ink overlaps or is very narrow.
+- Cluster-to-character lookup now uses UTF-16 source offsets, so Arabic combining marks do not shift the displayed character/cluster relationship.
+- App/PWA version bumped to V6.32.2 β.
+
 # V6.32.1 β — Natural word proportions & geometry registration
 
 - Fixed horizontal stretching caused by a mismatch between the canvas bitmap aspect ratio and its CSS display size.
