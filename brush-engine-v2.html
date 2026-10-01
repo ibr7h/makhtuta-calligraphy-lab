@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.34.1-beta">
+<html lang="ar" dir="rtl" data-app-version="6.34.2-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.34.1 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.34.2 β</span>
           </p>
         </div>
       </div>
@@ -631,6 +631,18 @@
                 <button type="button" onclick="mapStudentStrokesToGlyphs()" class="px-3 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-[10px] font-bold"><i class="fa-solid fa-bullseye ml-1"></i>شاهد المطابقة</button>
               </div>
             </div>
+            <div class="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-fuchsia-100 bg-fuchsia-50/60 px-3 py-2">
+              <div>
+                <strong class="text-[10px] text-fuchsia-900"><i class="fa-solid fa-wave-square ml-1"></i>V6.34.2 — Distance Matching</strong>
+                <div class="text-[8px] text-stone-500">أخضر: داخل Ink • كهرماني: قريب من الـOutline • أحمر: خارج نطاق التسامح</div>
+              </div>
+              <div class="flex flex-wrap items-center gap-3">
+                <label class="text-[9px] font-bold text-fuchsia-900">التسامح <span id="contourToleranceValue" class="font-mono">16px</span>
+                  <input id="contourToleranceInput" type="range" min="6" max="36" value="16" oninput="setContourTolerance(this.value)" class="w-24 align-middle accent-fuchsia-700">
+                </label>
+                <label class="text-[9px] font-bold text-fuchsia-900 cursor-pointer"><input id="contourHeatmapToggle" type="checkbox" checked onchange="toggleContourHeatmap(this.checked)" class="accent-fuchsia-700 ml-1">خريطة الخطأ</label>
+              </div>
+            </div>
             <div class="mt-2 relative rounded-xl overflow-hidden border border-sky-100 bg-white">
               <canvas id="shapingPracticeCanvas" width="1000" height="320" class="block w-full h-[240px] sm:h-[300px]" style="touch-action:none"></canvas>
             </div>
@@ -661,7 +673,16 @@
             <strong class="text-sm text-teal-950"><i class="fa-solid fa-bullseye ml-1"></i>نتيجة المطابقة</strong>
             <div class="mt-3 flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">الثقة الهندسية</span><span id="shapingConfidenceValue" class="text-2xl font-black text-teal-700">—</span></div>
             <div class="mt-2 h-2.5 rounded-full bg-stone-100 overflow-hidden"><div id="shapingConfidenceBar" class="h-full bg-teal-600 rounded-full transition-all" style="width:0%"></div></div>
-            <div id="shapingFeedbackList" class="mt-3 space-y-2 text-[10px] text-stone-600"><div class="rounded-xl bg-stone-50 border border-stone-100 p-2">ستظهر هنا ملاحظات الموضع، حدود الضربات، وخط الأساس بعد المطابقة.</div></div>
+            <div class="mt-4 pt-3 border-t border-fuchsia-100">
+              <div class="flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">مطابقة الـOutline</span><span id="contourMatchValue" class="text-2xl font-black text-fuchsia-700">—</span></div>
+              <div class="mt-2 h-2.5 rounded-full bg-stone-100 overflow-hidden"><div id="contourMatchBar" class="h-full bg-fuchsia-600 rounded-full transition-all" style="width:0%"></div></div>
+              <div class="mt-2 grid grid-cols-3 gap-1 text-center">
+                <div class="rounded-lg bg-emerald-50 p-1.5"><div id="contourInsideValue" class="font-black text-[11px] text-emerald-700">—</div><div class="text-[7px] text-stone-500">داخل Ink</div></div>
+                <div class="rounded-lg bg-sky-50 p-1.5"><div id="contourCoverageValue" class="font-black text-[11px] text-sky-700">—</div><div class="text-[7px] text-stone-500">Coverage</div></div>
+                <div class="rounded-lg bg-rose-50 p-1.5"><div id="contourErrorValue" class="font-black text-[11px] text-rose-700">—</div><div class="text-[7px] text-stone-500">خطأ خارج Ink</div></div>
+              </div>
+            </div>
+            <div id="shapingFeedbackList" class="mt-3 space-y-2 text-[10px] text-stone-600"><div class="rounded-xl bg-stone-50 border border-stone-100 p-2">ستظهر هنا ملاحظات الموضع، الحدود، والمسافة إلى الـOutline بعد المطابقة.</div></div>
           </div>
         </aside>
       </div>
@@ -1770,6 +1791,7 @@
     let lastHarfBuzzGlyphs=[],lastHarfBuzzText='',glyphReferenceVisible=true,glyphReferenceOpacity=.24,glyphReferenceFontUrl='',glyphReferenceFamily='';
     let lastShapingZones=[],selectedShapingGlyphIndex=-1,lastShapingLayout=null;
     let outlineSamplesVisible=true,outlineSampleDensity=12;
+    let contourTolerancePx=16,contourHeatmapVisible=true,outlineHitCanvas=null,outlineHitCtx=null;
 
     async function getHarfBuzzModule(){
       if(!harfBuzzModulePromise)harfBuzzModulePromise=import('https://cdn.jsdelivr.net/npm/harfbuzzjs@1.6.2/dist/index.mjs');
@@ -1837,6 +1859,17 @@
       outlineSampleDensity=clamp(Math.round(Number(v)||12),5,28);
       lastHarfBuzzGlyphs.forEach(g=>{if(g){delete g._outlineSamples;delete g._outlineSamplesDensity}});
       renderGlyphReferenceModel();renderShapingPracticeCanvas();
+      if(shapingLastMappings.length)mapStudentStrokesToGlyphs();
+    }
+    function setContourTolerance(v){
+      contourTolerancePx=clamp(Math.round(Number(v)||16),6,36);
+      const el=document.getElementById('contourToleranceValue');if(el)el.textContent=contourTolerancePx+'px';
+      if(shapingLastMappings.length||shapingPracticeStrokes.length)mapStudentStrokesToGlyphs();else renderShapingPracticeCanvas();
+    }
+    function toggleContourHeatmap(v){contourHeatmapVisible=!!v;renderShapingPracticeCanvas()}
+    function getOutlineHitContext(){
+      if(!outlineHitCanvas){outlineHitCanvas=document.createElement('canvas');outlineHitCanvas.width=8;outlineHitCanvas.height=8;outlineHitCtx=outlineHitCanvas.getContext('2d')}
+      return outlineHitCtx;
     }
 
     async function ensureReferenceFontFace(){
@@ -2007,6 +2040,95 @@
         if(opts.points!==false){ctx.fillStyle=opts.pointStyle||'rgba(6,182,212,.9)';for(let i=0;i<pts.length;i+=Math.max(1,Math.ceil(pts.length/80))){ctx.beginPath();ctx.arc(pts[i].nx*W,pts[i].ny*H,opts.pointRadius||1.8,0,Math.PI*2);ctx.fill()}}
       });
       ctx.restore();return m;
+    }
+
+    function pointToSegmentDistancePx(px,py,ax,ay,bx,by){
+      const vx=bx-ax,vy=by-ay,wx=px-ax,wy=py-ay,den=vx*vx+vy*vy;
+      let t=den>1e-9?(wx*vx+wy*vy)/den:0;t=clamp(t,0,1);
+      const qx=ax+t*vx,qy=ay+t*vy;
+      return{distance:Math.hypot(px-qx,py-qy),x:qx,y:qy,t};
+    }
+
+    function nearestOutlineDistancePx(p,z,W,H){
+      const contours=glyphOutlineContoursNormalized(z,W,H),px=Number(p.nx)*W,py=Number(p.ny)*H;
+      let best={distance:Infinity,nx:Number(p.nx),ny:Number(p.ny)};
+      contours.forEach(c=>{
+        const pts=c.points;
+        for(let i=1;i<pts.length;i++){
+          const a=pts[i-1],b=pts[i],r=pointToSegmentDistancePx(px,py,a.nx*W,a.ny*H,b.nx*W,b.ny*H);
+          if(r.distance<best.distance)best={distance:r.distance,nx:r.x/W,ny:r.y/H};
+        }
+        if(c.closed&&pts.length>2){
+          const a=pts[pts.length-1],b=pts[0],r=pointToSegmentDistancePx(px,py,a.nx*W,a.ny*H,b.nx*W,b.ny*H);
+          if(r.distance<best.distance)best={distance:r.distance,nx:r.x/W,ny:r.y/H};
+        }
+      });
+      return best;
+    }
+
+    function pointInSampledContours(p,z,W,H){
+      const contours=glyphOutlineContoursNormalized(z,W,H),x=Number(p.nx),y=Number(p.ny);let inside=false;
+      contours.forEach(c=>{
+        const pts=c.points;let hit=false;
+        for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+          const a=pts[i],b=pts[j];
+          const cross=((a.ny>y)!==(b.ny>y))&&(x<(b.nx-a.nx)*(y-a.ny)/((b.ny-a.ny)||1e-12)+a.nx);
+          if(cross)hit=!hit;
+        }
+        if(hit)inside=!inside;
+      });
+      return inside;
+    }
+
+    function pointInsideGlyphInk(p,z,W,H){
+      const path=glyphPath2D(z?.g),ctx=getOutlineHitContext(),scalePx=(Number(z?.scaleNorm)||0)*W;
+      if(path&&ctx&&scalePx>1e-9){
+        const gx=(Number(p.nx)*W-(Number(z.drawOriginX)||0)*W)/scalePx;
+        const gy=((Number(z.drawOriginY)||Number(z.baseline)||.72)*H-Number(p.ny)*H)/scalePx;
+        try{return ctx.isPointInPath(path,gx,gy,'nonzero')}catch(_){}
+      }
+      return pointInSampledContours(p,z,W,H);
+    }
+
+    function nearestPolylineDistancePx(p,points,W,H){
+      const px=Number(p.nx)*W,py=Number(p.ny)*H;let best=Infinity;
+      for(let i=1;i<points.length;i++){
+        const a=points[i-1],b=points[i],r=pointToSegmentDistancePx(px,py,Number(a.nx)*W,Number(a.ny)*H,Number(b.nx)*W,Number(b.ny)*H);
+        if(r.distance<best)best=r.distance;
+      }
+      return best;
+    }
+
+    function downsamplePoints(points,maxN=160){
+      if(!Array.isArray(points)||points.length<=maxN)return points||[];
+      const step=(points.length-1)/(maxN-1),out=[];for(let i=0;i<maxN;i++)out.push(points[Math.round(i*step)]);return out;
+    }
+
+    function analyzeSegmentContourMatch(stroke,z,W,H){
+      const pts=downsamplePoints((stroke?.points||[]).filter(p=>Number.isFinite(Number(p.nx))&&Number.isFinite(Number(p.ny))),160);
+      if(pts.length<2)return{score:0,insideRatio:0,coverage:0,meanOutside:Infinity,p90Outside:Infinity,samples:[],sampleCount:0};
+      const tol=Math.max(1,contourTolerancePx),samples=[],outsideDistances=[];let fitSum=0,insideCount=0,edgeSum=0;
+      pts.forEach(p=>{
+        const near=nearestOutlineDistancePx(p,z,W,H),inside=pointInsideGlyphInk(p,z,W,H),d=Number.isFinite(near.distance)?near.distance:tol*3;
+        if(inside)insideCount++;else outsideDistances.push(d);
+        const fit=inside?1:Math.exp(-d/tol);
+        fitSum+=fit;edgeSum+=Math.exp(-d/(tol*1.5));
+        samples.push({nx:Number(p.nx),ny:Number(p.ny),distance:d,inside,nearestNx:near.nx,nearestNy:near.ny});
+      });
+
+      const outline=outlineMetrics(z,W,H).normalized.flatMap(c=>c.points),refPts=downsamplePoints(outline,180);
+      let coverageSum=0,covered=0;
+      refPts.forEach(p=>{
+        const d=nearestPolylineDistancePx(p,pts,W,H),radius=tol*1.75;
+        const q=Math.max(0,1-d/radius);coverageSum+=q;if(d<=radius)covered++;
+      });
+      outsideDistances.sort((a,b)=>a-b);
+      const meanOutside=outsideDistances.length?outsideDistances.reduce((a,b)=>a+b,0)/outsideDistances.length:0;
+      const p90Outside=outsideDistances.length?outsideDistances[Math.min(outsideDistances.length-1,Math.floor(outsideDistances.length*.9))]:0;
+      const insideRatio=insideCount/pts.length,studentFit=fitSum/pts.length,edgeScore=edgeSum/pts.length;
+      const coverage=refPts.length?covered/refPts.length:0,coverageSoft=refPts.length?coverageSum/refPts.length:0;
+      const score=clamp(.58*studentFit+.27*coverageSoft+.15*edgeScore,0,1);
+      return{score,insideRatio,coverage,coverageSoft,studentFit,edgeScore,meanOutside,p90Outside,samples,sampleCount:pts.length};
     }
 
     function updateOutlineEngineSummary(z,W,H){
@@ -5399,7 +5521,19 @@
 
       if(shapingLastMappings.length){
         shapingLastMappings.forEach((m,i)=>{
-          const b=m.bounds,z=m.zone,good=m.score>=.7;ctx.save();
+          if(contourHeatmapVisible&&m.contour?.samples?.length){
+            const selected=m.zone?.index===selectedShapingGlyphIndex;
+            m.contour.samples.forEach((sp,si)=>{
+              const d=Number(sp.distance)||0;
+              const fill=sp.inside?'rgba(5,150,105,.92)':d<=contourTolerancePx?'rgba(245,158,11,.92)':'rgba(220,38,38,.92)';
+              ctx.fillStyle=fill;ctx.beginPath();ctx.arc(sp.nx*W,sp.ny*H,selected?2.8:2.1,0,Math.PI*2);ctx.fill();
+            });
+            if(selected){
+              const worst=[...m.contour.samples].filter(sp=>!sp.inside).sort((a,b)=>b.distance-a.distance).slice(0,5);
+              worst.forEach(sp=>{ctx.strokeStyle=sp.distance<=contourTolerancePx?'rgba(245,158,11,.55)':'rgba(220,38,38,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(sp.nx*W,sp.ny*H);ctx.lineTo(sp.nearestNx*W,sp.nearestNy*H);ctx.stroke()});
+            }
+          }
+          const b=m.bounds,z=m.zone,good=(m.contour?.score??m.score)>=.7;ctx.save();
           ctx.strokeStyle=good?'rgba(5,150,105,.9)':'rgba(245,158,11,.9)';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.strokeRect(b.left*W,b.top*H,(b.right-b.left)*W,(b.bottom-b.top)*H);ctx.setLineDash([]);
           const sx=(b.left+b.right)/2*W,sy=(b.top+b.bottom)/2*H,gx=z.centerX*W,gy=z.centerY*H;ctx.strokeStyle=good?'rgba(5,150,105,.45)':'rgba(245,158,11,.45)';ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(gx,gy);ctx.stroke();
           ctx.fillStyle=good?'#047857':'#b45309';ctx.font='bold 11px sans-serif';ctx.fillText('g'+(z.index+1)+' '+Math.round(m.score*100)+'%',b.right*W,Math.max(12,b.top*H-4));ctx.restore();
@@ -5410,8 +5544,10 @@
     function clearShapingPractice(){
       shapingPracticeStrokes=[];shapingPracticeActive=null;shapingLastMappings=[];
       const status=document.getElementById('glyphStrokeMappingStatus'),grid=document.getElementById('glyphStrokeMappingGrid'),val=document.getElementById('shapingConfidenceValue'),bar=document.getElementById('shapingConfidenceBar'),fb=document.getElementById('shapingFeedbackList');
+      const cv=document.getElementById('contourMatchValue'),cb=document.getElementById('contourMatchBar'),ci=document.getElementById('contourInsideValue'),cc=document.getElementById('contourCoverageValue'),ce=document.getElementById('contourErrorValue');
       if(status)status.textContent='اكتب المحاولة في المساحة ثم اضغط «شاهد المطابقة».';
-      if(grid)grid.innerHTML='';if(val)val.textContent='—';if(bar)bar.style.width='0%';if(fb)fb.innerHTML='<div class="rounded-xl bg-stone-50 border border-stone-100 p-2">ستظهر هنا ملاحظات الموضع، حدود الضربات، وخط الأساس بعد المطابقة.</div>';
+      if(grid)grid.innerHTML='';if(val)val.textContent='—';if(bar)bar.style.width='0%';if(cv)cv.textContent='—';if(cb)cb.style.width='0%';if(ci)ci.textContent='—';if(cc)cc.textContent='—';if(ce)ce.textContent='—';
+      if(fb)fb.innerHTML='<div class="rounded-xl bg-stone-50 border border-stone-100 p-2">ستظهر هنا ملاحظات الموضع، الحدود، والمسافة إلى الـOutline بعد المطابقة.</div>';
       renderShapingPracticeCanvas();
     }
 
@@ -5506,28 +5642,39 @@
         const zoneRect={left:z.left,right:z.right,top:z.top,bottom:z.bottom,area:Math.max(.0001,(z.right-z.left)*(z.bottom-z.top))};
         const overlap=rectOverlapScore(b,zoneRect),center=centerProximityScore(b,z),baseline=baselineFitScore(b,z),cluster=clusterConsistencyScore(b,z,clusterGroups);
         const score=.42*overlap+.28*center+.18*baseline+.12*cluster;
-        maps.push({strokeIndex:seg.strokeIndex,segmentIndex:seg.segmentIndex,stroke:segmentStroke,bounds:b,zone:z,score,parts:{overlap,center,baseline,cluster}});
+        const contour=analyzeSegmentContourMatch(segmentStroke,z,W,H);
+        maps.push({strokeIndex:seg.strokeIndex,segmentIndex:seg.segmentIndex,stroke:segmentStroke,bounds:b,zone:z,score,contour,parts:{overlap,center,baseline,cluster}});
       });
 
       shapingLastMappings=maps;
       const grouped=new Map(zones.map(z=>[z.index,[]]));maps.forEach(m=>grouped.get(m.zone.index)?.push(m));
       grid.innerHTML=zones.map(z=>{
-        const arr=grouped.get(z.index)||[],avg=arr.length?arr.reduce((n,m)=>n+m.score,0)/arr.length:0,u=contextualUnitForCluster(z.g.cluster);
-        return '<button type="button" onclick="selectShapingGlyph('+z.index+')" class="text-right rounded-xl border '+(z.index===selectedShapingGlyphIndex?'border-violet-400 bg-violet-50':'border-teal-100 bg-teal-50/50')+' p-2"><div class="flex items-center justify-between gap-2"><div class="font-black text-[10px] text-teal-950">g'+(z.index+1)+' • cluster '+z.g.cluster+'</div><span class="font-qalam text-2xl">'+(u?(u.char+u.marks.join('')):'◌')+'</span></div><div class="text-[9px] text-stone-600">'+arr.length+' جزء مرتبط'+(arr.length?' • ثقة '+Math.round(avg*100)+'%':'')+'</div><div class="text-[8px] text-stone-400">segment-level 2D • bbox + baseline + cluster</div></button>';
+        const arr=grouped.get(z.index)||[],avg=arr.length?arr.reduce((n,m)=>n+m.score,0)/arr.length:0;
+        const contourWeight=arr.reduce((n,m)=>n+(m.contour?.sampleCount||0),0),contourAvg=contourWeight?arr.reduce((n,m)=>n+(m.contour?.score||0)*(m.contour?.sampleCount||0),0)/contourWeight:0;
+        const inside=contourWeight?arr.reduce((n,m)=>n+(m.contour?.insideRatio||0)*(m.contour?.sampleCount||0),0)/contourWeight:0,u=contextualUnitForCluster(z.g.cluster);
+        return '<button type="button" onclick="selectShapingGlyph('+z.index+')" class="text-right rounded-xl border '+(z.index===selectedShapingGlyphIndex?'border-fuchsia-400 bg-fuchsia-50':'border-teal-100 bg-teal-50/50')+' p-2"><div class="flex items-center justify-between gap-2"><div class="font-black text-[10px] text-teal-950">g'+(z.index+1)+' • cluster '+z.g.cluster+'</div><span class="font-qalam text-2xl">'+(u?(u.char+u.marks.join('')):'◌')+'</span></div><div class="text-[9px] text-stone-600">'+arr.length+' جزء'+(arr.length?' • هندسي '+Math.round(avg*100)+'% • Outline '+Math.round(contourAvg*100)+'%':'')+'</div><div class="text-[8px] text-stone-400">'+(arr.length?'داخل Ink '+Math.round(inside*100)+'% • ':'')+'V6.34.2 distance field</div></button>';
       }).join('');
 
       const avg=maps.length?maps.reduce((n,m)=>n+m.score,0)/maps.length:0,avgOverlap=maps.length?maps.reduce((n,m)=>n+m.parts.overlap,0)/maps.length:0,avgBaseline=maps.length?maps.reduce((n,m)=>n+m.parts.baseline,0)/maps.length:0,avgCluster=maps.length?maps.reduce((n,m)=>n+m.parts.cluster,0)/maps.length:0;
-      const pct=Math.round(avg*100),val=document.getElementById('shapingConfidenceValue'),bar=document.getElementById('shapingConfidenceBar'),fb=document.getElementById('shapingFeedbackList');
+      const weight=maps.reduce((n,m)=>n+(m.contour?.sampleCount||0),0);
+      const contourAvg=weight?maps.reduce((n,m)=>n+(m.contour?.score||0)*(m.contour?.sampleCount||0),0)/weight:0;
+      const insideAvg=weight?maps.reduce((n,m)=>n+(m.contour?.insideRatio||0)*(m.contour?.sampleCount||0),0)/weight:0;
+      const coverageAvg=weight?maps.reduce((n,m)=>n+(m.contour?.coverage||0)*(m.contour?.sampleCount||0),0)/weight:0;
+      const outsideWeighted=maps.reduce((n,m)=>n+((m.contour?.meanOutside||0)*(m.contour?.sampleCount||0)),0),meanOutside=weight?outsideWeighted/weight:0;
+      const pct=Math.round(avg*100),contourPct=Math.round(contourAvg*100),val=document.getElementById('shapingConfidenceValue'),bar=document.getElementById('shapingConfidenceBar'),fb=document.getElementById('shapingFeedbackList');
+      const cv=document.getElementById('contourMatchValue'),cb=document.getElementById('contourMatchBar'),ci=document.getElementById('contourInsideValue'),cc=document.getElementById('contourCoverageValue'),ce=document.getElementById('contourErrorValue');
       if(val)val.textContent=pct+'%';if(bar)bar.style.width=pct+'%';
+      if(cv)cv.textContent=contourPct+'%';if(cb)cb.style.width=contourPct+'%';if(ci)ci.textContent=Math.round(insideAvg*100)+'%';if(cc)cc.textContent=Math.round(coverageAvg*100)+'%';if(ce)ce.textContent=meanOutside.toFixed(1)+'px';
 
       const represented=new Set(maps.map(m=>m.zone.index)).size,notes=[];
-      notes.push(represented===zones.length?['check','الضربة المتصلة قُسّمت إلى أجزاء تغطي جميع Glyphs في الكلمة.']:['warn','بعض Glyphs لم يصل إليها أي جزء من الكتابة بعد.']);
+      notes.push(insideAvg>=.82?['check','معظم نقاط المسار تقع داخل مساحة الحبر المرجعية للـGlyph.']:insideAvg>=.60?['warn','جزء معتبر من المسار يخرج من مساحة الحبر؛ راجع المناطق الكهرمانية والحمراء.']:['warn','المسار خارج Ink Bounds بنسبة كبيرة؛ المحاذاة أو شكل الحرف يحتاج مراجعة.']);
+      notes.push(coverageAvg>=.65?['check','تغطية الـOutline جيدة على مستوى المسار العام.']:['warn','هناك أجزاء مرجعية بعيدة عن مسار الطالب؛ Coverage ما زالت منخفضة.']);
+      notes.push(meanOutside<=contourTolerancePx*.55?['check','متوسط الخطأ خارج Ink ضمن نطاق التسامح المحدد.']:['warn','متوسط الابتعاد خارج Ink مرتفع مقارنة بالتسامح '+contourTolerancePx+'px.']);
+      notes.push(represented===zones.length?['check','المسار المقسّم يغطي جميع Glyphs في الكلمة.']:['warn','بعض Glyphs لم يصل إليها أي جزء من الكتابة بعد.']);
       notes.push(avgBaseline>=.72?['check','محاذاة خط الأساس جيدة هندسيًا.']:['warn','محاذاة خط الأساس تحتاج ضبطًا أكثر.']);
-      notes.push(avgOverlap>=.58?['check','الأجزاء تقع غالبًا داخل الحدود المرجعية المناسبة.']:['warn','بعض أجزاء المسار تخرج عن Ink Bounds المرجعية.']);
-      notes.push(avgCluster>=.72?['check','تقسيم المسار بين الـClusters متسق مع موضعه.']:['warn','هناك انتقالات قريبة من حدود Cluster؛ راجع مناطق الوصل بين الحروف.']);
-      notes.push(['info','V6.34.1 فعّل Outline Engine وحوّل منحنيات الـGlyph إلى عينات هندسية؛ Distance Matching التفصيلي هو V6.34.2.']);
+      notes.push(['info','مطابقة Outline الحالية تشخيص هندسي وليست درجة تعليمية نهائية؛ V6.34.3 سيحوّل القياسات إلى ملاحظات حرفية مفهومة للطالب.']);
       if(fb)fb.innerHTML=notes.map(n=>'<div class="rounded-xl border p-2 '+(n[0]==='check'?'bg-emerald-50 border-emerald-100 text-emerald-800':n[0]==='warn'?'bg-amber-50 border-amber-100 text-amber-800':'bg-sky-50 border-sky-100 text-sky-800')+'"><i class="fa-solid '+(n[0]==='check'?'fa-circle-check':n[0]==='warn'?'fa-triangle-exclamation':'fa-circle-info')+' ml-1"></i>'+n[1]+'</div>').join('');
-      status.textContent='تم تقسيم '+strokes.length+' ضربة فعلية إلى '+maps.length+' أجزاء وربطها بـ '+represented+' من '+zones.length+' glyphs. متوسط الثقة الهندسية '+pct+'%.';
+      status.textContent='V6.34.2: '+strokes.length+' ضربة → '+maps.length+' أجزاء → '+represented+'/'+zones.length+' glyphs • هندسي '+pct+'% • Outline '+contourPct+'% • داخل Ink '+Math.round(insideAvg*100)+'%.';
       renderShapingPracticeCanvas();
     }
 
