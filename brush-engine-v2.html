@@ -976,6 +976,12 @@
             <section class="bg-white border border-amber-200 rounded-2xl p-3">
               <h4 class="text-xs font-black text-amber-950 mb-3"><i class="fa-solid fa-wave-square ml-1 text-amber-700"></i>ديناميكية الضربة</h4>
               <label class="block text-[11px] font-bold mb-2">التنعيم <span id="bsSmoothingVal" class="float-left font-mono">58%</span><input id="bsSmoothing" type="range" min="0" max="95" value="58" oninput="updateBrushSetting('smoothing',this.value)" class="w-full accent-amber-800"></label>
+              <div class="mb-2 rounded-xl border border-cyan-200 bg-cyan-50/60 p-2">
+                <div class="flex items-center justify-between gap-2 mb-1"><span class="text-[10px] font-black text-cyan-950"><i class="fa-solid fa-water ml-1"></i>Brush Motion Engine</span><span class="text-[8px] text-cyan-700">V6.35.4</span></div>
+                <label class="block text-[11px] font-bold">Moving Average <span id="bsMovingAverageVal" class="float-left font-mono">0%</span><input id="bsMovingAverage" type="range" min="0" max="70" value="0" oninput="updateBrushSetting('movingAverage',this.value)" class="w-full accent-cyan-700"></label>
+                <label class="mt-1.5 flex items-center justify-between gap-2 text-[10px] font-bold text-cyan-950"><span>Uniform Path Resampling</span><input id="bsUniformResampling" type="checkbox" onchange="updateBrushSetting('uniformResampling',this.checked)" class="accent-cyan-700"></label>
+                <div class="mt-1 text-[8px] leading-4 text-cyan-800">Moving Average يهدّئ اهتزاز المسار، وResampling يجعل كثافة النقاط مستقلة عن سرعة إرسال أحداث القلم.</div>
+              </div>
               <label class="block text-[11px] font-bold mb-2">شفافية الحبر <span id="bsOpacityVal" class="float-left font-mono">100%</span><input id="bsOpacity" type="range" min="10" max="100" value="100" oninput="updateBrushSetting('opacity',this.value)" class="w-full accent-amber-800"></label>
               <label class="block text-[11px] font-bold mb-1">مصدر دوران السن</label>
               <select id="bsRotationSource" onchange="updateBrushSetting('rotationSource',this.value)" class="w-full bg-parchment-50 border border-amber-300 rounded-xl text-xs py-2 px-2">
@@ -1522,7 +1528,12 @@
     let inkColor = '#1A1817';
     let brushSize = 15;
     let nibAngleDeg = 42;
-    let qalamSmoothing = 0.58; // adjustable from Brush Settings
+    let qalamSmoothing = 0.58; // adaptive low-pass smoothing
+    let qalamMovingAverage = 0; // V6.35.4 motion profile; AliQaseef archive = 0.30
+    let qalamUniformResampling = false;
+    let qalamMotionBuffer = [];
+    let qalamMotionPrevPoint = null;
+    let qalamResampleState = null;
     let stabilizerEnabled = false;
     let stabilizerRadiusPx = 12;
     let stabilizerFriction = 0.45;
@@ -6572,7 +6583,7 @@
       return{
         tool:'calligraphy',size:Number(a.brushSize.toFixed(2)),angle:Number(a.angle.toFixed(2)),
         roundness:a.roundness,nibThickness:Number(a.nibThicknessPct.toFixed(2)),nibShape:'roundedRect',
-        spacing:4,smoothing:64,opacity:100,pressure:false,pressureSensitivity:25,minWidth:88,curve:'linear',
+        spacing:1,smoothing:80,movingAverage:30,resampling:true,opacity:100,pressure:false,pressureSensitivity:25,minWidth:88,curve:'linear',
         rotation:'fixed',twist:0,stabilizer:false,stabilizerRadius:10,stabilizerFriction:40,descenderFlip:false,
         velocityDynamics:false,velocityStrength:0,startTaper:0,endTaper:0,taperLength:36,
         source:'Font-derived/'+(a.fontName||'font')
