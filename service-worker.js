@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-34-3-educational-feedback-2026-10-01-16';
+const CACHE_VERSION = 'makhtuta-pwa-v6-34-3-1-ink-footprint-2026-10-01-17';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
