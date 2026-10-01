@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.29.1-beta">
+<html lang="ar" dir="rtl" data-app-version="6.30.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.29.1 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.30 β</span>
           </p>
         </div>
       </div>
@@ -495,6 +495,11 @@
         <div id="shapingInspectorSummary" class="mt-2 text-[9px] text-violet-800"></div>
         <div id="harfBuzzRuntimeStatus" class="mt-1 text-[9px] font-bold text-stone-500">HarfBuzz: لم يُحمّل خط بعد.</div>
         <div id="harfBuzzGlyphGrid" class="hidden mt-2 overflow-x-auto custom-scrollbar"></div>
+        <div id="glyphReferencePanel" class="hidden mt-2 rounded-xl border border-sky-200 bg-sky-50/60 p-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-2"><strong class="text-[10px] text-sky-950"><i class="fa-solid fa-vector-square ml-1"></i>Glyph Geometry & Reference Model</strong><div class="flex items-center gap-2"><label class="text-[9px]">شفافية <input id="glyphRefOpacity" type="range" min="8" max="70" value="24" oninput="setGlyphReferenceOpacity(this.value)" class="w-20 align-middle"></label><button type="button" onclick="toggleGlyphReference()" class="px-2 py-1 rounded-lg bg-white border border-sky-200 text-[9px] font-bold">إظهار/إخفاء</button></div></div>
+          <canvas id="glyphReferenceCanvas" width="900" height="220" class="mt-2 w-full h-[120px] rounded-xl bg-white border border-sky-100"></canvas>
+          <div id="glyphGeometrySummary" class="mt-1 text-[9px] text-stone-500"></div>
+        </div>
         <div id="shapingInspectorGrid" class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5"></div>
       </div>
 
@@ -746,7 +751,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.29.1-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.30.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -1676,6 +1681,7 @@
 
 
     let harfBuzzModulePromise=null,harfBuzzFontData=null,harfBuzzFontName='',harfBuzzRuntime=null; // harfbuzzjs v1 API
+    let lastHarfBuzzGlyphs=[],lastHarfBuzzText='',glyphReferenceVisible=true,glyphReferenceOpacity=.24,glyphReferenceFontUrl='';
     async function getHarfBuzzModule(){
       if(!harfBuzzModulePromise)harfBuzzModulePromise=import('https://cdn.jsdelivr.net/npm/harfbuzzjs@1.6.2/dist/index.mjs');
       return harfBuzzModulePromise;
@@ -1691,10 +1697,26 @@
       try{buffer.addText(String(text||''));buffer.guessSegmentProperties();hb.shape(font,buffer);const out=buffer.getGlyphInfosAndPositions();return out.map((g,i)=>({index:i,glyphId:g.codepoint,cluster:g.cluster,xAdvance:g.x_advance,yAdvance:g.y_advance,xOffset:g.x_offset,yOffset:g.y_offset,name:font.glyphName?font.glyphName(g.codepoint):''}))}
       finally{try{buffer.destroy?.()}catch(_){}try{font.destroy?.()}catch(_){}try{face.destroy?.()}catch(_){}try{blob.destroy?.()}catch(_){}}
     }
-    function renderHarfBuzzGlyphs(glyphs){
+    function setGlyphReferenceOpacity(v){glyphReferenceOpacity=clamp((Number(v)||24)/100,.08,.7);renderGlyphReferenceModel()}
+    function toggleGlyphReference(){glyphReferenceVisible=!glyphReferenceVisible;renderGlyphReferenceModel()}
+    async function ensureReferenceFontFace(){
+      if(!harfBuzzFontData)return null;if(glyphReferenceFontUrl)URL.revokeObjectURL(glyphReferenceFontUrl);
+      glyphReferenceFontUrl=URL.createObjectURL(new Blob([harfBuzzFontData]));const family='MakhtutaHBReference';
+      try{const ff=new FontFace(family,'url('+glyphReferenceFontUrl+')');await ff.load();document.fonts.add(ff);return family}catch(_){return null}
+    }
+    async function renderGlyphReferenceModel(){
+      const panel=document.getElementById('glyphReferencePanel'),c=document.getElementById('glyphReferenceCanvas'),sum=document.getElementById('glyphGeometrySummary');if(!panel||!c||!lastHarfBuzzGlyphs.length)return;
+      panel.classList.remove('hidden');const ctx=c.getContext('2d');ctx.clearRect(0,0,c.width,c.height);
+      const total=Math.max(1,lastHarfBuzzGlyphs.reduce((n,g)=>n+Math.abs(Number(g.xAdvance)||0),0)),maxAdv=Math.max(...lastHarfBuzzGlyphs.map(g=>Math.abs(Number(g.xAdvance)||0)),1);
+      ctx.strokeStyle='rgba(2,132,199,.16)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(20,165);ctx.lineTo(c.width-20,165);ctx.stroke();
+      let x=25;const usable=c.width-50;lastHarfBuzzGlyphs.forEach((g,i)=>{const w=Math.max(8,Math.abs(Number(g.xAdvance)||0)/total*usable);ctx.fillStyle='rgba(2,132,199,.07)';ctx.fillRect(x,35,w,130);ctx.strokeStyle='rgba(2,132,199,.25)';ctx.strokeRect(x,35,w,130);ctx.fillStyle='rgba(3,105,161,.85)';ctx.font='11px sans-serif';ctx.fillText('gid '+g.glyphId,x+3,51);ctx.fillText('c'+g.cluster,x+3,65);x+=w});
+      if(glyphReferenceVisible){const family=await ensureReferenceFontFace();if(family){ctx.save();ctx.globalAlpha=glyphReferenceOpacity;ctx.fillStyle='#111827';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.direction='rtl';ctx.font='112px "'+family+'"';ctx.fillText(lastHarfBuzzText,c.width/2,160,c.width-70);ctx.restore()}}
+      if(sum)sum.textContent='المربعات تمثل advances الناتجة من HarfBuzz؛ شكل الكلمة المرئي يرسم بنفس ملف الخط المحمّل. هذه هندسة طباعية مرجعية وليست قواعد خطاط.';
+    }
+    function renderHarfBuzzGlyphs(glyphs,text=''){
       const box=document.getElementById('harfBuzzGlyphGrid'),status=document.getElementById('harfBuzzRuntimeStatus');if(!box)return;
       if(!glyphs?.length){box.classList.add('hidden');return}
-      box.innerHTML='<div class="text-[9px] font-black text-violet-950 mb-1">HarfBuzz OpenType output — glyph IDs / clusters / advances / offsets</div><div class="flex gap-1.5 min-w-max" dir="ltr">'+glyphs.map(g=>'<div class="w-28 rounded-xl border border-violet-100 bg-white p-2 text-[8px]"><div class="font-black text-violet-900">gid '+g.glyphId+(g.name?' · '+g.name:'')+'</div><div>cluster '+g.cluster+'</div><div>adv '+g.xAdvance+', '+g.yAdvance+'</div><div>off '+g.xOffset+', '+g.yOffset+'</div></div>').join('')+'</div>';box.classList.remove('hidden');if(status)status.textContent='HarfBuzz shaping فعلي ✓ • '+harfBuzzFontName+' • '+glyphs.length+' glyphs';
+      box.innerHTML='<div class="text-[9px] font-black text-violet-950 mb-1">HarfBuzz OpenType output — glyph IDs / clusters / advances / offsets</div><div class="flex gap-1.5 min-w-max" dir="ltr">'+glyphs.map(g=>'<div class="w-28 rounded-xl border border-violet-100 bg-white p-2 text-[8px]"><div class="font-black text-violet-900">gid '+g.glyphId+(g.name?' · '+g.name:'')+'</div><div>cluster '+g.cluster+'</div><div>adv '+g.xAdvance+', '+g.yAdvance+'</div><div>off '+g.xOffset+', '+g.yOffset+'</div></div>').join('')+'</div>';box.classList.remove('hidden');if(status)status.textContent='HarfBuzz shaping فعلي ✓ • '+harfBuzzFontName+' • '+glyphs.length+' glyphs';lastHarfBuzzGlyphs=glyphs.map(g=>({...g}));lastHarfBuzzText=String(text||document.getElementById('shapingInspectorInput')?.value||'');renderGlyphReferenceModel();
     }
     const ARABIC_NON_JOINING_LEFT=new Set(['ا','أ','إ','آ','ٱ','د','ذ','ر','ز','و','ؤ','ء','ة','ى']);
     const ARABIC_TRANSPARENT_RE=/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/u;
@@ -1719,7 +1741,7 @@
       const units=arabicContextualUnits(text),arabic=units.filter(u=>u.arabic),joined=arabic.filter(u=>u.joinPrev||u.joinNext).length;
       summary.textContent='الاتجاه المتوقع: RTL • '+arabic.length+' حرف عربي • '+joined+' حرف داخل اتصال • '+units.length+' cluster محلي. نتائج glyph IDs/advances/GPOS تحتاج HarfBuzz الحقيقي.';
       grid.innerHTML=units.map((u,i)=>'<div class="rounded-xl border '+(u.arabic?'border-violet-100 bg-violet-50/60':'border-stone-100 bg-stone-50')+' p-2 flex items-center gap-2"><div class="w-10 h-10 rounded-lg bg-white border flex items-center justify-center text-2xl font-qalam">'+u.char+u.marks.join('')+'</div><div class="min-w-0 flex-1"><div class="font-black text-[10px]">'+(u.arabic?u.form:'فاصل/رمز')+' <span class="font-normal text-stone-400">cluster '+i+'</span></div><div class="text-[8px] text-stone-500">U+'+u.codePoint.toString(16).toUpperCase().padStart(4,'0')+(u.marks.length?' • '+u.marks.length+' علامة':'')+'</div><div class="text-[8px] mt-0.5"><span class="'+(u.joinPrev?'text-emerald-700':'text-stone-400')+'">↝ السابق '+(u.joinPrev?'متصل':'لا')+'</span> · <span class="'+(u.joinNext?'text-emerald-700':'text-stone-400')+'">التالي ↜ '+(u.joinNext?'متصل':'لا')+'</span></div></div></div>').join('');
-      if(harfBuzzRuntime&&harfBuzzFontData){try{renderHarfBuzzGlyphs(await shapeWithHarfBuzz(text))}catch(err){const st=document.getElementById('harfBuzzRuntimeStatus');if(st)st.textContent='HarfBuzz shaping error: '+(err?.message||err)}}
+      if(harfBuzzRuntime&&harfBuzzFontData){try{renderHarfBuzzGlyphs(await shapeWithHarfBuzz(text),text)}catch(err){const st=document.getElementById('harfBuzzRuntimeStatus');if(st)st.textContent='HarfBuzz shaping error: '+(err?.message||err)}}
     }
     function currentPracticeLetter() {
       if (typeof mode !== 'undefined' && mode === 'letters' && Array.isArray(ARABIC_LETTERS)) {
