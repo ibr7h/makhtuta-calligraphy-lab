@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.32.2-beta">
+<html lang="ar" dir="rtl" data-app-version="6.33.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.32.2 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.33 β</span>
           </p>
         </div>
       </div>
@@ -622,7 +622,7 @@
 
           <div id="glyphStrokeMappingPanel" class="bg-white rounded-2xl p-3 border border-teal-200 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <div><strong class="text-xs text-teal-950"><i class="fa-solid fa-pen-ruler ml-1"></i>كتابتك اليدوية ومطابقة 2D</strong><div class="text-[9px] text-stone-500">المطابقة تستخدم موضع الضربة، Bounding Box، خط الأساس، والـCluster؛ وليست تقييمًا كاملًا لجمال الخط.</div></div>
+              <div><strong class="text-xs text-teal-950"><i class="fa-solid fa-pen-ruler ml-1"></i>كتابتك اليدوية ومطابقة 2D</strong><div class="text-[9px] text-stone-500">المطابقة تقسّم الضربة المتصلة إلى أجزاء ثم تربط كل جزء بأقرب Glyph باستخدام Ink Bounds وخط الأساس والـCluster.</div></div>
               <div class="flex gap-1.5">
                 <button type="button" onclick="clearShapingPractice()" class="px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-stone-700 text-[10px] font-bold"><i class="fa-solid fa-trash-can ml-1"></i>مسح</button>
                 <button type="button" onclick="mapStudentStrokesToGlyphs()" class="px-3 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-[10px] font-bold"><i class="fa-solid fa-bullseye ml-1"></i>شاهد المطابقة</button>
@@ -1817,6 +1817,7 @@
             xOffset:Number(g.xOffset??g.x_offset??0),
             yOffset:Number(g.yOffset??g.y_offset??0),
             name:font.glyphName?font.glyphName(g.codepoint):'',
+            path:(typeof font.glyphToPath==='function'?font.glyphToPath(g.codepoint):''),
             extents
           };
         });
@@ -1862,7 +1863,7 @@
       return{span,left,right:left+span,fontPx,fontRatio:fontPx/W,baseline:.72,naturalWidth,canvasW:W,canvasH:H};
     }
 
-    function buildShapingGlyphZones(layout=lastShapingLayout){
+    function buildShapingGlyphZones(layout=lastShapingLayout,persist=true){
       const glyphs=lastHarfBuzzGlyphs||[];if(!glyphs.length)return[];
       const advances=glyphs.map(g=>Math.max(0,Math.abs(Number(g.xAdvance)||0)));
       const fallbackAdvance=Math.max(1,advances.find(v=>v>0)||1);
@@ -1911,14 +1912,46 @@
         // Extents are ink bounds; advance cells remain useful as a fallback and for hit testing.
         const hitLeft=Math.min(left,cellLeft),hitRight=Math.max(right,cellRight);
         left=clamp(left,0,1);right=clamp(right,0,1);top=clamp(top,.04,.94);bottom=clamp(bottom,.06,.96);
+        const drawOriginX=penOrigin+xOffset;
+        const drawOriginY=baseline-(Number(g.yOffset)||0)*unitPx/canvasH;
         return{
           index:i,g,left,right,top,bottom,baseline,
           cellLeft:clamp(cellLeft,0,1),cellRight:clamp(cellRight,0,1),
           hitLeft:clamp(hitLeft,0,1),hitRight:clamp(hitRight,0,1),
-          centerX:(left+right)/2,centerY:(top+bottom)/2,usedExtents
+          centerX:(left+right)/2,centerY:(top+bottom)/2,usedExtents,
+          drawOriginX,drawOriginY,scaleNorm:unitNormX
         };
       });
-      lastShapingZones=zones;return zones;
+      if(persist)lastShapingZones=zones;return zones;
+    }
+
+    function glyphPath2D(g){
+      if(!g?.path||typeof Path2D==='undefined')return null;
+      if(g._path2d)return g._path2d;
+      try{g._path2d=new Path2D(g.path);return g._path2d}catch(_){return null}
+    }
+
+    function paintHarfBuzzGlyph(ctx,z,W,H,opts={}){
+      const p=glyphPath2D(z?.g);if(!p)return false;
+      const scalePx=Math.max(.0001,(Number(z.scaleNorm)||0)*W);
+      const ox=(Number(z.drawOriginX)||0)*W,oy=(Number(z.drawOriginY)||Number(z.baseline)||.72)*H;
+      ctx.save();
+      ctx.globalAlpha=opts.alpha==null?1:opts.alpha;
+      ctx.translate(ox,oy);ctx.scale(scalePx,-scalePx);
+      if(opts.fill!==false){ctx.fillStyle=opts.fillStyle||'#111827';ctx.fill(p,'nonzero')}
+      if(opts.strokeStyle&&opts.strokeWidthPx>0){
+        ctx.strokeStyle=opts.strokeStyle;ctx.lineWidth=opts.strokeWidthPx/scalePx;ctx.lineJoin='round';ctx.lineCap='round';ctx.stroke(p);
+      }
+      ctx.restore();return true;
+    }
+
+    function paintExactShapedWord(ctx,zones,W,H,opts={}){
+      let drawn=0;(zones||[]).forEach(z=>{if(paintHarfBuzzGlyph(ctx,z,W,H,opts))drawn++});return drawn;
+    }
+
+    function practiceShapingZones(W,H){
+      if(!lastShapingLayout)return lastShapingZones.length?lastShapingZones:buildShapingGlyphZones();
+      return buildShapingGlyphZones({...lastShapingLayout,canvasW:W,canvasH:H},false);
     }
 
     function shapingClusterGroups(zones=lastShapingZones){
@@ -1966,11 +1999,12 @@
         ctx.strokeStyle=sel?'rgba(124,58,237,.9)':'rgba(2,132,199,.35)';ctx.lineWidth=sel?2.5:1.25;ctx.setLineDash(sel?[]:[6,5]);ctx.strokeRect(x,y,w,h);ctx.setLineDash([]);
         ctx.fillStyle=sel?'#6d28d9':'#0369a1';ctx.font='bold 11px sans-serif';ctx.textAlign='left';ctx.fillText('g'+(z.index+1)+' · c'+z.g.cluster,x+4,Math.max(13,y+13));
       });
-      if(glyphReferenceVisible&&family){
-        ctx.save();ctx.globalAlpha=glyphReferenceOpacity;ctx.fillStyle='#111827';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.direction='rtl';
-        ctx.font=lastShapingLayout.fontPx+'px "'+family+'"';
-        ctx.fillText(lastHarfBuzzText,W/2,baselineY);
-        ctx.restore();
+      if(glyphReferenceVisible){
+        const exactCount=paintExactShapedWord(ctx,zones,W,H,{alpha:glyphReferenceOpacity,fillStyle:'#111827'});
+        if(!exactCount&&family){
+          ctx.save();ctx.globalAlpha=glyphReferenceOpacity;ctx.fillStyle='#111827';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.direction='rtl';
+          ctx.font=lastShapingLayout.fontPx+'px "'+family+'"';ctx.fillText(lastHarfBuzzText,W/2,baselineY);ctx.restore();
+        }
       }
       c.onclick=(ev)=>{const rect=c.getBoundingClientRect(),nx=(ev.clientX-rect.left)/rect.width,ny=(ev.clientY-rect.top)/rect.height;const hit=zones.filter(z=>nx>=z.hitLeft&&nx<=z.hitRight&&ny>=z.top-.08&&ny<=z.bottom+.08).sort((a,b)=>Math.abs(nx-a.centerX)-Math.abs(nx-b.centerX))[0]||zones.reduce((a,b)=>Math.abs(nx-a.centerX)<Math.abs(nx-b.centerX)?a:b);if(hit)selectShapingGlyph(hit.index)};
       if(sum)sum.textContent='الإطار الآن يمثل Ink Bounds الفعلية للـGlyph عند توفر extents، بينما HarfBuzz xAdvance/xOffset يحدد موضعه داخل العرض الطبيعي للكلمة. تم تصحيح حقول harfbuzzjs v1.x إلى camelCase.';
@@ -5251,18 +5285,17 @@
       ctx.strokeStyle='rgba(2,132,199,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(25,baseline);ctx.lineTo(W-25,baseline);ctx.stroke();
       ctx.fillStyle='#0369a1';ctx.font='bold 11px sans-serif';ctx.textAlign='right';ctx.fillText('خط الأساس',W-28,baseline-7);
 
-      const zones=lastShapingZones.length?lastShapingZones:buildShapingGlyphZones();
+      const zones=practiceShapingZones(W,H);
       const sel=zones.find(z=>z.index===selectedShapingGlyphIndex);
       if(sel){ctx.fillStyle='rgba(124,58,237,.07)';ctx.fillRect(sel.left*W,sel.top*H,(sel.right-sel.left)*W,(sel.bottom-sel.top)*H);ctx.strokeStyle='rgba(124,58,237,.45)';ctx.setLineDash([8,6]);ctx.strokeRect(sel.left*W,sel.top*H,(sel.right-sel.left)*W,(sel.bottom-sel.top)*H);ctx.setLineDash([])}
 
       if(glyphReferenceVisible&&lastHarfBuzzText&&harfBuzzFontData){
         const family=await ensureReferenceFontFace();
-        if(family){
+        const exactCount=paintExactShapedWord(ctx,zones,W,H,{alpha:Math.min(.16,glyphReferenceOpacity),fillStyle:'#7c3aed'});
+        if(!exactCount&&family){
           if(!lastShapingLayout)lastShapingLayout=computeNaturalShapingLayout(ctx,W,H,family);
-          ctx.save();ctx.globalAlpha=Math.min(.16,glyphReferenceOpacity);ctx.fillStyle='#6d28d9';ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='alphabetic';
-          ctx.font=(lastShapingLayout.fontRatio*W)+'px "'+family+'"';
-          ctx.fillText(lastHarfBuzzText,W/2,baseline);
-          ctx.restore();
+          ctx.save();ctx.globalAlpha=Math.min(.16,glyphReferenceOpacity);ctx.fillStyle='#7c3aed';ctx.direction='rtl';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+          ctx.font=(lastShapingLayout.fontRatio*W)+'px "'+family+'"';ctx.fillText(lastHarfBuzzText,W/2,baseline);ctx.restore();
         }
       }
 
@@ -5324,44 +5357,85 @@
       return clamp(1-Math.hypot(dx/.35,dy/.45),0,1);
     }
 
+    function pointGlyphScore(p,z,prevIndex=-1){
+      const x=Number(p?.nx),y=Number(p?.ny);if(!Number.isFinite(x)||!Number.isFinite(y))return-1e9;
+      const hx=x<z.hitLeft?z.hitLeft-x:x>z.hitRight?x-z.hitRight:0;
+      const hy=y<z.top?z.top-y:y>z.bottom?y-z.bottom:0;
+      const inside=x>=z.hitLeft&&x<=z.hitRight&&y>=z.top-.06&&y<=z.bottom+.06;
+      const center=Math.hypot((x-z.centerX)/Math.max(.04,z.hitRight-z.hitLeft),(y-z.centerY)/Math.max(.08,z.bottom-z.top));
+      let score=(inside?1.2:0)-hx*7-hy*4-center*.16;
+      if(z.index===prevIndex)score+=.12; // hysteresis prevents rapid boundary flicker
+      return score;
+    }
+
+    function splitStrokeByGlyph(stroke,zones,strokeIndex){
+      const pts=(stroke?.points||[]).filter(p=>Number.isFinite(Number(p.nx))&&Number.isFinite(Number(p.ny)));
+      if(pts.length<2)return[];
+      const labels=[];let prev=-1;
+      pts.forEach(p=>{
+        let best=zones[0],bestScore=-Infinity;
+        zones.forEach(z=>{const sc=pointGlyphScore(p,z,prev);if(sc>bestScore){bestScore=sc;best=z}});
+        const label=best?.index??-1;labels.push(label);prev=label;
+      });
+      // Remove one-point label spikes between identical neighbours.
+      for(let i=1;i<labels.length-1;i++)if(labels[i-1]===labels[i+1]&&labels[i]!==labels[i-1])labels[i]=labels[i-1];
+      const out=[];let start=0;
+      for(let i=1;i<=pts.length;i++){
+        if(i===pts.length||labels[i]!==labels[start]){
+          let a=start,b=i;
+          // Keep a boundary point in both adjacent segments so connected Arabic joins stay continuous.
+          if(a>0)a--;
+          const segPts=pts.slice(a,b);
+          if(segPts.length>=2&&labels[start]>=0){
+            out.push({strokeIndex,segmentIndex:out.length,glyphIndex:labels[start],points:segPts,sourceStroke:stroke});
+          }
+          start=i;
+        }
+      }
+      return out;
+    }
+
     function mapStudentStrokesToGlyphs(){
       const grid=document.getElementById('glyphStrokeMappingGrid'),status=document.getElementById('glyphStrokeMappingStatus');if(!grid||!status)return;
-      const zones=lastShapingZones.length?lastShapingZones:buildShapingGlyphZones(),strokes=visibleStudentStrokesForMapping();
+      const pc=document.getElementById('shapingPracticeCanvas'),rect=pc?.getBoundingClientRect(),W=Math.max(1,rect?.width||1000),H=Math.max(1,rect?.height||320);
+      const zones=practiceShapingZones(W,H),strokes=visibleStudentStrokesForMapping();
       if(!zones.length){status.textContent='حمّل خطًا وحلّل الكلمة باستخدام HarfBuzz أولًا.';grid.innerHTML='';return}
       if(!strokes.length){status.textContent='لا توجد ضربات بعد. اكتب في مساحة التدريب أولًا.';grid.innerHTML='';return}
-      const clusterGroups=shapingClusterGroups(zones),maps=[];
-      strokes.forEach((st,strokeIndex)=>{
-        const b=strokeBoundsNormalized(st);if(!b)return;
-        let best=null;
-        zones.forEach(z=>{
-          const zoneRect={left:z.left,right:z.right,top:z.top,bottom:z.bottom,area:(z.right-z.left)*(z.bottom-z.top)};
-          const overlap=rectOverlapScore(b,zoneRect),center=centerProximityScore(b,z),baseline=baselineFitScore(b,z),cluster=clusterConsistencyScore(b,z,clusterGroups);
-          const score=.42*overlap+.28*center+.18*baseline+.12*cluster;
-          const cand={strokeIndex,stroke:st,bounds:b,zone:z,score,parts:{overlap,center,baseline,cluster}};
-          if(!best||cand.score>best.score)best=cand;
-        });
-        if(best)maps.push(best);
+
+      const clusterGroups=shapingClusterGroups(zones),segments=[];
+      strokes.forEach((st,strokeIndex)=>segments.push(...splitStrokeByGlyph(st,zones,strokeIndex)));
+
+      const maps=[];
+      segments.forEach(seg=>{
+        const z=zones.find(q=>q.index===seg.glyphIndex);if(!z)return;
+        const segmentStroke={kind:'stroke',tool:'lab-segment',points:seg.points},b=strokeBoundsNormalized(segmentStroke);if(!b)return;
+        const zoneRect={left:z.left,right:z.right,top:z.top,bottom:z.bottom,area:Math.max(.0001,(z.right-z.left)*(z.bottom-z.top))};
+        const overlap=rectOverlapScore(b,zoneRect),center=centerProximityScore(b,z),baseline=baselineFitScore(b,z),cluster=clusterConsistencyScore(b,z,clusterGroups);
+        const score=.42*overlap+.28*center+.18*baseline+.12*cluster;
+        maps.push({strokeIndex:seg.strokeIndex,segmentIndex:seg.segmentIndex,stroke:segmentStroke,bounds:b,zone:z,score,parts:{overlap,center,baseline,cluster}});
       });
+
       shapingLastMappings=maps;
       const grouped=new Map(zones.map(z=>[z.index,[]]));maps.forEach(m=>grouped.get(m.zone.index)?.push(m));
       grid.innerHTML=zones.map(z=>{
         const arr=grouped.get(z.index)||[],avg=arr.length?arr.reduce((n,m)=>n+m.score,0)/arr.length:0,u=contextualUnitForCluster(z.g.cluster);
-        return '<button type="button" onclick="selectShapingGlyph('+z.index+')" class="text-right rounded-xl border '+(z.index===selectedShapingGlyphIndex?'border-violet-400 bg-violet-50':'border-teal-100 bg-teal-50/50')+' p-2"><div class="flex items-center justify-between gap-2"><div class="font-black text-[10px] text-teal-950">g'+(z.index+1)+' • cluster '+z.g.cluster+'</div><span class="font-qalam text-2xl">'+(u?(u.char+u.marks.join('')):'◌')+'</span></div><div class="text-[9px] text-stone-600">'+arr.length+' ضربة مرتبطة'+(arr.length?' • ثقة '+Math.round(avg*100)+'%':'')+'</div><div class="text-[8px] text-stone-400">2D bbox + baseline + cluster</div></button>';
+        return '<button type="button" onclick="selectShapingGlyph('+z.index+')" class="text-right rounded-xl border '+(z.index===selectedShapingGlyphIndex?'border-violet-400 bg-violet-50':'border-teal-100 bg-teal-50/50')+' p-2"><div class="flex items-center justify-between gap-2"><div class="font-black text-[10px] text-teal-950">g'+(z.index+1)+' • cluster '+z.g.cluster+'</div><span class="font-qalam text-2xl">'+(u?(u.char+u.marks.join('')):'◌')+'</span></div><div class="text-[9px] text-stone-600">'+arr.length+' جزء مرتبط'+(arr.length?' • ثقة '+Math.round(avg*100)+'%':'')+'</div><div class="text-[8px] text-stone-400">segment-level 2D • bbox + baseline + cluster</div></button>';
       }).join('');
 
       const avg=maps.length?maps.reduce((n,m)=>n+m.score,0)/maps.length:0,avgOverlap=maps.length?maps.reduce((n,m)=>n+m.parts.overlap,0)/maps.length:0,avgBaseline=maps.length?maps.reduce((n,m)=>n+m.parts.baseline,0)/maps.length:0,avgCluster=maps.length?maps.reduce((n,m)=>n+m.parts.cluster,0)/maps.length:0;
       const pct=Math.round(avg*100),val=document.getElementById('shapingConfidenceValue'),bar=document.getElementById('shapingConfidenceBar'),fb=document.getElementById('shapingFeedbackList');
       if(val)val.textContent=pct+'%';if(bar)bar.style.width=pct+'%';
-      const notes=[];
+
+      const represented=new Set(maps.map(m=>m.zone.index)).size,notes=[];
+      notes.push(represented===zones.length?['check','الضربة المتصلة قُسّمت إلى أجزاء تغطي جميع Glyphs في الكلمة.']:['warn','بعض Glyphs لم يصل إليها أي جزء من الكتابة بعد.']);
       notes.push(avgBaseline>=.72?['check','محاذاة خط الأساس جيدة هندسيًا.']:['warn','محاذاة خط الأساس تحتاج ضبطًا أكثر.']);
-      notes.push(avgOverlap>=.58?['check','معظم الضربات تقع داخل الحدود المرجعية المناسبة.']:['warn','بعض الضربات تخرج عن Bounding Box المرجعي للـGlyph.']);
-      notes.push(avgCluster>=.72?['check','توزيع الضربات على الـClusters متسق مع موضعها.']:['warn','هناك ضربات قريبة من Cluster مجاور؛ راجع توزيع أجزاء الكلمة.']);
-      notes.push(['info','هذه النتيجة تقيس المطابقة الهندسية، ولا تقيس بعدُ جودة المنحنى أو زاوية القلم أو ترتيب الضربات.']);
+      notes.push(avgOverlap>=.58?['check','الأجزاء تقع غالبًا داخل الحدود المرجعية المناسبة.']:['warn','بعض أجزاء المسار تخرج عن Ink Bounds المرجعية.']);
+      notes.push(avgCluster>=.72?['check','تقسيم المسار بين الـClusters متسق مع موضعه.']:['warn','هناك انتقالات قريبة من حدود Cluster؛ راجع مناطق الوصل بين الحروف.']);
+      notes.push(['info','تم الانتقال من Stroke→Glyph إلى Segment→Glyph؛ الخطوة التالية هي مقارنة هذه الأجزاء بحدود الـOutline نفسها.']);
       if(fb)fb.innerHTML=notes.map(n=>'<div class="rounded-xl border p-2 '+(n[0]==='check'?'bg-emerald-50 border-emerald-100 text-emerald-800':n[0]==='warn'?'bg-amber-50 border-amber-100 text-amber-800':'bg-sky-50 border-sky-100 text-sky-800')+'"><i class="fa-solid '+(n[0]==='check'?'fa-circle-check':n[0]==='warn'?'fa-triangle-exclamation':'fa-circle-info')+' ml-1"></i>'+n[1]+'</div>').join('');
-      status.textContent='تمت مطابقة '+maps.length+' ضربة على '+zones.length+' glyphs باستخدام 2D bounds + baseline + cluster. متوسط الثقة الهندسية '+pct+'%.';
+      status.textContent='تم تقسيم '+strokes.length+' ضربة فعلية إلى '+maps.length+' أجزاء وربطها بـ '+represented+' من '+zones.length+' glyphs. متوسط الثقة الهندسية '+pct+'%.';
       renderShapingPracticeCanvas();
     }
-
 
     /* --- أوراق العمل --- */
     function togglePrint(show) {
