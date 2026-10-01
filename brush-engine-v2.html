@@ -6724,6 +6724,193 @@
       return{score,iou,coverage,precision,extra,missing:1-coverage,glyphs,groups,count:glyphs.length};
     }
 
+    function reconstructionProfileWith(base,patch={}){
+      const p={...base,...patch};
+      p.angle=clamp(Number(p.angle)||42,8,82);
+      p.aspect=clamp(Number(p.aspect)||.18,.05,.55);
+      p.fitMajorUnits=Math.max(1,Number(p.fitMajorUnits)||Number(base?.fitMajorUnits)||1);
+      return p;
+    }
+
+    function reconstructionObjective(profile,metrics){
+      const src=(metrics||[]).filter(m=>m?.rasterMask&&m?.ridgeSamples?.length);
+      if(!src.length)return{objective:0,score:0,iou:0,coverage:0,precision:0,extra:1,count:0};
+      const rows=[];
+      for(const m of src){
+        const recon=reconstructGlyphMaskFromProfile(m,profile);if(!recon)continue;
+        const cmp=compareBinaryInkMasks(m.rasterMask,recon.mask);
+        rows.push({...cmp,group:m.structuralGroup||'other'});
+      }
+      if(!rows.length)return{objective:0,score:0,iou:0,coverage:0,precision:0,extra:1,count:0};
+      const byGroup=new Map();
+      rows.forEach(x=>{const a=byGroup.get(x.group)||[];a.push(x);byGroup.set(x.group,a)});
+      const groupMeans=[...byGroup.values()].map(arr=>({
+        score:brushMean(arr.map(x=>x.score)),iou:brushMean(arr.map(x=>x.iou)),
+        coverage:brushMean(arr.map(x=>x.coverage)),precision:brushMean(arr.map(x=>x.precision)),extra:brushMean(arr.map(x=>x.extra))
+      }));
+      const avg=k=>brushMean(groupMeans.map(g=>g[k]));
+      const score=avg('score'),iou=avg('iou'),coverage=avg('coverage'),precision=avg('precision'),extra=avg('extra');
+      const objective=clamp(.62*score+.23*iou+.08*coverage+.07*precision,0,1);
+      return{objective,score,iou,coverage,precision,extra,count:rows.length};
+    }
+
+    function balancedOptimizationMetrics(calibration,perGroup=2){
+      const groups=new Map();
+      (calibration?.accepted||[]).forEach(m=>{const k=m.structuralGroup||'other',a=groups.get(k)||[];a.push(m);groups.set(k,a)});
+      const out=[];
+      [...groups.values()].forEach(arr=>{
+        [...arr].sort((a,b)=>(a.individualFit?.error??9)-(b.individualFit?.error??9)).slice(0,perGroup).forEach(m=>out.push(m));
+      });
+      return out.length?out:(calibration?.accepted||[]).slice(0,8);
+    }
+
+    function candidateRange(center,span,step,min,max){
+      const out=[];for(let v=center-span;v<=center+span+1e-9;v+=step)out.push(clamp(v,min,max));
+      out.push(clamp(center,min,max));return [...new Set(out.map(v=>Math.round(v*100000)/100000))];
+    }
+
+    function scanReconstructionParameterSync(profile,metrics,key,values){
+      let best={profile,metrics:reconstructionObjective(profile,metrics)};
+      for(const value of values){
+        const cand=reconstructionProfileWith(best.profile,{[key]:value});
+        const m=reconstructionObjective(cand,metrics);
+        if(m.objective>best.metrics.objective+1e-9)best={profile:cand,metrics:m};
+      }
+      return best;
+    }
+
+    function optimizeReconstructionProfileSync(baseProfile,metrics,opts={}){
+      let best={profile:reconstructionProfileWith(baseProfile),metrics:reconstructionObjective(baseProfile,metrics)};
+      const broad=opts.broad!==false;
+      if(broad){
+        best=scanReconstructionParameterSync(best.profile,metrics,'angle',candidateRange(best.profile.angle,24,4,10,80));
+        best=scanReconstructionParameterSync(best.profile,metrics,'aspect',candidateRange(best.profile.aspect,.22,.04,.06,.52));
+        const size=best.profile.fitMajorUnits;
+        best=scanReconstructionParameterSync(best.profile,metrics,'fitMajorUnits',candidateRange(size,size*.35,Math.max(1,size*.07),size*.55,size*1.45));
+      }
+      for(let pass=0;pass<2;pass++){
+        best=scanReconstructionParameterSync(best.profile,metrics,'angle',candidateRange(best.profile.angle,6,2,8,82));
+        best=scanReconstructionParameterSync(best.profile,metrics,'aspect',candidateRange(best.profile.aspect,.06,.02,.05,.55));
+        const size=best.profile.fitMajorUnits;
+        best=scanReconstructionParameterSync(best.profile,metrics,'fitMajorUnits',candidateRange(size,size*.12,Math.max(.5,size*.04),size*.75,size*1.25));
+      }
+      return best;
+    }
+
+    async function scanReconstructionParameterAsync(profile,metrics,key,values,onProgress,state){
+      let best={profile,metrics:reconstructionObjective(profile,metrics)};
+      for(let i=0;i<values.length;i++){
+        const cand=reconstructionProfileWith(best.profile,{[key]:values[i]});
+        const m=reconstructionObjective(cand,metrics);
+        if(m.objective>best.metrics.objective+1e-9)best={profile:cand,metrics:m};
+        state.done++;if(onProgress)onProgress(state.done,state.total,key,best);
+        if(i%3===2)await new Promise(r=>setTimeout(r,0));
+      }
+      return best;
+    }
+
+    async function optimizeReconstructionProfileAsync(baseProfile,metrics,opts={}){
+      let best={profile:reconstructionProfileWith(baseProfile),metrics:reconstructionObjective(baseProfile,metrics)};
+      const broad=opts.broad!==false;
+      const sets=[];
+      if(broad){
+        sets.push(['angle',candidateRange(best.profile.angle,24,4,10,80)]);
+        sets.push(['aspect',candidateRange(best.profile.aspect,.22,.04,.06,.52)]);
+        const size=best.profile.fitMajorUnits;sets.push(['fitMajorUnits',candidateRange(size,size*.35,Math.max(1,size*.07),size*.55,size*1.45)]);
+      }
+      sets.push(['angle',candidateRange(best.profile.angle,6,2,8,82)]);
+      sets.push(['aspect',candidateRange(best.profile.aspect,.06,.02,.05,.55)]);
+      let size=best.profile.fitMajorUnits;sets.push(['fitMajorUnits',candidateRange(size,size*.12,Math.max(.5,size*.04),size*.75,size*1.25)]);
+      sets.push(['angle',candidateRange(best.profile.angle,4,1,8,82)]);
+      sets.push(['aspect',candidateRange(best.profile.aspect,.04,.01,.05,.55)]);
+      size=best.profile.fitMajorUnits;sets.push(['fitMajorUnits',candidateRange(size,size*.08,Math.max(.35,size*.02),size*.80,size*1.20)]);
+      const state={done:0,total:sets.reduce((n,x)=>n+x[1].length,0)};
+      for(const [key,values] of sets)best=await scanReconstructionParameterAsync(best.profile,metrics,key,values,opts.onProgress,state);
+      return best;
+    }
+
+    function structuralGroupLabel(key){
+      return({vertical:'رأسي',teeth:'أسنان/أفقي',bowl:'أقواس/حلقات',descender:'هابط/منفصل',other:'أخرى'})[key]||key;
+    }
+
+    function contextualBrushVerdict(globalProfile,groupResults){
+      const rows=(groupResults||[]).filter(g=>g?.best?.profile);
+      if(rows.length<2)return{key:'insufficient',label:'بيانات غير كافية',detail:'نحتاج مجموعتين بنيويتين على الأقل للحكم على ثبات القصبة.',tone:'warn'};
+      const angles=rows.map(g=>g.best.profile.angle),aspects=rows.map(g=>g.best.profile.aspect),sizes=rows.map(g=>g.best.profile.fitMajorUnits);
+      const angleSpread=Math.max(...angles)-Math.min(...angles),aspectSpread=Math.max(...aspects)-Math.min(...aspects);
+      const sizeSpread=Math.max(...sizes)/Math.max(1e-9,Math.min(...sizes))-1;
+      const avgGain=brushMean(rows.map(g=>Math.max(0,g.gain||0)));
+      let key='single',label='قصبة عالمية واحدة مناسبة',tone='good';
+      if(angleSpread>=14||aspectSpread>=.14||sizeSpread>=.28||avgGain>=.065){key='contextual';label='الخط يحتاج نموذج قصبة سياقي';tone='error'}
+      else if(angleSpread>=9||aspectSpread>=.09||sizeSpread>=.18||avgGain>=.035){key='mixed';label='قصبة واحدة مقبولة مع فروق بنيوية';tone='warn'}
+      return{key,label,tone,angleSpread,aspectSpread,sizeSpread,avgGain,detail:'فرق الزوايا '+angleSpread.toFixed(1)+'° • فرق Aspect '+aspectSpread.toFixed(2)+' • فرق الحجم '+Math.round(sizeSpread*100)+'% • مكسب المجموعة '+Math.round(avgGain*100)+' نقطة.'};
+    }
+
+    function optimizedProfileForApplication(base,opt){
+      const ratio=(Number(opt.fitMajorUnits)||1)/Math.max(1e-9,Number(base.fitMajorUnits)||Number(opt.fitMajorUnits)||1);
+      return{
+        ...base,angle:opt.angle,aspect:opt.aspect,fitMajorUnits:opt.fitMajorUnits,
+        brushSize:clamp((Number(base.brushSize)||12)*ratio,4,36),
+        nibThicknessPct:clamp(opt.aspect*100,5,55),
+        reconstructionOptimized:true
+      };
+    }
+
+    async function runReconstructionGuidedAutoCalibration(silent=false){
+      const a=lastFontBrushAnalysis,status=document.getElementById('reconStatus'),badge=document.getElementById('reconAutoCalBadge');
+      if(!a?.calibration){if(status)status.textContent='حلّل الخط أولًا.';return null}
+      const btn=document.getElementById('runReconAutoCalBtn'),applyBtn=document.getElementById('applyReconAutoCalBtn');
+      if(btn)btn.disabled=true;if(applyBtn)applyBtn.disabled=true;
+      const source=balancedOptimizationMetrics(a.calibration,2);
+      const initial=reconstructionObjective(a,source);
+      if(badge){badge.className='px-2 py-0.5 rounded-full border border-sky-200 bg-sky-50 text-[7px] font-black text-sky-700';badge.textContent='جارٍ البحث…'}
+      const best=await optimizeReconstructionProfileAsync(a,source,{onProgress:(done,total,key,b)=>{
+        if(status)status.textContent='Auto Calibration '+Math.round(done/Math.max(1,total)*100)+'% • '+key+' • أفضل Reconstruction '+Math.round(b.metrics.score*100)+'%.';
+      }});
+      const optimized=optimizedProfileForApplication(a,best.profile);
+      const fullBefore=validateBrushReconstruction(a,a.calibration),fullAfter=validateBrushReconstruction(optimized,a.calibration);
+
+      const groupMap=new Map();
+      (a.calibration.accepted||[]).forEach(m=>{const k=m.structuralGroup||'other',arr=groupMap.get(k)||[];arr.push(m);groupMap.set(k,arr)});
+      const groups=[];
+      for(const [key,arr] of groupMap.entries()){
+        if(!arr.length)continue;
+        const globalOnGroup=reconstructionObjective(optimized,arr);
+        const gb=await optimizeReconstructionProfileAsync(optimized,arr,{broad:false,onProgress:null});
+        groups.push({key,label:structuralGroupLabel(key),count:arr.length,global:globalOnGroup,best:gb,gain:gb.metrics.objective-globalOnGroup.objective});
+      }
+      const verdict=contextualBrushVerdict(optimized,groups);
+      const result={initialProfile:{angle:a.angle,aspect:a.aspect,fitMajorUnits:a.fitMajorUnits,brushSize:a.brushSize},optimizedProfile:optimized,initial,searchBest:best.metrics,fullBefore,fullAfter,groups,verdict};
+      lastReconstructionAutoCalibration=result;renderReconstructionAutoCalibration(result);
+      if(btn)btn.disabled=false;if(applyBtn){applyBtn.disabled=false;applyBtn.className='px-2 py-1 rounded-lg bg-emerald-700 text-white text-[8px] font-bold'}
+      if(status)status.textContent='اكتملت المعايرة التلقائية ✓ • Reconstruction '+Math.round((fullBefore?.score||0)*100)+'% → '+Math.round((fullAfter?.score||0)*100)+'% • '+verdict.label+'.';
+      return result;
+    }
+
+    function renderReconstructionAutoCalibration(r){
+      const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
+      if(!r)return;
+      const before=r.fullBefore?.score||0,after=r.fullAfter?.score||0,gain=after-before,p0=r.initialProfile,p1=r.optimizedProfile;
+      set('reconAutoBefore',Math.round(before*100)+'%');set('reconAutoAfter',Math.round(after*100)+'%');set('reconAutoGain',(gain>=0?'+':'')+Math.round(gain*100)+'');
+      const params=document.getElementById('reconAutoParams');
+      if(params)params.innerHTML='<b>Angle</b> '+Math.round(p0.angle)+'° → <b>'+Math.round(p1.angle)+'°</b> • <b>Aspect</b> '+Number(p0.aspect).toFixed(2)+' → <b>'+p1.aspect.toFixed(2)+'</b> • <b>Nib</b> '+Math.round(p0.fitMajorUnits||0)+' → <b>'+Math.round(p1.fitMajorUnits||0)+'</b> units.';
+      const verdict=document.getElementById('reconAutoModelVerdict'),badge=document.getElementById('reconAutoCalBadge');
+      const tone=r.verdict.tone;
+      if(verdict){verdict.className='mt-1 rounded-lg px-2 py-1.5 text-[8px] leading-4 '+(tone==='good'?'bg-emerald-50 text-emerald-800':tone==='error'?'bg-rose-50 text-rose-800':'bg-amber-50 text-amber-800');verdict.innerHTML='<b>'+r.verdict.label+'</b><br>'+r.verdict.detail}
+      if(badge){badge.className='px-2 py-0.5 rounded-full border text-[7px] font-black '+(tone==='good'?'border-emerald-200 bg-emerald-50 text-emerald-800':tone==='error'?'border-rose-200 bg-rose-50 text-rose-800':'border-amber-200 bg-amber-50 text-amber-800');badge.textContent=r.verdict.label}
+      const grid=document.getElementById('reconAutoGroupGrid');
+      if(grid)grid.innerHTML=r.groups.map(g=>'<div class="rounded-lg border border-violet-100 bg-white p-1.5"><div class="font-black text-[8px] text-violet-950">'+g.label+'</div><div class="text-[7px] text-stone-600">'+Math.round(g.best.profile.angle)+'° • '+g.best.profile.aspect.toFixed(2)+' • '+Math.round(g.best.profile.fitMajorUnits)+'u</div><div class="text-[7px] '+(g.gain>=.05?'text-rose-600':'text-stone-400')+'">مكسب '+(g.gain>=0?'+':'')+Math.round(g.gain*100)+' نقطة</div></div>').join('');
+    }
+
+    function applyReconstructionOptimizedProfile(){
+      const r=lastReconstructionAutoCalibration,a=lastFontBrushAnalysis,status=document.getElementById('reconStatus');if(!r||!a)return;
+      Object.assign(a,r.optimizedProfile,{reconstructionAutoCalibration:r});
+      renderFontBrushAnalysis(a);
+      const v=validateBrushReconstruction(a,a.calibration);renderBrushReconstructionValidation(v);
+      const applyBtn=document.getElementById('applyReconAutoCalBtn');if(applyBtn){applyBtn.disabled=true;applyBtn.textContent='تم اعتماد أفضل قصبة ✓'}
+      if(status)status.textContent='تم اعتماد القصبة المحسنة ✓ • Angle '+Math.round(a.angle)+'° • Aspect '+a.aspect.toFixed(2)+' • Nib '+Math.round(a.fitMajorUnits)+' units • Reconstruction '+Math.round((v?.score||0)*100)+'%.';
+    }
+
     function reconstructionTone(v){return v>=.68?'good':v>=.48?'warn':'error'}
 
     function renderBrushReconstructionGlyph(g){
