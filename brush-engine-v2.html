@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.35.1-beta">
+<html lang="ar" dir="rtl" data-app-version="6.35.2-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.1 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.2 β</span>
           </p>
         </div>
       </div>
@@ -656,7 +656,7 @@
           <section id="fontBrushAnalyzerPanel" class="bg-white rounded-2xl p-3 sm:p-4 border border-amber-200 shadow-sm">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <strong class="text-sm text-amber-950"><i class="fa-solid fa-pen-nib ml-1"></i>V6.35.1 — Font → Brush Analyzer</strong>
+                <strong class="text-sm text-amber-950"><i class="fa-solid fa-pen-nib ml-1"></i>V6.35.2 — Nib Model Fitting</strong>
                 <div class="text-[9px] text-stone-500 mt-1">يستنتج نموذج قصبة محتملًا من هندسة Glyph Outlines. النتيجة تقديرية وليست استخراجًا للقلم الأصلي.</div>
               </div>
               <div class="flex flex-wrap items-center gap-2">
@@ -6445,17 +6445,32 @@
 
     function runFontBrushAnalyzerSelfTests(){
       const histAt=a=>{const h=Array(31).fill(0),i=clamp(Math.round(a/3),0,30);h[i]=12;if(i>0)h[i-1]=4;if(i+1<h.length)h[i+1]=4;return h};
-      const mk=(angle,ratio,aspect,variation,sharp)=>({strokeRatio:ratio,aspect,variation,sharpFraction:sharp,angleHist:histAt(angle),angleWeight:20});
+      const mk=(angle,ratio,aspect,variation,sharp)=>({strokeRatio:ratio,aspect,variation,sharpFraction:sharp,angleHist:histAt(angle),angleWeight:20,ridgeSamples:[]});
       const p1=deriveBrushProfileFromMetrics(Array.from({length:30},()=>mk(45,.12,.18,.18,.20)),'test');
       const p2=deriveBrushProfileFromMetrics(Array.from({length:28},()=>mk(60,.16,.25,.38,.08)),'test');
+
+      const synth=[];
+      const target={angle:48,aspect:.18,major:.145};
+      for(let i=0;i<72;i++){
+        const tangent=(i*17)%180,d=(target.angle-tangent)*Math.PI/180;
+        const base=target.major*(Math.abs(Math.sin(d))+target.aspect*Math.abs(Math.cos(d)));
+        const noise=1+.018*Math.sin(i*.73);
+        synth.push({tangentDeg:tangent,diameterNorm:base*noise,confidence:.88});
+      }
+      const fit=fitFlatNibModel(synth);
+
       const tests=[
-        {name:'angle-45',ok:!!p1&&Math.abs(p1.angle-45)<=3},
+        {name:'contour-angle-45',ok:!!p1&&Math.abs(p1.angle-45)<=3},
         {name:'size-range',ok:!!p1&&p1.brushSize>=5&&p1.brushSize<=30},
-        {name:'aspect',ok:!!p1&&Math.abs(p1.aspect-.18)<.03},
-        {name:'angle-60',ok:!!p2&&Math.abs(p2.angle-60)<=3},
-        {name:'variation-order',ok:!!p1&&!!p2&&p2.widthVariationPct>p1.widthVariationPct}
+        {name:'coarse-aspect',ok:!!p1&&Math.abs(p1.aspect-.18)<.03},
+        {name:'contour-angle-60',ok:!!p2&&Math.abs(p2.angle-60)<=3},
+        {name:'variation-order',ok:!!p1&&!!p2&&p2.widthVariationPct>p1.widthVariationPct},
+        {name:'nib-fit-angle',ok:!!fit&&Math.abs(fit.angle-target.angle)<=4},
+        {name:'nib-fit-aspect',ok:!!fit&&Math.abs(fit.aspect-target.aspect)<=.06},
+        {name:'nib-fit-major',ok:!!fit&&Math.abs(fit.majorRatio-target.major)<=.03},
+        {name:'nib-fit-error',ok:!!fit&&fit.error<.12}
       ];
-      return{ok:tests.every(t=>t.ok),tests,p1,p2};
+      return{ok:tests.every(t=>t.ok),tests,p1,p2,fit,target};
     }
 
     /* --- أوراق العمل --- */
