@@ -1,3 +1,14 @@
+# V6.32.1 β — Natural word proportions & geometry registration
+
+- Fixed horizontal stretching caused by a mismatch between the canvas bitmap aspect ratio and its CSS display size.
+- Added HiDPI canvas resizing so the drawing buffer always matches the rendered canvas size.
+- The reference word is now rendered at its natural typographic width; Canvas maxWidth compression/stretching is no longer used.
+- Glyph zones are centered on the real measured word width rather than spanning a fixed 88% of the canvas.
+- HarfBuzz xAdvance and xOffset are now applied inside that natural word span.
+- The handwriting canvas reuses the same normalized word transform, so reference geometry and student strokes share one coordinate system.
+- Resizing the window recomputes the reference layout and handwriting overlay.
+- App/PWA version bumped to V6.32.1 β.
+
 # V6.32 β — 2D Glyph–Stroke Mapping
 
 - Redesigned «مختبر تشكيل الكلمات» as a full workflow page with five guided steps.
