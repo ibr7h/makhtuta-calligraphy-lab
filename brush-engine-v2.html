@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.26.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.27.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.26 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.27 β</span>
           </p>
         </div>
       </div>
@@ -469,6 +469,10 @@
             <button id="btnClearStudentAttempt" type="button" onclick="clearStudentAttempt()" class="mr-auto px-2.5 py-1.5 rounded-lg border border-rose-200 bg-white text-rose-700 text-[10px] font-bold">مسح المحاولة فقط</button>
           </div>
           <div id="assessmentResults" class="hidden mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
+          <div id="arabicCalligraphyMetrics" class="hidden mt-2 rounded-xl border border-amber-200 bg-amber-50/60 p-2.5">
+            <div class="flex items-center justify-between gap-2 mb-2"><strong class="text-[10px] text-amber-950"><i class="fa-solid fa-ruler-combined ml-1"></i>قياسات الخط بالنقطة</strong><span id="qalamDotLegend" class="text-[9px] text-amber-800"></span></div>
+            <div id="qalamMetricGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-1.5"></div>
+          </div>
           <div id="assessmentFeedback" class="hidden mt-2 p-2.5 rounded-xl bg-white border border-emerald-200 text-xs text-stone-700 leading-6"></div>
           <div class="mt-2 rounded-xl bg-white border border-emerald-200 overflow-hidden">
             <div class="px-2.5 py-2 flex items-center justify-between gap-2 border-b border-emerald-100"><strong class="text-[10px] text-emerald-900"><i class="fa-solid fa-chart-line ml-1"></i>تقدم الطالب</strong><button type="button" onclick="clearAttemptHistory()" class="text-[9px] font-bold text-rose-700">مسح السجل</button></div>
@@ -730,7 +734,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.26.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.27.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -2374,6 +2378,37 @@
       const directed=(a,b)=>a.reduce((sum,p)=>{let best=Infinity;b.forEach(q=>{const d=Math.hypot(p.x-q.x,p.y-q.y);if(d<best)best=d});return sum+best},0)/a.length;
       return Math.min(1,(directed(m,u)+directed(u,m))/2/1.4);
     }
+
+    function qalamDotSizeNorm(strokes){
+      const vals=(strokes||[]).map(s=>Math.max(.001,(Number(s.sizeNorm)||.02)*(Number(s.nibThickness)||.16))).filter(Number.isFinite);
+      if(!vals.length)return .01;vals.sort((a,b)=>a-b);return vals[Math.floor(vals.length/2)];
+    }
+    function endpointProfile(strokes){
+      const ordered=(strokes||[]).filter(s=>s.points?.length);if(!ordered.length)return null;
+      const first=ordered[0].points[0],lastStroke=ordered[ordered.length-1],last=lastStroke.points[lastStroke.points.length-1];
+      return{start:{x:first.nx,y:first.ny},end:{x:last.nx,y:last.ny}};
+    }
+    function calligraphyGeometry(strokes,referenceBaseline){
+      const b=boundsForStrokes(strokes),dot=qalamDotSizeNorm(strokes),ep=endpointProfile(strokes);if(!b||!ep)return null;
+      const baseline=Number.isFinite(referenceBaseline)?referenceBaseline:b.maxY;
+      return{dot,bounds:b,widthDots:b.width/dot,heightDots:b.height/dot,aboveDots:Math.max(0,baseline-b.minY)/dot,belowDots:Math.max(0,b.maxY-baseline)/dot,startX:ep.start.x,startY:ep.start.y,endX:ep.end.x,endY:ep.end.y,nibAngleDeg:Math.abs(meanStrokeAngle(strokes)*180/Math.PI)};
+    }
+    function qalamMetricCell(label,modelValue,studentValue,suffix=''){
+      const delta=studentValue-modelValue;return '<div class="rounded-lg bg-white border border-amber-100 p-1.5"><div class="text-[8px] font-bold text-stone-500">'+label+'</div><div class="text-[10px]"><b>نموذج</b> '+modelValue.toFixed(2)+suffix+' · <b>طالب</b> '+studentValue.toFixed(2)+suffix+'</div><div class="text-[8px] '+(Math.abs(delta)<.15?'text-emerald-700':'text-stone-500')+'">Δ '+(delta>=0?'+':'')+delta.toFixed(2)+suffix+'</div></div>';
+    }
+    function renderArabicCalligraphyMetrics(model,student,mb,sb){
+      const panel=document.getElementById('arabicCalligraphyMetrics'),grid=document.getElementById('qalamMetricGrid'),legend=document.getElementById('qalamDotLegend');if(!panel||!grid)return null;
+      const baseline=mb.maxY,mg=calligraphyGeometry(model,baseline),sg=calligraphyGeometry(student,baseline);if(!mg||!sg){panel.classList.add('hidden');return null}
+      const modelEp=endpointProfile(model),studentEp=endpointProfile(student),dot=mg.dot;
+      const startDelta=Math.hypot(studentEp.start.x-modelEp.start.x,studentEp.start.y-modelEp.start.y)/dot,endDelta=Math.hypot(studentEp.end.x-modelEp.end.x,studentEp.end.y-modelEp.end.y)/dot,nibDelta=angleDeltaDegrees(meanStrokeAngle(model),meanStrokeAngle(student));
+      grid.innerHTML=qalamMetricCell('العرض',mg.widthDots,sg.widthDots,' ن')+qalamMetricCell('الارتفاع',mg.heightDots,sg.heightDots,' ن')+qalamMetricCell('فوق السطر',mg.aboveDots,sg.aboveDots,' ن')+qalamMetricCell('تحت السطر',mg.belowDots,sg.belowDots,' ن')+
+        '<div class="rounded-lg bg-white border border-amber-100 p-1.5"><div class="text-[8px] font-bold text-stone-500">بداية المسار</div><div class="font-black text-amber-900">'+startDelta.toFixed(2)+' ن</div></div>'+
+        '<div class="rounded-lg bg-white border border-amber-100 p-1.5"><div class="text-[8px] font-bold text-stone-500">نهاية المسار</div><div class="font-black text-amber-900">'+endDelta.toFixed(2)+' ن</div></div>'+
+        '<div class="rounded-lg bg-white border border-amber-100 p-1.5"><div class="text-[8px] font-bold text-stone-500">فرق زاوية القطّة</div><div class="font-black text-amber-900">'+nibDelta.toFixed(1)+'°</div></div>'+
+        '<div class="rounded-lg bg-white border border-amber-100 p-1.5"><div class="text-[8px] font-bold text-stone-500">وحدة النقطة</div><div class="font-black text-amber-900">'+Math.round(dot*Math.min(canvasCssWidth,canvasCssHeight))+' px</div></div>';
+      if(legend)legend.textContent='النقطة = عرض سنّ القلم في نموذج المعلم';panel.classList.remove('hidden');
+      return{model:mg,student:sg,startDeltaDots:startDelta,endDeltaDots:endDelta,nibAngleDelta:nibDelta,dotSizeNorm:dot};
+    }
     function metricScore(error,tolerance){return Math.round(100*clamp(1-error/Math.max(.0001,tolerance),0,1))}
     function assessmentCard(label,value,detail){
       return '<div class="rounded-xl bg-white border border-emerald-200 p-2 text-center"><div class="text-[9px] text-stone-500 font-bold">'+label+'</div><div class="text-lg font-black text-emerald-800">'+value+'%</div><div class="text-[9px] text-stone-500">'+detail+'</div></div>';
@@ -2412,8 +2447,8 @@
     function assessStudentAgainstModel(){
       const all=activeVisibleStrokesIncludingModel(),model=all.filter(s=>s.isTrainingModel),student=all.filter(s=>!s.isTrainingModel);
       const status=document.getElementById('assessmentStatus'),results=document.getElementById('assessmentResults'),feedback=document.getElementById('assessmentFeedback');
-      if(!model.length){status.textContent='لا يوجد نموذج تدريب في هذه المنطقة.';results.classList.add('hidden');feedback.classList.add('hidden');return}
-      if(!student.length){status.textContent='اكتب محاولة الطالب أولًا.';results.classList.add('hidden');feedback.classList.add('hidden');return}
+      if(!model.length){status.textContent='لا يوجد نموذج تدريب في هذه المنطقة.';results.classList.add('hidden');feedback.classList.add('hidden');document.getElementById('arabicCalligraphyMetrics')?.classList.add('hidden');return}
+      if(!student.length){status.textContent='اكتب محاولة الطالب أولًا.';results.classList.add('hidden');feedback.classList.add('hidden');document.getElementById('arabicCalligraphyMetrics')?.classList.add('hidden');return}
       const mb=boundsForStrokes(model),sb=boundsForStrokes(student);
       const alignErr=Math.hypot(sb.cx-mb.cx,sb.cy-mb.cy);
       const sizeErr=(Math.abs(sb.width-mb.width)/mb.width+Math.abs(sb.height-mb.height)/mb.height)/2;
@@ -2426,7 +2461,8 @@
         angle:metricScore(angleErr,35),extension:metricScore(extensionErr,.18),shape:metricScore(shapeErr,.55)
       };
       const overall=Math.round(metrics.alignment*.17+metrics.size*.16+metrics.baseline*.17+metrics.angle*.14+metrics.extension*.14+metrics.shape*.22);
-      const area=activePracticeArea();if(area){area.attempts=area.attempts||[];area.attempts.push({id:(crypto.randomUUID?crypto.randomUUID():'attempt-'+Date.now()),at:new Date().toISOString(),overall,metrics:{...metrics},letter:currentPracticeLetter(),modelStrokeCount:model.length,studentStrokeCount:student.length,studentSnapshot:cloneHistoryState(student)});if(area.attempts.length>50)area.attempts.splice(0,area.attempts.length-50);scheduleWorkspaceSave();renderAttemptHistory()}
+      const arabicGeometry=renderArabicCalligraphyMetrics(model,student,mb,sb);
+      const area=activePracticeArea();if(area){area.attempts=area.attempts||[];area.attempts.push({id:(crypto.randomUUID?crypto.randomUUID():'attempt-'+Date.now()),at:new Date().toISOString(),overall,metrics:{...metrics},letter:currentPracticeLetter(),modelStrokeCount:model.length,studentStrokeCount:student.length,studentSnapshot:cloneHistoryState(student),arabicGeometry:arabicGeometry?cloneHistoryState([arabicGeometry])[0]:null});if(area.attempts.length>50)area.attempts.splice(0,area.attempts.length-50);scheduleWorkspaceSave();renderAttemptHistory()}
       results.innerHTML=assessmentCard('المحاذاة',metrics.alignment,Math.round(alignErr*canvasCssWidth)+'px')+
         assessmentCard('الحجم',metrics.size,Math.round(sizeErr*100)+'% فرق')+
         assessmentCard('خط الأساس',metrics.baseline,Math.round(baselineErr*canvasCssHeight)+'px')+
@@ -2449,7 +2485,7 @@
       const before=cloneHistoryState();const kept=strokeHistory.filter(a=>a.kind!=='stroke'||a.isTrainingModel);
       if(kept.length===strokeHistory.length)return;strokeHistory.splice(0,strokeHistory.length,...kept);
       recordEditSnapshot('clear-student-attempt',before,cloneHistoryState());clearObjectSelection();redrawAllStrokes();scheduleWorkspaceSave();
-      const r=document.getElementById('assessmentResults'),f=document.getElementById('assessmentFeedback');r?.classList.add('hidden');f?.classList.add('hidden');
+      const r=document.getElementById('assessmentResults'),f=document.getElementById('assessmentFeedback');r?.classList.add('hidden');f?.classList.add('hidden');document.getElementById('arabicCalligraphyMetrics')?.classList.add('hidden');
       const st=document.getElementById('assessmentStatus');if(st)st.textContent='تم مسح محاولة الطالب مع الإبقاء على النموذج.';
     }
     function setAutoGroupEnabled(on){autoGroupEnabled=!!on;if(!autoGroupEnabled){clearTimeout(autoGroupTimer);autoGroupPendingIds=[]}}
