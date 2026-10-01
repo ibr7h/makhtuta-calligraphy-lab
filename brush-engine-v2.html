@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.34.3.3-beta">
+<html lang="ar" dir="rtl" data-app-version="6.34.3.4-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.34.3.3 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.34.3.4 β</span>
           </p>
         </div>
       </div>
@@ -5550,7 +5550,7 @@
         }
       }
 
-      if(outlineSamplesVisible&&sel)drawOutlineSamples(ctx,sel,W,H,{strokeStyle:'rgba(192,38,211,.48)',pointStyle:'rgba(6,182,212,.55)',lineWidth:1.25,pointRadius:1.5});
+      if(outlineSamplesVisible&&sel&&!contourHeatmapVisible)drawOutlineSamples(ctx,sel,W,H,{strokeStyle:'rgba(192,38,211,.48)',pointStyle:'rgba(6,182,212,.55)',lineWidth:1.25,pointRadius:1.5});
       const all=[...shapingPracticeStrokes,...(shapingPracticeActive?[shapingPracticeActive]:[])];
       ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#2563eb';ctx.lineWidth=shapingInkWidthPx;
       all.forEach(st=>{const p=st.points||[];if(!p.length)return;ctx.beginPath();ctx.moveTo(p[0].nx*W,p[0].ny*H);for(let i=1;i<p.length;i++)ctx.lineTo(p[i].nx*W,p[i].ny*H);ctx.stroke()});
@@ -5562,7 +5562,7 @@
 
       if(shapingLastMappings.length){
         shapingLastMappings.forEach((m)=>{
-          if(contourHeatmapVisible&&m.contour?.samples?.length){
+          if(!contourHeatmapVisible&&m.contour?.samples?.length){
             const selected=m.zone?.index===selectedShapingGlyphIndex;
             m.contour.samples.forEach((sp)=>{
               const d=Number(sp.distance)||0;
@@ -5898,6 +5898,74 @@
       if(weakest)selectShapingGlyph(weakest.glyphIndex);
     }
 
+    function interpretInkResult(m={}){
+      const score=clamp(Number(m.score)||0,0,1),coverage=clamp(Number(m.coverage)||0,0,1),iou=clamp(Number(m.iou)||0,0,1),extra=clamp(Number(m.extra)||0,0,1);
+      if(coverage>=.85&&iou<.35&&extra>.50)return{
+        key:'overpaint',tone:'error',badge:'تغطية زائدة',headline:'المحاولة غطّت الحرف بدل أن تتبع شكله.',
+        detail:'التغطية مرتفعة، لكن التداخل الحقيقي منخفض والحبر الزائد كبير. اتبع مسار الحرف وحدوده بدل ملء مساحته.',
+        coverageLabel:'تغطية مرتفعة بحبر زائد'
+      };
+      if(extra>.50)return{
+        key:'excess',tone:'error',badge:'حبر زائد',headline:'الحبر الزائد أكبر من المقبول.',
+        detail:'قلّل سماكة/تكدس الحبر وابقَ أقرب إلى هيئة الحرف المرجعية.',
+        coverageLabel:'تغطية المرجع'
+      };
+      if(coverage<.45&&extra<=.30)return{
+        key:'incomplete',tone:'warn',badge:'حرف غير مكتمل',headline:'أجزاء من الحرف لم تُغطَّ بعد.',
+        detail:'أكمل الأجزاء الناقصة أولًا ثم أعد التقييم.',
+        coverageLabel:'تغطية ناقصة'
+      };
+      if(iou<.35)return{
+        key:'low-iou',tone:'warn',badge:'شكل غير متطابق',headline:'الموضع قريب لكن هيئة الحبر لا تطابق الحرف جيدًا.',
+        detail:'راجع الحجم والمنحنى والامتداد؛ تغطية المرجع وحدها لا تكفي.',
+        coverageLabel:'تغطية المرجع'
+      };
+      if(score>=.75&&iou>=.55&&extra<=.20&&coverage>=.75)return{
+        key:'good',tone:'good',badge:'مطابقة جيدة',headline:'شكل الحرف قريب من المرجع.',
+        detail:'الموضع والتداخل والحبر الزائد ضمن نطاق جيد.',
+        coverageLabel:'تغطية المرجع'
+      };
+      if(score>=.55)return{
+        key:'fair',tone:'warn',badge:'قريب ويحتاج ضبطًا',headline:'شكل الحرف قريب جزئيًا من المرجع.',
+        detail:'صحّح الأجزاء المميزة في خريطة الحبر ثم أعد المحاولة.',
+        coverageLabel:'تغطية المرجع'
+      };
+      return{
+        key:'poor',tone:'error',badge:'يحتاج إعادة',headline:'شكل الحرف بعيد عن المرجع.',
+        detail:'ابدأ بالشكل العام وخط الأساس ثم راجع التفاصيل.',
+        coverageLabel:'تغطية المرجع'
+      };
+    }
+
+    function setMetricCardTone(el,tone){
+      if(!el)return;
+      el.className='rounded-xl border p-2 '+(tone==='good'?'border-emerald-100 bg-emerald-50':tone==='error'?'border-rose-100 bg-rose-50':tone==='warn'?'border-amber-100 bg-amber-50':'border-stone-100 bg-stone-50');
+    }
+
+    function renderInkVerdict(verdict){
+      const badge=document.getElementById('inkVerdictBadge'),text=document.getElementById('inkVerdictText');
+      if(badge){
+        badge.className='px-2 py-1 rounded-full border text-[9px] font-black '+(verdict.tone==='good'?'border-emerald-200 bg-emerald-50 text-emerald-800':verdict.tone==='error'?'border-rose-200 bg-rose-50 text-rose-800':'border-amber-200 bg-amber-50 text-amber-800');
+        badge.textContent=verdict.badge;
+      }
+      if(text)text.innerHTML='<strong>'+verdict.headline+'</strong><br>'+verdict.detail;
+      const coverageCard=document.getElementById('coverageMetricCard'),coverageLabel=document.getElementById('coverageMetricLabel');
+      setMetricCardTone(coverageCard,verdict.key==='overpaint'?'error':verdict.key==='incomplete'?'warn':verdict.tone==='good'?'good':'neutral');
+      if(coverageLabel)coverageLabel.textContent=verdict.coverageLabel;
+    }
+
+    function runInkSemanticsSelfTests(){
+      const cases=[
+        {name:'near-perfect',m:{score:.84,coverage:.92,iou:.72,extra:.10},expect:'good'},
+        {name:'overpaint',m:{score:.18,coverage:.99,iou:.24,extra:.76},expect:'overpaint'},
+        {name:'incomplete',m:{score:.38,coverage:.31,iou:.30,extra:.16},expect:'incomplete'},
+        {name:'low-overlap',m:{score:.42,coverage:.72,iou:.26,extra:.32},expect:'low-iou'},
+        {name:'excess-ink',m:{score:.32,coverage:.67,iou:.31,extra:.58},expect:'excess'}
+      ];
+      const results=cases.map(c=>({name:c.name,got:interpretInkResult(c.m).key,expect:c.expect}));
+      return{ok:results.every(x=>x.got===x.expect),results};
+    }
+
     function mapStudentStrokesToGlyphs(){
       const grid=document.getElementById('glyphStrokeMappingGrid'),status=document.getElementById('glyphStrokeMappingStatus');if(!grid||!status)return;
       const pc=document.getElementById('shapingPracticeCanvas'),rect=pc?.getBoundingClientRect(),W=Math.max(1,rect?.width||1000),H=Math.max(1,rect?.height||320);
@@ -5944,18 +6012,26 @@
       const cv=document.getElementById('contourMatchValue'),cb=document.getElementById('contourMatchBar'),ci=document.getElementById('contourInsideValue'),cc=document.getElementById('contourCoverageValue'),ce=document.getElementById('contourErrorValue');
       if(val)val.textContent=pct+'%';if(bar)bar.style.width=pct+'%';
       if(cv)cv.textContent=contourPct+'%';if(cb)cb.style.width=contourPct+'%';if(ci)ci.textContent=Math.round(insideAvg*100)+'%';if(cc)cc.textContent=Math.round(coverageAvg*100)+'%';if(ce)ce.textContent=Math.round(meanOutside*100)+'%';
+      const verdict=interpretInkResult({score:contourAvg,coverage:insideAvg,iou:coverageAvg,extra:meanOutside});
+      renderInkVerdict(verdict);
+      setMetricCardTone(document.getElementById('iouMetricCard'),coverageAvg>=.55?'good':coverageAvg<.35?'error':'warn');
+      setMetricCardTone(document.getElementById('extraInkMetricCard'),meanOutside<=.18?'good':meanOutside>.50?'error':'warn');
 
       const represented=new Set(maps.map(m=>m.zone.index)).size,notes=[];
-      notes.push(insideAvg>=.78?['check','تغطية مساحة المرجع جيدة.']:insideAvg>=.55?['warn','تغطية مساحة المرجع متوسطة؛ راجع المناطق الكهرمانية.']:['warn','هناك أجزاء كبيرة من المرجع لم يصل إليها الحبر.']);
-      notes.push(coverageAvg>=.55?['check','التداخل الفعلي بين حبر الطالب والمرجع جيد.']:coverageAvg>=.32?['warn','IoU متوسط؛ يوجد اختلاف ملحوظ في الحجم أو الشكل.']:['warn','IoU منخفض؛ مجرد تغطية المرجع لا تعني أن شكل الحرف صحيح.']);
-      if(insideAvg>.85&&coverageAvg<.35)notes.push(['warn','التغطية مرتفعة لكن التداخل منخفض؛ تم الوصول إلى معظم المرجع مع حبر زائد كبير، لذلك لا تُعد المحاولة قريبة من شكل الحرف.']);
-      notes.push(meanOutside<=.18?['check','الحبر الزائد خارج النموذج محدود.']:meanOutside<=.35?['warn','يوجد حبر زائد ملحوظ خارج النموذج بنسبة '+Math.round(meanOutside*100)+'%.']:['warn','الحبر الزائد مرتفع جدًا ('+Math.round(meanOutside*100)+'%)؛ النتيجة لن تُعد قريبة من النموذج حتى لو كانت التغطية 100%.']);
-      notes.push(represented===zones.length?['check','جميع Glyphs استقبلت أجزاء من كتابة الطالب.']:['warn','بعض Glyphs لم تصل إليها الكتابة بعد.']);
-      notes.push(avgBaseline>=.72?['check','خط الأساس متقارب مع النموذج.']:['warn','محاذاة خط الأساس تحتاج ضبطًا.']);
-      notes.push(['info','V6.34.3 يحول القياسات الآن إلى ملاحظات تعليمية للحروف، مع تحديد أولوية الحرف الأضعف.']);
+      if(verdict.key==='overpaint'){
+        notes.push(['warn','التغطية '+Math.round(insideAvg*100)+'% مرتفعة، لكنها ناتجة عن حبر زائد '+Math.round(meanOutside*100)+'% مع IoU '+Math.round(coverageAvg*100)+'%.']);
+        notes.push(['warn','الحكم الصحيح: المحاولة غطّت الحرف بدل أن تتبع هيئته.']);
+      }else{
+        notes.push(coverageAvg>=.55?['check','IoU جيد: شكل الحبر يتداخل فعليًا مع المرجع.']:['warn','IoU منخفض؛ راجع شكل الحرف وليس موقعه فقط.']);
+        notes.push(meanOutside<=.18?['check','الحبر الزائد محدود.']:['warn','الحبر الزائد '+Math.round(meanOutside*100)+'% ويحتاج تقليلًا.']);
+        if(insideAvg<.55)notes.push(['warn','تغطية المرجع ناقصة؛ أكمل الأجزاء المفقودة.']);
+      }
+      notes.push(['info','الموضع '+pct+'% مؤشر تشخيصي مستقل ولا يرفع درجة الشكل إذا كانت هيئة الحبر غير صحيحة.']);
+      if(represented!==zones.length)notes.push(['warn','بعض Glyphs لم تصل إليها الكتابة بعد.']);
+      if(avgBaseline<.72)notes.push(['warn','محاذاة خط الأساس تحتاج ضبطًا.']);
       if(fb)fb.innerHTML=notes.map(n=>'<div class="rounded-xl border p-2 '+(n[0]==='check'?'bg-emerald-50 border-emerald-100 text-emerald-800':n[0]==='warn'?'bg-amber-50 border-amber-100 text-amber-800':'bg-sky-50 border-sky-100 text-sky-800')+'"><i class="fa-solid '+(n[0]==='check'?'fa-circle-check':n[0]==='warn'?'fa-triangle-exclamation':'fa-circle-info')+' ml-1"></i>'+n[1]+'</div>').join('');
       const eduWeak=edu.filter(e=>e.severity>=2).length;
-      status.textContent='V6.34.3.3: '+strokes.length+' ضربة → '+maps.length+' أجزاء → '+represented+'/'+zones.length+' glyphs • مطابقة الشكل والحبر '+contourPct+'% • '+eduWeak+' حروف تحتاج مراجعة.';
+      status.textContent='V6.34.3.4: '+strokes.length+' ضربة → '+maps.length+' أجزاء → '+represented+'/'+zones.length+' glyphs • مطابقة الشكل والحبر '+contourPct+'% • '+eduWeak+' حروف تحتاج مراجعة.';
       renderShapingPracticeCanvas();
     }
 
