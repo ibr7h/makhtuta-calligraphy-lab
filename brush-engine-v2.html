@@ -6779,21 +6779,50 @@
       return best;
     }
 
+    function scanReconstructionAngleAspectSync(profile,metrics,angles,aspects){
+      let best={profile,metrics:reconstructionObjective(profile,metrics)};
+      for(const angle of angles)for(const aspect of aspects){
+        const cand=reconstructionProfileWith(profile,{angle,aspect});
+        const m=reconstructionObjective(cand,metrics);
+        if(m.objective>best.metrics.objective+1e-9)best={profile:cand,metrics:m};
+      }
+      return best;
+    }
+
     function optimizeReconstructionProfileSync(baseProfile,metrics,opts={}){
       let best={profile:reconstructionProfileWith(baseProfile),metrics:reconstructionObjective(baseProfile,metrics)};
       const broad=opts.broad!==false;
       if(broad){
-        best=scanReconstructionParameterSync(best.profile,metrics,'angle',candidateRange(best.profile.angle,24,4,10,80));
-        best=scanReconstructionParameterSync(best.profile,metrics,'aspect',candidateRange(best.profile.aspect,.22,.04,.06,.52));
-        const size=best.profile.fitMajorUnits;
+        let size=best.profile.fitMajorUnits;
         best=scanReconstructionParameterSync(best.profile,metrics,'fitMajorUnits',candidateRange(size,size*.35,Math.max(1,size*.07),size*.55,size*1.45));
+        best=scanReconstructionAngleAspectSync(
+          best.profile,metrics,
+          candidateRange(best.profile.angle,24,4,10,80),
+          candidateRange(best.profile.aspect,.22,.04,.06,.52)
+        );
+        size=best.profile.fitMajorUnits;
+        best=scanReconstructionParameterSync(best.profile,metrics,'fitMajorUnits',candidateRange(size,size*.24,Math.max(.6,size*.05),size*.65,size*1.35));
+      }else{
+        best=scanReconstructionAngleAspectSync(
+          best.profile,metrics,
+          candidateRange(best.profile.angle,12,4,8,82),
+          candidateRange(best.profile.aspect,.12,.04,.05,.55)
+        );
       }
-      for(let pass=0;pass<2;pass++){
-        best=scanReconstructionParameterSync(best.profile,metrics,'angle',candidateRange(best.profile.angle,6,2,8,82));
-        best=scanReconstructionParameterSync(best.profile,metrics,'aspect',candidateRange(best.profile.aspect,.06,.02,.05,.55));
-        const size=best.profile.fitMajorUnits;
-        best=scanReconstructionParameterSync(best.profile,metrics,'fitMajorUnits',candidateRange(size,size*.12,Math.max(.5,size*.04),size*.75,size*1.25));
-      }
+      best=scanReconstructionAngleAspectSync(
+        best.profile,metrics,
+        candidateRange(best.profile.angle,7,2,8,82),
+        candidateRange(best.profile.aspect,.07,.02,.05,.55)
+      );
+      let size=best.profile.fitMajorUnits;
+      best=scanReconstructionParameterSync(best.profile,metrics,'fitMajorUnits',candidateRange(size,size*.12,Math.max(.4,size*.03),size*.78,size*1.22));
+      best=scanReconstructionAngleAspectSync(
+        best.profile,metrics,
+        candidateRange(best.profile.angle,3,1,8,82),
+        candidateRange(best.profile.aspect,.035,.01,.05,.55)
+      );
+      size=best.profile.fitMajorUnits;
+      best=scanReconstructionParameterSync(best.profile,metrics,'fitMajorUnits',candidateRange(size,size*.06,Math.max(.25,size*.015),size*.86,size*1.14));
       return best;
     }
 
@@ -6809,23 +6838,62 @@
       return best;
     }
 
+    async function scanReconstructionAngleAspectAsync(profile,metrics,angles,aspects,onProgress,state){
+      let best={profile,metrics:reconstructionObjective(profile,metrics)},n=0;
+      for(const angle of angles)for(const aspect of aspects){
+        const cand=reconstructionProfileWith(profile,{angle,aspect});
+        const m=reconstructionObjective(cand,metrics);
+        if(m.objective>best.metrics.objective+1e-9)best={profile:cand,metrics:m};
+        state.done++;n++;if(onProgress)onProgress(state.done,state.total,'angle×aspect',best);
+        if(n%6===0)await new Promise(r=>setTimeout(r,0));
+      }
+      return best;
+    }
+
     async function optimizeReconstructionProfileAsync(baseProfile,metrics,opts={}){
       let best={profile:reconstructionProfileWith(baseProfile),metrics:reconstructionObjective(baseProfile,metrics)};
-      const broad=opts.broad!==false;
-      const sets=[];
+      const broad=opts.broad!==false,ops=[];
       if(broad){
-        sets.push(['angle',candidateRange(best.profile.angle,24,4,10,80)]);
-        sets.push(['aspect',candidateRange(best.profile.aspect,.22,.04,.06,.52)]);
-        const size=best.profile.fitMajorUnits;sets.push(['fitMajorUnits',candidateRange(size,size*.35,Math.max(1,size*.07),size*.55,size*1.45)]);
+        let size=best.profile.fitMajorUnits;
+        ops.push({type:'one',key:'fitMajorUnits',values:candidateRange(size,size*.35,Math.max(1,size*.07),size*.55,size*1.45)});
+        ops.push({type:'joint',angles:candidateRange(best.profile.angle,24,4,10,80),aspects:candidateRange(best.profile.aspect,.22,.04,.06,.52)});
+      }else{
+        ops.push({type:'joint',angles:candidateRange(best.profile.angle,12,4,8,82),aspects:candidateRange(best.profile.aspect,.12,.04,.05,.55)});
       }
-      sets.push(['angle',candidateRange(best.profile.angle,6,2,8,82)]);
-      sets.push(['aspect',candidateRange(best.profile.aspect,.06,.02,.05,.55)]);
-      let size=best.profile.fitMajorUnits;sets.push(['fitMajorUnits',candidateRange(size,size*.12,Math.max(.5,size*.04),size*.75,size*1.25)]);
-      sets.push(['angle',candidateRange(best.profile.angle,4,1,8,82)]);
-      sets.push(['aspect',candidateRange(best.profile.aspect,.04,.01,.05,.55)]);
-      size=best.profile.fitMajorUnits;sets.push(['fitMajorUnits',candidateRange(size,size*.08,Math.max(.35,size*.02),size*.80,size*1.20)]);
-      const state={done:0,total:sets.reduce((n,x)=>n+x[1].length,0)};
-      for(const [key,values] of sets)best=await scanReconstructionParameterAsync(best.profile,metrics,key,values,opts.onProgress,state);
+      ops.push({type:'joint-fresh',angleSpan:7,angleStep:2,aspectSpan:.07,aspectStep:.02});
+      ops.push({type:'size-fresh',span:.12,step:.03});
+      ops.push({type:'joint-fresh',angleSpan:3,angleStep:1,aspectSpan:.035,aspectStep:.01});
+      ops.push({type:'size-fresh',span:.06,step:.015});
+
+      const countOp=op=>{
+        if(op.type==='one')return op.values.length;
+        if(op.type==='joint')return op.angles.length*op.aspects.length;
+        if(op.type==='joint-fresh'){
+          const A=candidateRange(best.profile.angle,op.angleSpan,op.angleStep,8,82),B=candidateRange(best.profile.aspect,op.aspectSpan,op.aspectStep,.05,.55);return A.length*B.length;
+        }
+        if(op.type==='size-fresh'){const z=best.profile.fitMajorUnits;return candidateRange(z,z*op.span,Math.max(.25,z*op.step),z*(1-op.span*2),z*(1+op.span*2)).length}
+        return 0;
+      };
+      const state={done:0,total:ops.reduce((n,op)=>n+countOp(op),0)};
+      for(const op of ops){
+        if(op.type==='one'){
+          best=await scanReconstructionParameterAsync(best.profile,metrics,op.key,op.values,opts.onProgress,state);
+        }else if(op.type==='joint'){
+          best=await scanReconstructionAngleAspectAsync(best.profile,metrics,op.angles,op.aspects,opts.onProgress,state);
+          if(broad&&op===ops[1]){
+            const z=best.profile.fitMajorUnits;
+            const vals=candidateRange(z,z*.24,Math.max(.6,z*.05),z*.65,z*1.35);
+            state.total+=vals.length;
+            best=await scanReconstructionParameterAsync(best.profile,metrics,'fitMajorUnits',vals,opts.onProgress,state);
+          }
+        }else if(op.type==='joint-fresh'){
+          const A=candidateRange(best.profile.angle,op.angleSpan,op.angleStep,8,82),B=candidateRange(best.profile.aspect,op.aspectSpan,op.aspectStep,.05,.55);
+          best=await scanReconstructionAngleAspectAsync(best.profile,metrics,A,B,opts.onProgress,state);
+        }else if(op.type==='size-fresh'){
+          const z=best.profile.fitMajorUnits,vals=candidateRange(z,z*op.span,Math.max(.25,z*op.step),z*(1-op.span*2),z*(1+op.span*2));
+          best=await scanReconstructionParameterAsync(best.profile,metrics,'fitMajorUnits',vals,opts.onProgress,state);
+        }
+      }
       return best;
     }
 
