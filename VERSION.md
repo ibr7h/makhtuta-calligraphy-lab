@@ -1,3 +1,21 @@
+# V6.34.3.1 β — Ink Footprint Matching
+
+- Replaced the misleading centerline-vs-filled-Glyph comparison with rasterized ink-footprint comparison.
+- Student handwriting is now rendered into a binary ink mask using the same visible lab stroke width.
+- Reference HarfBuzz Glyphs are rasterized as exact filled ink masks.
+- Added tolerance masks around both student ink and reference ink so handwriting is not judged pixel-perfect.
+- Primary shape score now combines tolerant precision, tolerant reference coverage, and strict IoU.
+- Added a lab control for student ink width (4–32 px); the visual stroke and the evaluator share the same value.
+- Diagnostics now report reference coverage, strict IoU, and extra student ink instead of the former centerline "inside Ink" statistic.
+- Added a selected-Glyph ink heatmap:
+  - green = student ink within the tolerated reference,
+  - red = student ink outside the tolerated reference,
+  - amber = reference ink still missing from the tolerated student footprint.
+- Educational feedback now prefers ink-mask evidence for incomplete coverage and excess ink.
+- Stale heatmaps are cleared immediately when handwriting changes.
+- The previous Outline-distance diagnostics remain available internally as a secondary signal.
+- App/PWA version bumped to V6.34.3.1 β.
+
 # V6.34.3 β — Educational Feedback Engine
 
 - Converts the geometric and Outline diagnostics into actionable Arabic feedback per Glyph.
