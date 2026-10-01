@@ -6303,6 +6303,133 @@
       };
     }
 
+    function analyzerUnitForCluster(text,cluster){
+      const units=arabicBaseUnits(String(text||'')),n=Number(cluster);
+      if(!Number.isFinite(n))return null;
+      return units.find(u=>u.start===n)||units.find(u=>n>=u.start&&n<u.end)||[...units].reverse().find(u=>u.start<=n)||null;
+    }
+
+    function fontBrushStructuralGroup(ch){
+      ch=String(ch||'').normalize('NFC').replace(ARABIC_TRANSPARENT_RE,'');
+      if(/[اأإآٱل]/u.test(ch))return'vertical';
+      if(/[بتثنيسشصض]/u.test(ch))return'teeth';
+      if(/[جحخعغفقمهة]/u.test(ch))return'bowl';
+      if(/[دذرزوىءؤئ]/u.test(ch))return'descender';
+      return'other';
+    }
+
+    function robustMedian(values){return brushQuantile((values||[]).filter(Number.isFinite),.50)}
+    function robustMAD(values,center=robustMedian(values)){
+      const a=(values||[]).filter(Number.isFinite);return a.length?robustMedian(a.map(v=>Math.abs(v-center))):0;
+    }
+    function robustBand(values,minBand,mult=3){
+      const center=robustMedian(values),mad=robustMAD(values,center),sigma=1.4826*mad;
+      return{center,mad,sigma,limit:Math.max(minBand,mult*sigma)};
+    }
+    function angleDistance90(a,b){
+      const d=Math.abs(Number(a)-Number(b));return Math.min(d,90-d);
+    }
+
+    function calibrateFontBrushMetrics(metrics){
+      const valid=(metrics||[]).filter(Boolean).map((m,index)=>{
+        const individualFit=fitFlatNibModel(m.ridgeSamples||[]);
+        return{...m,_calIndex:index,individualFit};
+      });
+      const candidates=valid.filter(m=>m.individualFit&&m.individualFit.sampleCount>=10&&m.individualFit.error<=.48);
+      if(!candidates.length){
+        return{all:valid,accepted:valid,rejected:[],balanced:valid,groups:[],acceptanceRatio:1,groupAgreement:0,confidence:.25,reason:'fallback-no-individual-fit'};
+      }
+
+      const angleBand=robustBand(candidates.map(m=>m.individualFit.angle),9,3);
+      const aspectBand=robustBand(candidates.map(m=>m.individualFit.aspect),.07,3);
+      const errorBand=robustBand(candidates.map(m=>m.individualFit.error),.10,3);
+      const evaluated=valid.map(m=>{
+        const f=m.individualFit;
+        if(!f)return{...m,calibrationAccepted:false,calibrationReason:'لا يوجد fit فردي كافٍ'};
+        const angleOk=angleDistance90(f.angle,angleBand.center)<=angleBand.limit;
+        const aspectOk=Math.abs(f.aspect-aspectBand.center)<=aspectBand.limit;
+        const errorOk=f.error<=errorBand.center+errorBand.limit;
+        const samplesOk=f.sampleCount>=10;
+        const accepted=angleOk&&aspectOk&&errorOk&&samplesOk;
+        const reasons=[];
+        if(!samplesOk)reasons.push('عينات قليلة');
+        if(!angleOk)reasons.push('زاوية شاذة');
+        if(!aspectOk)reasons.push('Aspect شاذ');
+        if(!errorOk)reasons.push('Fit error مرتفع');
+        return{...m,calibrationAccepted:accepted,calibrationReason:accepted?'مقبول':reasons.join('، ')||'مستبعد'};
+      });
+
+      let accepted=evaluated.filter(m=>m.calibrationAccepted);
+      if(accepted.length<Math.min(5,evaluated.length)){
+        const ranked=[...evaluated].filter(m=>m.individualFit).sort((a,b)=>(a.individualFit.error||9)-(b.individualFit.error||9));
+        const keep=Math.min(evaluated.length,Math.max(3,Math.ceil(evaluated.length*.55)));
+        const ids=new Set(ranked.slice(0,keep).map(m=>m._calIndex));
+        accepted=evaluated.map(m=>ids.has(m._calIndex)?{...m,calibrationAccepted:true,calibrationReason:'مقبول احتياطيًا بأفضل Fit'}:m).filter(m=>m.calibrationAccepted);
+      }
+      const acceptedIds=new Set(accepted.map(m=>m._calIndex));
+      const finalAll=evaluated.map(m=>acceptedIds.has(m._calIndex)?{...m,calibrationAccepted:true}:m);
+      const rejected=finalAll.filter(m=>!m.calibrationAccepted);
+
+      const byGroup=new Map();
+      accepted.forEach(m=>{
+        const key=m.structuralGroup||'other',arr=byGroup.get(key)||[];arr.push(m);byGroup.set(key,arr);
+      });
+      const groupLabels={vertical:'رأسي',teeth:'أسنان/أفقي',bowl:'أقواس/حلقات',descender:'هابط/منفصل',other:'أخرى'};
+      const groups=[...byGroup.entries()].map(([key,arr])=>{
+        const p=deriveBrushProfileFromMetrics(arr,'group:'+key);
+        return{key,label:groupLabels[key]||key,count:arr.length,profile:p};
+      }).filter(g=>g.profile);
+
+      const groupAngles=groups.map(g=>g.profile.angle).filter(Number.isFinite);
+      const gaCenter=robustMedian(groupAngles),gaMad=robustMAD(groupAngles,gaCenter);
+      const groupAgreement=groupAngles.length<=1?0:clamp(1-(1.4826*gaMad)/18,0,1);
+
+      const groupArrays=[...byGroup.values()].filter(a=>a.length);
+      const cap=groupArrays.length?Math.max(3,Math.min(10,Math.ceil(accepted.length/groupArrays.length))):10;
+      const balanced=[];
+      groupArrays.forEach(arr=>{
+        [...arr].sort((a,b)=>(a.individualFit?.error??9)-(b.individualFit?.error??9)).slice(0,cap).forEach(m=>balanced.push(m));
+      });
+
+      const acceptanceRatio=evaluated.length?accepted.length/evaluated.length:0;
+      const sampleFactor=clamp(accepted.length/20,0,1);
+      const confidence=clamp(.42*acceptanceRatio+.33*groupAgreement+.25*sampleFactor,0,1);
+      return{
+        all:finalAll,accepted,rejected,balanced:balanced.length?balanced:accepted,groups,
+        acceptanceRatio,groupAgreement,confidence,
+        bands:{angle:angleBand,aspect:aspectBand,error:errorBand}
+      };
+    }
+
+    function renderFontBrushCalibration(cal){
+      const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
+      if(!cal){return}
+      set('calAcceptedCount',cal.accepted.length+'/'+cal.all.length);
+      set('calRejectedCount',String(cal.rejected.length));
+      set('calGroupAgreement',Math.round((cal.groupAgreement||0)*100)+'%');
+      const badge=document.getElementById('fontBrushCalibrationBadge');
+      if(badge){
+        const good=cal.confidence>=.68,weak=cal.confidence<.45;
+        badge.className='px-2 py-1 rounded-full border text-[8px] font-black '+(good?'bg-emerald-50 border-emerald-200 text-emerald-800':weak?'bg-rose-50 border-rose-200 text-rose-800':'bg-amber-50 border-amber-200 text-amber-800');
+        badge.textContent=(good?'معايرة مستقرة':weak?'معايرة ضعيفة':'معايرة متوسطة')+' • '+Math.round(cal.confidence*100)+'%';
+      }
+      const groups=document.getElementById('fontBrushGroupCalibration');
+      if(groups)groups.innerHTML=(cal.groups||[]).map(g=>
+        '<div class="rounded-lg bg-white border border-cyan-100 p-2"><div class="font-black text-[9px] text-cyan-950">'+g.label+'</div><div class="mt-0.5 text-[8px] text-stone-600">'+g.count+' glyphs • '+Math.round(g.profile.angle)+'° • '+g.profile.aspect.toFixed(2)+'</div><div class="text-[7px] text-stone-400">ثقة '+Math.round(g.profile.confidence*100)+'%</div></div>'
+      ).join('')||'<div class="text-[8px] text-stone-400">لا توجد مجموعات كافية.</div>';
+
+      const glyphs=document.getElementById('fontBrushGlyphCalibration');
+      if(glyphs)glyphs.innerHTML=(cal.all||[]).map(m=>{
+        const f=m.individualFit,ok=m.calibrationAccepted;
+        return '<div class="flex items-center gap-2 rounded-lg border '+(ok?'border-emerald-100 bg-emerald-50/60':'border-rose-100 bg-rose-50/60')+' px-2 py-1.5">'+
+          '<span class="font-qalam text-xl w-7 text-center">'+(m.sourceChar||'◌')+'</span>'+
+          '<div class="min-w-0 flex-1"><div class="text-[8px] font-black '+(ok?'text-emerald-900':'text-rose-900')+'">gid '+m.glyphId+' • '+(m.structuralGroup||'other')+' • '+(ok?'مقبول':'Outlier')+'</div>'+
+          '<div class="text-[7px] text-stone-500">'+(f?('angle '+Math.round(f.angle)+'° • aspect '+f.aspect.toFixed(2)+' • error '+Math.round(f.error*100)+'% • n '+f.sampleCount):'لا يوجد fit فردي')+'</div>'+
+          (!ok?'<div class="text-[7px] text-rose-600">'+(m.calibrationReason||'مستبعد')+'</div>':'')+
+          '</div></div>';
+      }).join('');
+    }
+
     function deriveBrushProfileFromMetrics(metrics,fontName=''){
       const valid=(metrics||[]).filter(Boolean);if(!valid.length)return null;
       const strokeRatio=brushQuantile(valid.map(m=>m.strokeRatio),.50);
