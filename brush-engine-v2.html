@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.28.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.29.0-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.28 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.29 β</span>
           </p>
         </div>
       </div>
@@ -490,9 +490,11 @@
       <div id="arabicShapingInspector" class="bg-white rounded-2xl p-3 border border-violet-200 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center gap-2">
           <div class="flex-1"><div class="text-xs font-black text-violet-950"><i class="fa-solid fa-language ml-1"></i>Arabic Shaping Inspector <span class="text-[9px] font-bold text-violet-600">Contextual</span></div><div class="text-[9px] text-stone-500 mt-0.5">تحليل Unicode والاتصال والسياق — ليس ناتج HarfBuzz/WASM بعد.</div></div>
-          <div class="flex gap-1.5"><input id="shapingInspectorInput" dir="rtl" value="محمد" oninput="inspectArabicShaping(this.value)" class="min-w-0 w-36 sm:w-52 px-2.5 py-1.5 rounded-xl border border-violet-200 bg-violet-50 text-lg font-qalam outline-none focus:ring-2 focus:ring-violet-200"><button type="button" onclick="inspectArabicShaping(document.getElementById('shapingInspectorInput').value)" class="px-2.5 py-1.5 rounded-xl bg-violet-800 text-white text-[10px] font-bold">تحليل</button></div>
+          <div class="flex flex-wrap justify-end gap-1.5"><input id="shapingInspectorInput" dir="rtl" value="محمد" oninput="inspectArabicShaping(this.value)" class="min-w-0 w-36 sm:w-52 px-2.5 py-1.5 rounded-xl border border-violet-200 bg-violet-50 text-lg font-qalam outline-none focus:ring-2 focus:ring-violet-200"><button type="button" onclick="inspectArabicShaping(document.getElementById('shapingInspectorInput').value)" class="px-2.5 py-1.5 rounded-xl bg-violet-800 text-white text-[10px] font-bold">تحليل</button><label class="px-2.5 py-1.5 rounded-xl border border-violet-200 bg-white text-violet-800 text-[10px] font-bold cursor-pointer"><i class="fa-solid fa-font ml-1"></i>تحميل خط<input id="hbFontInput" type="file" accept=".ttf,.otf,.woff,.woff2,font/ttf,font/otf" class="hidden" onchange="loadHarfBuzzFontFile(this.files?.[0])"></label></div>
         </div>
         <div id="shapingInspectorSummary" class="mt-2 text-[9px] text-violet-800"></div>
+        <div id="harfBuzzRuntimeStatus" class="mt-1 text-[9px] font-bold text-stone-500">HarfBuzz: لم يُحمّل خط بعد.</div>
+        <div id="harfBuzzGlyphGrid" class="hidden mt-2 overflow-x-auto custom-scrollbar"></div>
         <div id="shapingInspectorGrid" class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5"></div>
       </div>
 
@@ -744,7 +746,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.28.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.29.0-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -1672,6 +1674,28 @@
     const DESCENDER_FLIP_LETTERS = new Set(['ر','و']);
 
 
+
+    let harfBuzzModulePromise=null,harfBuzzFontData=null,harfBuzzFontName='',harfBuzzRuntime=null;
+    async function getHarfBuzzModule(){
+      if(!harfBuzzModulePromise)harfBuzzModulePromise=import('https://cdn.jsdelivr.net/npm/harfbuzzjs@0.10.0/dist/index.mjs');
+      return harfBuzzModulePromise;
+    }
+    async function loadHarfBuzzFontFile(file){
+      const status=document.getElementById('harfBuzzRuntimeStatus');if(!file)return;
+      try{if(status)status.textContent='HarfBuzz: جارٍ تحميل المحرك والخط…';harfBuzzFontData=await file.arrayBuffer();harfBuzzFontName=file.name;harfBuzzRuntime=await getHarfBuzzModule();if(status)status.textContent='HarfBuzz جاهز ✓ • '+file.name;await inspectArabicShaping(document.getElementById('shapingInspectorInput')?.value||'محمد')}
+      catch(err){harfBuzzRuntime=null;if(status)status.textContent='تعذر تشغيل HarfBuzz؛ التحليل السياقي المحلي ما زال يعمل. '+(err?.message||err)}
+    }
+    async function shapeWithHarfBuzz(text){
+      if(!harfBuzzRuntime||!harfBuzzFontData)return null;const hb=harfBuzzRuntime;
+      const blob=new hb.Blob(harfBuzzFontData),face=new hb.Face(blob,0),font=new hb.Font(face),buffer=new hb.Buffer();
+      try{buffer.addText(String(text||''));buffer.guessSegmentProperties();hb.shape(font,buffer);const out=buffer.getGlyphInfosAndPositions();return out.map((g,i)=>({index:i,glyphId:g.codepoint,cluster:g.cluster,xAdvance:g.x_advance,yAdvance:g.y_advance,xOffset:g.x_offset,yOffset:g.y_offset,name:font.glyphName?font.glyphName(g.codepoint):''}))}
+      finally{try{buffer.destroy?.()}catch(_){}try{font.destroy?.()}catch(_){}try{face.destroy?.()}catch(_){}try{blob.destroy?.()}catch(_){}}
+    }
+    function renderHarfBuzzGlyphs(glyphs){
+      const box=document.getElementById('harfBuzzGlyphGrid'),status=document.getElementById('harfBuzzRuntimeStatus');if(!box)return;
+      if(!glyphs?.length){box.classList.add('hidden');return}
+      box.innerHTML='<div class="text-[9px] font-black text-violet-950 mb-1">HarfBuzz OpenType output — glyph IDs / clusters / advances / offsets</div><div class="flex gap-1.5 min-w-max" dir="ltr">'+glyphs.map(g=>'<div class="w-28 rounded-xl border border-violet-100 bg-white p-2 text-[8px]"><div class="font-black text-violet-900">gid '+g.glyphId+(g.name?' · '+g.name:'')+'</div><div>cluster '+g.cluster+'</div><div>adv '+g.xAdvance+', '+g.yAdvance+'</div><div>off '+g.xOffset+', '+g.yOffset+'</div></div>').join('')+'</div>';box.classList.remove('hidden');if(status)status.textContent='HarfBuzz shaping فعلي ✓ • '+harfBuzzFontName+' • '+glyphs.length+' glyphs';
+    }
     const ARABIC_NON_JOINING_LEFT=new Set(['ا','أ','إ','آ','ٱ','د','ذ','ر','ز','و','ؤ','ء','ة','ى']);
     const ARABIC_TRANSPARENT_RE=/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/u;
     const ARABIC_LETTER_RE=/[\u0621-\u063A\u0641-\u064A\u066E\u066F\u0671-\u06D3\u06FA-\u06FC]/u;
@@ -1690,11 +1714,12 @@
         return{...u,arabic:true,joinPrev,joinNext,form:joinPrev&&joinNext?'وسط':joinPrev?'آخر':joinNext?'أول':'منفصل',cluster:i};
       });
     }
-    function inspectArabicShaping(text){
+    async function inspectArabicShaping(text){
       const grid=document.getElementById('shapingInspectorGrid'),summary=document.getElementById('shapingInspectorSummary');if(!grid||!summary)return;
       const units=arabicContextualUnits(text),arabic=units.filter(u=>u.arabic),joined=arabic.filter(u=>u.joinPrev||u.joinNext).length;
       summary.textContent='الاتجاه المتوقع: RTL • '+arabic.length+' حرف عربي • '+joined+' حرف داخل اتصال • '+units.length+' cluster محلي. نتائج glyph IDs/advances/GPOS تحتاج HarfBuzz الحقيقي.';
       grid.innerHTML=units.map((u,i)=>'<div class="rounded-xl border '+(u.arabic?'border-violet-100 bg-violet-50/60':'border-stone-100 bg-stone-50')+' p-2 flex items-center gap-2"><div class="w-10 h-10 rounded-lg bg-white border flex items-center justify-center text-2xl font-qalam">'+u.char+u.marks.join('')+'</div><div class="min-w-0 flex-1"><div class="font-black text-[10px]">'+(u.arabic?u.form:'فاصل/رمز')+' <span class="font-normal text-stone-400">cluster '+i+'</span></div><div class="text-[8px] text-stone-500">U+'+u.codePoint.toString(16).toUpperCase().padStart(4,'0')+(u.marks.length?' • '+u.marks.length+' علامة':'')+'</div><div class="text-[8px] mt-0.5"><span class="'+(u.joinPrev?'text-emerald-700':'text-stone-400')+'">↝ السابق '+(u.joinPrev?'متصل':'لا')+'</span> · <span class="'+(u.joinNext?'text-emerald-700':'text-stone-400')+'">التالي ↜ '+(u.joinNext?'متصل':'لا')+'</span></div></div></div>').join('');
+      if(harfBuzzRuntime&&harfBuzzFontData){try{renderHarfBuzzGlyphs(await shapeWithHarfBuzz(text))}catch(err){const st=document.getElementById('harfBuzzRuntimeStatus');if(st)st.textContent='HarfBuzz shaping error: '+(err?.message||err)}}
     }
     function currentPracticeLetter() {
       if (typeof mode !== 'undefined' && mode === 'letters' && Array.isArray(ARABIC_LETTERS)) {
