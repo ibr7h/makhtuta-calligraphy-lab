@@ -1,3 +1,14 @@
+# V6.32 β — 2D Glyph–Stroke Mapping
+
+- Redesigned «مختبر تشكيل الكلمات» as a full workflow page with five guided steps.
+- Added an independent handwriting canvas inside the shaping lab.
+- Added clickable Glyph selection on the HarfBuzz geometry canvas and Glyph cards.
+- Upgraded matching from horizontal-only assignment to 2D scoring using stroke position, bounding boxes, baseline alignment, and HarfBuzz clusters.
+- Added per-Glyph confidence, overall geometric confidence, mapping overlays, and actionable baseline/bounds/cluster feedback.
+- Added optional glyph extents from HarfBuzz when the loaded font/runtime exposes them.
+- Kept the score explicitly geometric; curve quality, nib angle, and stroke-order scoring remain future work.
+- Bumped the PWA cache and app version to V6.32 β.
+
 # Version
 
 **Hybrid V6.11 — AliQaseef Arabic Brush Presets**
