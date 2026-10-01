@@ -1,3 +1,42 @@
+# V6.35.6 β — Reconstruction-Guided Auto Calibration
+
+Reference snapshot remains frozen:
+- Branch: `reference-v6.34.3.4`
+- Commit: `ed65ea62735bbf68821f16b1097a1d8be93c5f38`
+
+New in V6.35.6:
+- Added reconstruction-guided optimization of:
+  - nib angle,
+  - nib aspect ratio,
+  - physical nib size in font units.
+- Auto Calibration runs automatically after the initial Font → Brush analysis.
+- Uses a balanced representative set across structural Glyph groups during the global search.
+- Replaced sequential local search with joint Angle × Aspect search plus size optimization before/after refinement to avoid local optima.
+- Added "اعتماد أفضل قصبة" so optimized geometry is reviewed before replacing the initial inferred brush.
+- Added per-structural-group reconstruction optimization and comparison against the global brush.
+- Added model verdicts:
+  - one global nib is suitable,
+  - one nib is acceptable with structural differences,
+  - contextual/dynamic nib model is recommended.
+- Contextual verdict considers:
+  - angle spread,
+  - aspect spread,
+  - nib-size spread,
+  - average reconstruction gain from group-specific tuning.
+- Added before/after Reconstruction score and explicit Angle / Aspect / Nib-size transitions.
+- The compact saved analyzer result can retain the accepted reconstruction optimization summary without storing heavy masks/ridge arrays.
+- Deterministic regression:
+  - starts from an intentionally wrong 63° / 0.35 / 37-unit nib,
+  - target is 47° / 0.18 / 26 units,
+  - initial reconstruction score = 53%,
+  - optimized reconstruction score ≈ 99.66%,
+  - recovered angle = 47°,
+  - recovered aspect = 0.18,
+  - recovered size ≈ 25.86 units.
+- Added regression checks for both "single global nib" and "contextual nib required" verdicts.
+- All Brush Motion, Nib Model, Real Font Calibration, Reconstruction, and frozen V6.34 handwriting-evaluation tests remain passing.
+- App/PWA version bumped to V6.35.6 β.
+
 # V6.35.5 β — Brush Reconstruction Validation
 
 Reference snapshot remains frozen:
