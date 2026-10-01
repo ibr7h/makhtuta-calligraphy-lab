@@ -1,3 +1,37 @@
+# V6.35.5 β — Brush Reconstruction Validation
+
+Reference snapshot remains frozen:
+- Branch: `reference-v6.34.3.4`
+- Commit: `ed65ea62735bbf68821f16b1097a1d8be93c5f38`
+
+New in V6.35.5:
+- Added Brush Reconstruction Validation after real-font calibration.
+- Ridge samples now retain raster coordinates and font-unit stroke diameters.
+- Added a second flat-nib fit in consistent font units, so reconstruction uses one physical nib size across different Glyphs instead of scaling nib size independently per Glyph height.
+- Reconstructs accepted Glyph ink by stamping the inferred fixed-angle nib over detected medial ridges.
+- Compares reconstructed ink with the original Glyph mask using:
+  - Reconstruction score,
+  - strict IoU,
+  - reference coverage,
+  - precision / extra ink,
+  - missing ink.
+- Added a visual reconstruction heatmap:
+  - green = overlap,
+  - red = reconstructed extra ink,
+  - amber = original Glyph ink not reproduced.
+- Added per-Glyph reconstruction cards; selecting a Glyph shows its detailed overlay.
+- Reconstruction runs automatically after Font → Brush analysis and can also be rerun manually.
+- Reconstruction scoring now penalizes large missing regions and oversized nibs even when one metric such as coverage is high.
+- Added deterministic reconstruction regressions:
+  - exact inferred nib reproduces synthetic reference at IoU 1.00,
+  - wrong angle drops IoU to ≈0.456,
+  - oversized nib is capped at a 0.58 reconstruction score.
+- Added a font-unit nib-fit regression; all V6.35 analyzer/calibration tests remain passing.
+- Brush Motion Engine from V6.35.4 remains active:
+  - AliQaseef: smoothing 80%, moving average 30%, spacing 1%, uniform resampling ON.
+- All frozen V6.34 handwriting-evaluation regressions remain passing.
+- App/PWA version bumped to V6.35.5 β.
+
 # V6.35.4 β — Brush Motion Engine
 
 Reference snapshot remains frozen:
