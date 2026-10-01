@@ -633,7 +633,7 @@
             </div>
             <div class="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-fuchsia-100 bg-fuchsia-50/60 px-3 py-2">
               <div>
-                <strong class="text-[10px] text-fuchsia-900"><i class="fa-solid fa-fill-drip ml-1"></i>V6.34.3.3 — Gross-Shape Validation</strong>
+                <strong class="text-[10px] text-fuchsia-900"><i class="fa-solid fa-fill-drip ml-1"></i>V6.34.3.4 — Result Semantics & Clean Heatmap</strong>
                 <div class="text-[8px] text-stone-500">نقارن مساحة الحبر التي ينتجها قلم الطالب بمساحة حبر الـGlyph، وليس Centerline فقط.</div>
               </div>
               <div class="flex flex-wrap items-center gap-3">
@@ -673,19 +673,22 @@
           </div>
 
           <div class="bg-white rounded-2xl p-4 border border-teal-200 shadow-sm">
-            <strong class="text-sm text-teal-950"><i class="fa-solid fa-bullseye ml-1"></i>نتيجة المطابقة</strong>
-            <div class="mt-3 flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">الموضع فقط — مؤشر تشخيصي</span><span id="shapingConfidenceValue" class="text-2xl font-black text-teal-700">—</span></div>
-            <div class="mt-2 h-2.5 rounded-full bg-stone-100 overflow-hidden"><div id="shapingConfidenceBar" class="h-full bg-teal-600 rounded-full transition-all" style="width:0%"></div></div>
-            <div class="mt-4 pt-3 border-t border-fuchsia-100">
-              <div class="flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">مطابقة الشكل والحبر</span><span id="contourMatchValue" class="text-2xl font-black text-fuchsia-700">—</span></div>
-              <div class="mt-2 h-2.5 rounded-full bg-stone-100 overflow-hidden"><div id="contourMatchBar" class="h-full bg-fuchsia-600 rounded-full transition-all" style="width:0%"></div></div>
-              <div class="mt-2 grid grid-cols-3 gap-1 text-center">
-                <div class="rounded-lg bg-emerald-50 p-1.5"><div id="contourInsideValue" class="font-black text-[11px] text-emerald-700">—</div><div class="text-[7px] text-stone-500">تغطية المرجع</div></div>
-                <div class="rounded-lg bg-sky-50 p-1.5"><div id="contourCoverageValue" class="font-black text-[11px] text-sky-700">—</div><div class="text-[7px] text-stone-500">IoU</div></div>
-                <div class="rounded-lg bg-rose-50 p-1.5"><div id="contourErrorValue" class="font-black text-[11px] text-rose-700">—</div><div class="text-[7px] text-stone-500">حبر زائد</div></div>
-              </div>
+            <div class="flex items-center justify-between gap-2">
+              <strong class="text-sm text-teal-950"><i class="fa-solid fa-bullseye ml-1"></i>نتيجة المطابقة</strong>
+              <span id="inkVerdictBadge" class="px-2 py-1 rounded-full border border-stone-200 bg-stone-50 text-[9px] font-black text-stone-600">بانتظار المحاولة</span>
             </div>
-            <div id="shapingFeedbackList" class="mt-3 space-y-2 text-[10px] text-stone-600"><div class="rounded-xl bg-stone-50 border border-stone-100 p-2">ستظهر هنا ملاحظات الموضع، الحدود، والمسافة إلى الـOutline بعد المطابقة.</div></div>
+            <div class="mt-3 rounded-2xl border border-fuchsia-100 bg-fuchsia-50/40 p-3">
+              <div class="flex items-end justify-between gap-2"><span class="text-[10px] font-bold text-stone-600">مطابقة الشكل والحبر</span><span id="contourMatchValue" class="text-3xl font-black text-fuchsia-700">—</span></div>
+              <div class="mt-2 h-3 rounded-full bg-white overflow-hidden border border-fuchsia-100"><div id="contourMatchBar" class="h-full bg-fuchsia-600 rounded-full transition-all" style="width:0%"></div></div>
+              <div id="inkVerdictText" class="mt-2 text-[9px] leading-5 text-stone-600">هذه هي النتيجة الأساسية. المؤشرات أدناه للتشخيص فقط.</div>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-1.5 text-center">
+              <div id="positionMetricCard" class="rounded-xl border border-stone-100 bg-stone-50 p-2"><div id="shapingConfidenceValue" class="font-black text-[13px] text-teal-700">—</div><div class="text-[7px] text-stone-500">الموضع فقط</div><div class="mt-1 h-1 rounded-full bg-white overflow-hidden"><div id="shapingConfidenceBar" class="h-full bg-teal-500" style="width:0%"></div></div></div>
+              <div id="coverageMetricCard" class="rounded-xl border border-stone-100 bg-stone-50 p-2"><div id="contourInsideValue" class="font-black text-[13px] text-stone-700">—</div><div id="coverageMetricLabel" class="text-[7px] text-stone-500">تغطية المرجع</div></div>
+              <div id="iouMetricCard" class="rounded-xl border border-sky-100 bg-sky-50 p-2"><div id="contourCoverageValue" class="font-black text-[13px] text-sky-700">—</div><div class="text-[7px] text-stone-500">IoU الفعلي</div></div>
+              <div id="extraInkMetricCard" class="rounded-xl border border-rose-100 bg-rose-50 p-2"><div id="contourErrorValue" class="font-black text-[13px] text-rose-700">—</div><div class="text-[7px] text-stone-500">حبر زائد</div></div>
+            </div>
+            <div id="shapingFeedbackList" class="mt-3 space-y-2 text-[10px] text-stone-600"><div class="rounded-xl bg-stone-50 border border-stone-100 p-2">ستظهر هنا خلاصة التشخيص بعد المطابقة.</div></div>
           </div>
 
           <div id="educationalFeedbackPanel" class="bg-white rounded-2xl p-4 border border-amber-200 shadow-sm">
