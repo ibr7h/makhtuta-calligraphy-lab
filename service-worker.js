@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-32-2-harfbuzz-v1-glyph-bounds-2026-10-01-11';
+const CACHE_VERSION = 'makhtuta-pwa-v6-33-segment-glyph-mapping-2026-10-01-12';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
