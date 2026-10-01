@@ -980,6 +980,11 @@
                 <div class="flex items-center justify-between gap-2 mb-1"><span class="text-[10px] font-black text-cyan-950"><i class="fa-solid fa-water ml-1"></i>Brush Motion Engine</span><span class="text-[8px] text-cyan-700">V6.35.4</span></div>
                 <label class="block text-[11px] font-bold">Moving Average <span id="bsMovingAverageVal" class="float-left font-mono">0%</span><input id="bsMovingAverage" type="range" min="0" max="70" value="0" oninput="updateBrushSetting('movingAverage',this.value)" class="w-full accent-cyan-700"></label>
                 <label class="mt-1.5 flex items-center justify-between gap-2 text-[10px] font-bold text-cyan-950"><span>Uniform Path Resampling</span><input id="bsUniformResampling" type="checkbox" onchange="updateBrushSetting('uniformResampling',this.checked)" class="accent-cyan-700"></label>
+                <div class="mt-2 grid grid-cols-3 gap-1">
+                  <button type="button" onclick="applyBrushMotionProfile('raw')" class="rounded-lg border border-cyan-200 bg-white px-1.5 py-1 text-[8px] font-bold text-cyan-900">Raw</button>
+                  <button type="button" onclick="applyBrushMotionProfile('balanced')" class="rounded-lg border border-cyan-200 bg-white px-1.5 py-1 text-[8px] font-bold text-cyan-900">Balanced</button>
+                  <button type="button" onclick="applyBrushMotionProfile('ali')" class="rounded-lg border border-cyan-700 bg-cyan-800 px-1.5 py-1 text-[8px] font-bold text-white">AliQaseef</button>
+                </div>
                 <div class="mt-1 text-[8px] leading-4 text-cyan-800">Moving Average يهدّئ اهتزاز المسار، وResampling يجعل كثافة النقاط مستقلة عن سرعة إرسال أحداث القلم.</div>
               </div>
               <label class="block text-[11px] font-bold mb-2">شفافية الحبر <span id="bsOpacityVal" class="float-left font-mono">100%</span><input id="bsOpacity" type="range" min="10" max="100" value="100" oninput="updateBrushSetting('opacity',this.value)" class="w-full accent-amber-800"></label>
@@ -4254,7 +4259,7 @@
         tip.style.opacity = String(brushOpacity);
         tip.style.transform = `rotate(${-nibAngleDeg}deg)`;
       }
-      if (summary) summary.textContent = `${Number(brushSize.toFixed(1))}px • ${Number(nibAngleDeg.toFixed(1))}° • ${nibShapeMode==='ellipse'?'Ellipse':'هندسي'} • سماكة ${Number((nibThicknessRatio*100).toFixed(1))}%`;
+      if (summary) summary.textContent = `${Number(brushSize.toFixed(1))}px • ${Number(nibAngleDeg.toFixed(1))}° • ${nibShapeMode==='ellipse'?'Ellipse':'هندسي'} • سماكة ${Number((nibThicknessRatio*100).toFixed(1))}% • Smooth ${Math.round(qalamSmoothing*100)}% • MA ${Math.round(qalamMovingAverage*100)}%${qalamUniformResampling?' • Resample':''}`;
     }
 
     function syncBrushSettingsUI() {
@@ -4287,6 +4292,17 @@
       const pr=document.getElementById('bsPressureRange'); if(pr) pr.textContent=`النطاق: ${pressureMin.toFixed(2)}–${pressureMax.toFixed(2)}`;
       updateBrushPreview();
       renderAliCalibrationPanel();
+    }
+
+    function applyBrushMotionProfile(name){
+      if(name==='ali'){
+        qalamSmoothing=.80;qalamMovingAverage=.30;qalamUniformResampling=true;brushSpacing=.01;
+      }else if(name==='balanced'){
+        qalamSmoothing=.68;qalamMovingAverage=.16;qalamUniformResampling=true;brushSpacing=Math.min(brushSpacing,.035);
+      }else{
+        qalamMovingAverage=0;qalamUniformResampling=false;
+      }
+      resetQalamMotionEngine();syncBrushSettingsUI();
     }
 
     function updateBrushSetting(key, value) {
@@ -6721,10 +6737,25 @@
       };
     }
 
+    function compactFontBrushAnalysisForStorage(a){
+      if(!a)return null;
+      return{
+        fontName:a.fontName,glyphCount:a.glyphCount,analysisGlyphCount:a.analysisGlyphCount,acceptedGlyphCount:a.acceptedGlyphCount,
+        angle:a.angle,angleConfidence:a.angleConfidence,brushSize:a.brushSize,aspect:a.aspect,nibThicknessPct:a.nibThicknessPct,
+        widthVariationPct:a.widthVariationPct,variationLabel:a.variationLabel,terminalStyle:a.terminalStyle,roundness:a.roundness,
+        confidence:a.confidence,fitAngle:a.fitAngle,fitAspect:a.fitAspect,fitError:a.fitError,fitSampleCount:a.fitSampleCount,angleAgreement:a.angleAgreement,
+        calibration:a.calibration?{
+          acceptanceRatio:a.calibration.acceptanceRatio,groupAgreement:a.calibration.groupAgreement,confidence:a.calibration.confidence,
+          acceptedCount:a.calibration.accepted?.length||0,rejectedCount:a.calibration.rejected?.length||0,
+          groups:(a.calibration.groups||[]).map(g=>({key:g.key,label:g.label,count:g.count,angle:g.profile?.angle,aspect:g.profile?.aspect,confidence:g.profile?.confidence}))
+        }:null
+      };
+    }
+
     function applyDerivedBrushPreset(){
       const a=lastFontBrushAnalysis,status=document.getElementById('fontBrushAnalyzerStatus');if(!a){if(status)status.textContent='حلّل الخط أولًا.';return}
       const preset=derivedBrushPresetFromAnalysis(a);BRUSH_PRESETS.font_derived=preset;
-      try{localStorage.setItem(FONT_DERIVED_BRUSH_STORAGE_KEY,JSON.stringify({analysis:a,preset,savedAt:new Date().toISOString()}))}catch(_){}
+      try{localStorage.setItem(FONT_DERIVED_BRUSH_STORAGE_KEY,JSON.stringify({analysis:compactFontBrushAnalysisForStorage(a),preset,savedAt:new Date().toISOString()}))}catch(_){}
       BRUSH_PRESETS.font_derived=preset;applyBrushPreset('font_derived');
       const storedBtn=document.getElementById('fontDerivedPresetButton');if(storedBtn){storedBtn.classList.remove('hidden');storedBtn.textContent='مشتقة من '+(a.fontName||'الخط')}
       if(status)status.textContent='تم إنشاء وتطبيق Brush Preset مشتق من '+(a.fontName||'الخط')+' ✓ • Angle '+Math.round(a.angle)+'° • Size '+a.brushSize.toFixed(1)+' • Aspect '+a.aspect.toFixed(2)+'.';
@@ -6733,7 +6764,10 @@
     function hydrateStoredFontDerivedBrushPreset(){
       try{
         const saved=JSON.parse(localStorage.getItem(FONT_DERIVED_BRUSH_STORAGE_KEY)||'null');if(!saved?.preset)return false;
-        BRUSH_PRESETS.font_derived=saved.preset;
+        const p={...saved.preset};
+        if(p.movingAverage==null)p.movingAverage=30;if(p.resampling==null)p.resampling=true;
+        if(Number(p.smoothing)<80)p.smoothing=80;if(Number(p.spacing)>1)p.spacing=1;
+        BRUSH_PRESETS.font_derived=p;
         const btn=document.getElementById('fontDerivedPresetButton');if(btn){btn.classList.remove('hidden');btn.textContent='مشتقة من '+(saved.analysis?.fontName||'الخط')}
         return true;
       }catch(_){return false}
