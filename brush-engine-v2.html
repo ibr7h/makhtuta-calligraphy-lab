@@ -6243,7 +6243,7 @@
       let angle=bestI*3;
       const meanBin=active?sum/active:0,peakRatio=meanBin>0?best/meanBin:0;
       let angleConfidence=clamp((peakRatio-1)/3.2,0,1);
-      if(!Number.isFinite(angle)||angle<12||angle>78){angle=42;angleConfidence=0}
+      if(!Number.isFinite(angle)||angle<12||angle>78||angleConfidence<.08){angle=42;angleConfidence=Math.min(angleConfidence,.08)}
       const brushSize=clamp(strokeRatio*112,5,30);
       const roundness=clamp(Math.round(5+(1-sharp)*22),4,30);
       const widthVariationPct=Math.round(variation*100);
@@ -6267,9 +6267,13 @@
       const r=Math.min(minor/2,major/2)*(a.roundness/100);
       if(r<.8)ctx.rect(-major/2,-minor/2,major,minor);
       else{
-        ctx.roundRect(-major/2,-minor/2,major,minor,r);
+        const x=-major/2,y=-minor/2,w=major,h=minor;
+        ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+        ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+        ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+        ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
       }
-      ctx.fill();ctx.restore();
+      ctx.closePath();ctx.fill();ctx.restore();
       ctx.strokeStyle='rgba(120,53,15,.45)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(W*.16,H*.78);ctx.bezierCurveTo(W*.34,H*.42,W*.62,H*.70,W*.84,H*.30);ctx.stroke();
       ctx.fillStyle='#78350f';ctx.font='bold 11px sans-serif';ctx.textAlign='center';ctx.fillText('زاوية '+Math.round(a.angle)+'° • aspect '+a.aspect.toFixed(2),W/2,H-14);
     }
