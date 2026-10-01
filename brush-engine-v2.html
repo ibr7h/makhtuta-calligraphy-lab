@@ -5727,8 +5727,12 @@
 
       // A large blob that happens to cover the whole reference must NOT score highly.
       // Strict IoU / ink precision dominate; tolerance only softens edge noise.
-      const score=clamp(.42*iou+.23*f1Strict+.15*sizeBalance+.20*f1Tol,0,1);
       const extraRatio=1-strictPrecision,missingRatio=1-strictCoverage;
+      let score=clamp(.42*iou+.23*f1Strict+.15*sizeBalance+.20*f1Tol,0,1);
+      if(strictCoverage>.80&&extraRatio>.65)score=Math.min(score,.18);
+      else if(strictCoverage>.75&&extraRatio>.48)score=Math.min(score,.28);
+      if(strictCoverage>.85&&iou<.30)score=Math.min(score,.24);
+      if(sizeBalance<.38&&stuArea>refArea)score=Math.min(score,.20);
 
       const overlay=document.createElement('canvas');overlay.width=R.w;overlay.height=R.h;const octx=overlay.getContext('2d'),img=octx.createImageData(R.w,R.h);
       for(let i=0,j=0;i<n;i++,j+=4){
