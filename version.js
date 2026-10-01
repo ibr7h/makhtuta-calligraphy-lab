@@ -1,7 +1,7 @@
 globalThis.MAKHTUTA_VERSION = Object.freeze({
-  version: "6.35.4-beta",
-  label: "V6.35.4 β",
-  build: "2026-10-01.24",
+  version: "6.35.5-beta",
+  label: "V6.35.5 β",
+  build: "2026-10-01.25",
   releasedAt: "2026-10-01",
   entry: "./brush-engine-v2.html"
 });
