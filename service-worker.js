@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-35-3-real-font-calibration-2026-10-01-23';
+const CACHE_VERSION = 'makhtuta-pwa-v6-35-4-brush-motion-engine-2026-10-01-24';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
