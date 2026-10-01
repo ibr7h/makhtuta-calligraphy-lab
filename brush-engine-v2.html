@@ -5713,6 +5713,48 @@
       return out;
     }
 
+    function scoreInkFootprintMetrics(m={}){
+      const strictPrecision=clamp(Number(m.strictPrecision)||0,0,1),strictCoverage=clamp(Number(m.strictCoverage)||0,0,1);
+      const precisionTol=clamp(Number(m.precisionTol)||0,0,1),coverageTol=clamp(Number(m.coverageTol)||0,0,1);
+      const iou=clamp(Number(m.iou)||0,0,1),sizeBalance=clamp(Number(m.sizeBalance)||0,0,1);
+      const stuArea=Math.max(0,Number(m.studentArea)||0),refArea=Math.max(0,Number(m.refArea)||0);
+      const f1Strict=(strictPrecision+strictCoverage)>0?2*strictPrecision*strictCoverage/(strictPrecision+strictCoverage):0;
+      const f1Tol=(precisionTol+coverageTol)>0?2*precisionTol*coverageTol/(precisionTol+coverageTol):0;
+      const extraRatio=1-strictPrecision,missingRatio=1-strictCoverage;
+      let score=clamp(.42*iou+.23*f1Strict+.15*sizeBalance+.20*f1Tol,0,1);
+      if(strictCoverage>.80&&extraRatio>.65)score=Math.min(score,.18);
+      else if(strictCoverage>.75&&extraRatio>.48)score=Math.min(score,.28);
+      if(strictCoverage>.85&&iou<.30)score=Math.min(score,.24);
+      if(sizeBalance<.38&&stuArea>refArea)score=Math.min(score,.20);
+      return{score,f1Strict,f1Tol,extraRatio,missingRatio};
+    }
+
+    function runInkScoreSelfTests(){
+      const cases=[
+        {
+          name:'overpaint-from-user-screenshot',
+          m:{strictPrecision:.24,strictCoverage:.99,precisionTol:.34,coverageTol:1,iou:.24,sizeBalance:.25,studentArea:400,refArea:100},
+          max:.18
+        },
+        {
+          name:'good-trace',
+          m:{strictPrecision:.88,strictCoverage:.86,precisionTol:.96,coverageTol:.94,iou:.77,sizeBalance:.91,studentArea:105,refArea:100},
+          min:.70
+        },
+        {
+          name:'incomplete-thin',
+          m:{strictPrecision:.82,strictCoverage:.34,precisionTol:.91,coverageTol:.48,iou:.31,sizeBalance:.46,studentArea:48,refArea:100},
+          max:.55
+        }
+      ];
+      const results=cases.map(c=>{
+        const score=scoreInkFootprintMetrics(c.m).score;
+        const ok=(c.max==null||score<=c.max+1e-9)&&(c.min==null||score>=c.min-1e-9);
+        return{name:c.name,score,ok,min:c.min,max:c.max};
+      });
+      return{ok:results.every(x=>x.ok),results};
+    }
+
     function analyzeGlyphInkFootprint(z,arr,W,H){
       if(!arr?.length)return{
         score:0,strictPrecision:0,strictCoverage:0,precisionTol:0,coverageTol:0,iou:0,
@@ -5735,18 +5777,9 @@
       const precisionTol=stuArea?studentInsideTol/stuArea:0;
       const coverageTol=refArea?refCoveredTol/refArea:0;
       const iou=union?inter/union:0;
-      const f1Strict=(strictPrecision+strictCoverage)>0?2*strictPrecision*strictCoverage/(strictPrecision+strictCoverage):0;
-      const f1Tol=(precisionTol+coverageTol)>0?2*precisionTol*coverageTol/(precisionTol+coverageTol):0;
       const sizeBalance=(refArea&&stuArea)?Math.min(refArea,stuArea)/Math.max(refArea,stuArea):0;
-
-      // A large blob that happens to cover the whole reference must NOT score highly.
-      // Strict IoU / ink precision dominate; tolerance only softens edge noise.
-      const extraRatio=1-strictPrecision,missingRatio=1-strictCoverage;
-      let score=clamp(.42*iou+.23*f1Strict+.15*sizeBalance+.20*f1Tol,0,1);
-      if(strictCoverage>.80&&extraRatio>.65)score=Math.min(score,.18);
-      else if(strictCoverage>.75&&extraRatio>.48)score=Math.min(score,.28);
-      if(strictCoverage>.85&&iou<.30)score=Math.min(score,.24);
-      if(sizeBalance<.38&&stuArea>refArea)score=Math.min(score,.20);
+      const scored=scoreInkFootprintMetrics({strictPrecision,strictCoverage,precisionTol,coverageTol,iou,sizeBalance,studentArea:stuArea,refArea});
+      const {score,f1Strict,f1Tol,extraRatio,missingRatio}=scored;
 
       const overlay=document.createElement('canvas');overlay.width=R.w;overlay.height=R.h;const octx=overlay.getContext('2d'),img=octx.createImageData(R.w,R.h);
       for(let i=0,j=0;i<n;i++,j+=4){
