@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.34.3-beta">
+<html lang="ar" dir="rtl" data-app-version="6.34.3.1-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.34.3 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.34.3.1 β</span>
           </p>
         </div>
       </div>
@@ -633,14 +633,17 @@
             </div>
             <div class="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-fuchsia-100 bg-fuchsia-50/60 px-3 py-2">
               <div>
-                <strong class="text-[10px] text-fuchsia-900"><i class="fa-solid fa-wave-square ml-1"></i>V6.34.3 — Educational Feedback</strong>
-                <div class="text-[8px] text-stone-500">أخضر: داخل Ink • كهرماني: قريب من الـOutline • أحمر: خارج نطاق التسامح</div>
+                <strong class="text-[10px] text-fuchsia-900"><i class="fa-solid fa-fill-drip ml-1"></i>V6.34.3.1 — Ink Footprint Matching</strong>
+                <div class="text-[8px] text-stone-500">نقارن مساحة الحبر التي ينتجها قلم الطالب بمساحة حبر الـGlyph، وليس Centerline فقط.</div>
               </div>
               <div class="flex flex-wrap items-center gap-3">
+                <label class="text-[9px] font-bold text-fuchsia-900">عرض الحبر <span id="shapingInkWidthValue" class="font-mono">15px</span>
+                  <input id="shapingInkWidthInput" type="range" min="4" max="32" value="15" oninput="setShapingInkWidth(this.value)" class="w-24 align-middle accent-fuchsia-700">
+                </label>
                 <label class="text-[9px] font-bold text-fuchsia-900">التسامح <span id="contourToleranceValue" class="font-mono">16px</span>
                   <input id="contourToleranceInput" type="range" min="6" max="36" value="16" oninput="setContourTolerance(this.value)" class="w-24 align-middle accent-fuchsia-700">
                 </label>
-                <label class="text-[9px] font-bold text-fuchsia-900 cursor-pointer"><input id="contourHeatmapToggle" type="checkbox" checked onchange="toggleContourHeatmap(this.checked)" class="accent-fuchsia-700 ml-1">خريطة الخطأ</label>
+                <label class="text-[9px] font-bold text-fuchsia-900 cursor-pointer"><input id="contourHeatmapToggle" type="checkbox" checked onchange="toggleContourHeatmap(this.checked)" class="accent-fuchsia-700 ml-1">خريطة الحبر</label>
               </div>
             </div>
             <div class="mt-2 relative rounded-xl overflow-hidden border border-sky-100 bg-white">
@@ -671,15 +674,15 @@
 
           <div class="bg-white rounded-2xl p-4 border border-teal-200 shadow-sm">
             <strong class="text-sm text-teal-950"><i class="fa-solid fa-bullseye ml-1"></i>نتيجة المطابقة</strong>
-            <div class="mt-3 flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">الثقة الهندسية</span><span id="shapingConfidenceValue" class="text-2xl font-black text-teal-700">—</span></div>
+            <div class="mt-3 flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">الموضع والمحاذاة</span><span id="shapingConfidenceValue" class="text-2xl font-black text-teal-700">—</span></div>
             <div class="mt-2 h-2.5 rounded-full bg-stone-100 overflow-hidden"><div id="shapingConfidenceBar" class="h-full bg-teal-600 rounded-full transition-all" style="width:0%"></div></div>
             <div class="mt-4 pt-3 border-t border-fuchsia-100">
-              <div class="flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">مطابقة الـOutline</span><span id="contourMatchValue" class="text-2xl font-black text-fuchsia-700">—</span></div>
+              <div class="flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">مطابقة الشكل والحبر</span><span id="contourMatchValue" class="text-2xl font-black text-fuchsia-700">—</span></div>
               <div class="mt-2 h-2.5 rounded-full bg-stone-100 overflow-hidden"><div id="contourMatchBar" class="h-full bg-fuchsia-600 rounded-full transition-all" style="width:0%"></div></div>
               <div class="mt-2 grid grid-cols-3 gap-1 text-center">
-                <div class="rounded-lg bg-emerald-50 p-1.5"><div id="contourInsideValue" class="font-black text-[11px] text-emerald-700">—</div><div class="text-[7px] text-stone-500">داخل Ink</div></div>
-                <div class="rounded-lg bg-sky-50 p-1.5"><div id="contourCoverageValue" class="font-black text-[11px] text-sky-700">—</div><div class="text-[7px] text-stone-500">Coverage</div></div>
-                <div class="rounded-lg bg-rose-50 p-1.5"><div id="contourErrorValue" class="font-black text-[11px] text-rose-700">—</div><div class="text-[7px] text-stone-500">خطأ خارج Ink</div></div>
+                <div class="rounded-lg bg-emerald-50 p-1.5"><div id="contourInsideValue" class="font-black text-[11px] text-emerald-700">—</div><div class="text-[7px] text-stone-500">تغطية المرجع</div></div>
+                <div class="rounded-lg bg-sky-50 p-1.5"><div id="contourCoverageValue" class="font-black text-[11px] text-sky-700">—</div><div class="text-[7px] text-stone-500">IoU</div></div>
+                <div class="rounded-lg bg-rose-50 p-1.5"><div id="contourErrorValue" class="font-black text-[11px] text-rose-700">—</div><div class="text-[7px] text-stone-500">حبر زائد</div></div>
               </div>
             </div>
             <div id="shapingFeedbackList" class="mt-3 space-y-2 text-[10px] text-stone-600"><div class="rounded-xl bg-stone-50 border border-stone-100 p-2">ستظهر هنا ملاحظات الموضع، الحدود، والمسافة إلى الـOutline بعد المطابقة.</div></div>
@@ -1801,7 +1804,7 @@
     let lastShapingZones=[],selectedShapingGlyphIndex=-1,lastShapingLayout=null;
     let outlineSamplesVisible=true,outlineSampleDensity=12;
     let contourTolerancePx=16,contourHeatmapVisible=true,outlineHitCanvas=null,outlineHitCtx=null;
-    let shapingVisualRenderSeq=0,lastEducationalFeedback=[];
+    let shapingInkWidthPx=15,shapingVisualRenderSeq=0,lastEducationalFeedback=[],lastInkFootprintByGlyph=new Map();
 
     async function getHarfBuzzModule(){
       if(!harfBuzzModulePromise)harfBuzzModulePromise=import('https://cdn.jsdelivr.net/npm/harfbuzzjs@1.6.2/dist/index.mjs');
@@ -1875,6 +1878,11 @@
       outlineSampleDensity=clamp(Math.round(Number(v)||12),5,28);
       lastHarfBuzzGlyphs.forEach(g=>{if(g){delete g._outlineSamples;delete g._outlineSamplesDensity}});
       refreshShapingVisuals().then(()=>{if(shapingLastMappings.length)mapStudentStrokesToGlyphs()});
+    }
+    function setShapingInkWidth(v){
+      shapingInkWidthPx=clamp(Math.round(Number(v)||15),4,32);
+      const el=document.getElementById('shapingInkWidthValue');if(el)el.textContent=shapingInkWidthPx+'px';
+      if(shapingPracticeStrokes.length)mapStudentStrokesToGlyphs();else renderShapingPracticeCanvas();
     }
     function setContourTolerance(v){
       contourTolerancePx=clamp(Math.round(Number(v)||16),6,36);
@@ -5541,8 +5549,13 @@
 
       if(outlineSamplesVisible&&sel)drawOutlineSamples(ctx,sel,W,H,{strokeStyle:'rgba(192,38,211,.48)',pointStyle:'rgba(6,182,212,.55)',lineWidth:1.25,pointRadius:1.5});
       const all=[...shapingPracticeStrokes,...(shapingPracticeActive?[shapingPracticeActive]:[])];
-      ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#2563eb';ctx.lineWidth=7;
+      ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#2563eb';ctx.lineWidth=shapingInkWidthPx;
       all.forEach(st=>{const p=st.points||[];if(!p.length)return;ctx.beginPath();ctx.moveTo(p[0].nx*W,p[0].ny*H);for(let i=1;i<p.length;i++)ctx.lineTo(p[i].nx*W,p[i].ny*H);ctx.stroke()});
+
+      if(contourHeatmapVisible&&lastInkFootprintByGlyph.size){
+        const ink=lastInkFootprintByGlyph.get(selectedShapingGlyphIndex);
+        if(ink?.overlay){ctx.save();ctx.globalAlpha=.72;ctx.drawImage(ink.overlay,0,0,W,H);ctx.restore()}
+      }
 
       if(shapingLastMappings.length){
         shapingLastMappings.forEach((m,i)=>{
@@ -5567,7 +5580,7 @@
     }
 
     function clearShapingPractice(){
-      shapingPracticeStrokes=[];shapingPracticeActive=null;shapingLastMappings=[];
+      shapingPracticeStrokes=[];shapingPracticeActive=null;shapingLastMappings=[];lastInkFootprintByGlyph=new Map();
       const status=document.getElementById('glyphStrokeMappingStatus'),grid=document.getElementById('glyphStrokeMappingGrid'),val=document.getElementById('shapingConfidenceValue'),bar=document.getElementById('shapingConfidenceBar'),fb=document.getElementById('shapingFeedbackList');
       const cv=document.getElementById('contourMatchValue'),cb=document.getElementById('contourMatchBar'),ci=document.getElementById('contourInsideValue'),cc=document.getElementById('contourCoverageValue'),ce=document.getElementById('contourErrorValue');
       if(status)status.textContent='اكتب المحاولة في المساحة ثم اضغط «شاهد المطابقة».';
@@ -5651,6 +5664,72 @@
       return out;
     }
 
+    function makeMaskCanvas(W,H,maxW=760,maxH=420){
+      const scale=Math.min(1,maxW/Math.max(1,W),maxH/Math.max(1,H)),w=Math.max(1,Math.round(W*scale)),h=Math.max(1,Math.round(H*scale));
+      const c=document.createElement('canvas');c.width=w;c.height=h;return{canvas:c,ctx:c.getContext('2d',{willReadFrequently:true}),w,h,scale};
+    }
+
+    function renderGlyphMaskTo(ctx,z,W,H,scale,tolerancePx=0){
+      const p=glyphPath2D(z?.g);if(!p)return false;
+      const s=(Number(z.scaleNorm)||0)*W*scale,ox=(Number(z.drawOriginX)||0)*W*scale,oy=(Number(z.drawOriginY)||Number(z.baseline)||.72)*H*scale;
+      if(s<=1e-9)return false;
+      ctx.save();ctx.translate(ox,oy);ctx.scale(s,-s);ctx.fillStyle='#fff';ctx.fill(p,'nonzero');
+      if(tolerancePx>0){
+        ctx.strokeStyle='#fff';ctx.lineJoin='round';ctx.lineCap='round';ctx.lineWidth=(2*tolerancePx*scale)/s;ctx.stroke(p);
+      }
+      ctx.restore();return true;
+    }
+
+    function renderStudentInkMaskTo(ctx,arr,W,H,scale,widthPx=shapingInkWidthPx,extraPx=0){
+      ctx.save();ctx.strokeStyle='#fff';ctx.fillStyle='#fff';ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.lineWidth=Math.max(1,(widthPx+2*extraPx)*scale);
+      (arr||[]).forEach(m=>{
+        const pts=m.stroke?.points||[];if(!pts.length)return;
+        if(pts.length===1){ctx.beginPath();ctx.arc(Number(pts[0].nx)*W*scale,Number(pts[0].ny)*H*scale,ctx.lineWidth/2,0,Math.PI*2);ctx.fill();return}
+        ctx.beginPath();ctx.moveTo(Number(pts[0].nx)*W*scale,Number(pts[0].ny)*H*scale);
+        for(let i=1;i<pts.length;i++)ctx.lineTo(Number(pts[i].nx)*W*scale,Number(pts[i].ny)*H*scale);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    function alphaMask(ctx,w,h){
+      const d=ctx.getImageData(0,0,w,h).data,out=new Uint8Array(w*h);
+      for(let i=0,j=3;i<out.length;i++,j+=4)out[i]=d[j]>24?1:0;
+      return out;
+    }
+
+    function analyzeGlyphInkFootprint(z,arr,W,H){
+      if(!arr?.length)return{score:0,precisionTol:0,coverageTol:0,iou:0,extraRatio:1,missingRatio:1,studentArea:0,refArea:0};
+      const A=makeMaskCanvas(W,H),R=A,RT=makeMaskCanvas(W,H),S=makeMaskCanvas(W,H),ST=makeMaskCanvas(W,H);
+      renderGlyphMaskTo(R.ctx,z,W,H,R.scale,0);
+      renderGlyphMaskTo(RT.ctx,z,W,H,RT.scale,contourTolerancePx);
+      renderStudentInkMaskTo(S.ctx,arr,W,H,S.scale,shapingInkWidthPx,0);
+      renderStudentInkMaskTo(ST.ctx,arr,W,H,ST.scale,shapingInkWidthPx,contourTolerancePx);
+      const ref=alphaMask(R.ctx,R.w,R.h),refTol=alphaMask(RT.ctx,RT.w,RT.h),stu=alphaMask(S.ctx,S.w,S.h),stuTol=alphaMask(ST.ctx,ST.w,ST.h);
+      let refArea=0,stuArea=0,inter=0,union=0,studentInsideTol=0,refCoveredTol=0;
+      const n=Math.min(ref.length,stu.length,refTol.length,stuTol.length);
+      for(let i=0;i<n;i++){
+        const rr=ref[i],ss=stu[i];if(rr)refArea++;if(ss)stuArea++;if(rr&&ss)inter++;if(rr||ss)union++;
+        if(ss&&refTol[i])studentInsideTol++;if(rr&&stuTol[i])refCoveredTol++;
+      }
+      const precisionTol=stuArea?studentInsideTol/stuArea:0,coverageTol=refArea?refCoveredTol/refArea:0,iou=union?inter/union:0;
+      const f1=(precisionTol+coverageTol)>0?2*precisionTol*coverageTol/(precisionTol+coverageTol):0;
+      const score=clamp(.72*f1+.28*Math.sqrt(Math.max(0,iou)),0,1);
+      const overlay=document.createElement('canvas');overlay.width=R.w;overlay.height=R.h;const octx=overlay.getContext('2d'),img=octx.createImageData(R.w,R.h);
+      for(let i=0,j=0;i<n;i++,j+=4){
+        let rgba=null;
+        if(stu[i])rgba=refTol[i]?[5,150,105,155]:[220,38,38,180];
+        else if(ref[i]&&!stuTol[i])rgba=[245,158,11,95];
+        if(rgba){img.data[j]=rgba[0];img.data[j+1]=rgba[1];img.data[j+2]=rgba[2];img.data[j+3]=rgba[3]}
+      }
+      octx.putImageData(img,0,0);
+      return{
+        score,precisionTol,coverageTol,iou,extraRatio:1-precisionTol,missingRatio:1-coverageTol,
+        studentArea:stuArea,refArea,intersection:inter,union,overlay
+      };
+    }
+
     function unionStrokeBounds(arr){
       const bs=(arr||[]).map(m=>m.bounds).filter(Boolean);if(!bs.length)return null;
       const left=Math.min(...bs.map(b=>b.left)),right=Math.max(...bs.map(b=>b.right)),top=Math.min(...bs.map(b=>b.top)),bottom=Math.max(...bs.map(b=>b.bottom));
@@ -5706,7 +5785,7 @@
       return [...messages].sort((a,b)=>(priority[b.level]||0)-(priority[a.level]||0))[0]||{level:'info',text:'لا توجد ملاحظة بعد.'};
     }
 
-    function buildGlyphEducationalFeedback(z,arr,W,H){
+    function buildGlyphEducationalFeedback(z,arr,W,H,ink=null){
       const u=contextualUnitForCluster(z.g.cluster),char=u?.char||'Glyph',stats=aggregateGlyphContourStats(arr),sb=unionStrokeBounds(arr);
       const studentPoints=(arr||[]).flatMap(m=>m.stroke?.points||[]);
       const region=contourRegionCoverage(z,studentPoints,W,H),detached=detachedPartsCoverage(z,studentPoints,W,H);
@@ -5736,11 +5815,12 @@
       }
       if(refAscender>.16&&stuAscender<refAscender*.68)messages.push({level:'warn',code:'ascender',text:'الجزء الصاعد أقصر من النموذج؛ ارفع رأس الحرف قليلًا.'});
 
-      if(stats.coverage<.42)messages.push({level:'error',code:'coverage',text:'الحرف غير مكتمل مقارنة بالنموذج؛ توجد أجزاء واضحة من الشكل المرجعي لم تمر بها الكتابة.'});
-      else if(stats.coverage<.64)messages.push({level:'warn',code:'coverage',text:'تغطية شكل الحرف ما زالت ناقصة؛ راجع الجزء الذي لا يظهر عليه مسار الطالب.'});
+      const effectiveCoverage=ink?ink.coverageTol:stats.coverage,effectiveInside=ink?ink.precisionTol:stats.insideRatio;
+      if(effectiveCoverage<.42)messages.push({level:'error',code:'coverage',text:'الحرف غير مكتمل مقارنة بالنموذج؛ توجد مساحة مرجعية واضحة لم يغطيها حبر الطالب.'});
+      else if(effectiveCoverage<.64)messages.push({level:'warn',code:'coverage',text:'تغطية شكل الحرف ما زالت ناقصة؛ راجع المناطق الكهرمانية التي لم يصل إليها الحبر.'});
 
-      if(stats.insideRatio<.58)messages.push({level:'error',code:'outside',text:'جزء كبير من المسار خارج جسم الحرف المرجعي؛ ركّز أولًا على ضبط الشكل العام.'});
-      else if(stats.insideRatio<.78)messages.push({level:'warn',code:'outside',text:'بعض المسار يخرج عن جسم الحرف؛ راجع المناطق الحمراء والكهرمانية.'});
+      if(effectiveInside<.58)messages.push({level:'error',code:'outside',text:'جزء كبير من حبر الطالب خارج النطاق المرجعي؛ اضبط شكل الحرف قبل التفاصيل الدقيقة.'});
+      else if(effectiveInside<.78)messages.push({level:'warn',code:'outside',text:'يوجد حبر زائد خارج النموذج؛ راجع المناطق الحمراء في خريطة الحبر.'});
 
       if(region.top<.42&&stats.coverage>.35){
         const txt=(char==='س'||char==='ش')?'الجزء العلوي من الحرف غير مكتمل جيدًا؛ راجع أسنان السين وتوازن ارتفاعها.':'الجزء العلوي من الحرف لا يغطي النموذج جيدًا؛ راجع الرأس أو الجزء الصاعد.';
@@ -5754,7 +5834,7 @@
         messages.push({level:'warn',code:'detached',text:'العنصر المنفصل '+p.position+' الحرف غير مكتمل؛ راجع النقطة أو العلامة المنفصلة.'});
       });
 
-      if(stats.score>=.82&&stats.coverage>=.70&&stats.insideRatio>=.82&&messages.filter(m=>m.level==='warn'||m.level==='error').length===0){
+      if((ink?.score??stats.score)>=.82&&effectiveCoverage>=.70&&effectiveInside>=.82&&messages.filter(m=>m.level==='warn'||m.level==='error').length===0){
         messages.push({level:'good',code:'good',text:'شكل الحرف قريب جدًا من النموذج في الموضع والتغطية والحدود.'});
       }else if(!messages.length){
         messages.push({level:'good',code:'good',text:'شكل الحرف قريب من النموذج، مع فروق بسيطة ضمن هامش التسامح.'});
@@ -5762,8 +5842,8 @@
 
       const primary=primaryEducationalIssue(messages);
       const severity=primary.level==='error'?3:primary.level==='warn'?2:primary.level==='good'?0:1;
-      const quality=clamp((stats.score||0)*.55+(stats.coverage||0)*.25+(stats.insideRatio||0)*.20,0,1);
-      return{glyphIndex:z.index,char,score:quality,severity,stats,sb,region,detached,messages,primary};
+      const quality=ink?clamp((ink.score||0)*.72+(stats.score||0)*.18+(stats.coverage||0)*.10,0,1):clamp((stats.score||0)*.55+(stats.coverage||0)*.25+(stats.insideRatio||0)*.20,0,1);
+      return{glyphIndex:z.index,char,score:quality,severity,stats,ink,sb,region,detached,messages,primary};
     }
 
     function renderEducationalFeedback(results){
@@ -5809,39 +5889,40 @@
 
       shapingLastMappings=maps;
       const grouped=new Map(zones.map(z=>[z.index,[]]));maps.forEach(m=>grouped.get(m.zone.index)?.push(m));
-      const edu=zones.map(z=>buildGlyphEducationalFeedback(z,grouped.get(z.index)||[],W,H));
+      lastInkFootprintByGlyph=new Map();
+      zones.forEach(z=>lastInkFootprintByGlyph.set(z.index,analyzeGlyphInkFootprint(z,grouped.get(z.index)||[],W,H)));
+      const edu=zones.map(z=>buildGlyphEducationalFeedback(z,grouped.get(z.index)||[],W,H,lastInkFootprintByGlyph.get(z.index)));
       renderEducationalFeedback(edu);
       const eduMap=new Map(edu.map(e=>[e.glyphIndex,e]));
 
       grid.innerHTML=zones.map(z=>{
         const arr=grouped.get(z.index)||[],avg=arr.length?arr.reduce((n,m)=>n+m.score,0)/arr.length:0;
-        const contourWeight=arr.reduce((n,m)=>n+(m.contour?.sampleCount||0),0),contourAvg=contourWeight?arr.reduce((n,m)=>n+(m.contour?.score||0)*(m.contour?.sampleCount||0),0)/contourWeight:0;
-        const inside=contourWeight?arr.reduce((n,m)=>n+(m.contour?.insideRatio||0)*(m.contour?.sampleCount||0),0)/contourWeight:0,u=contextualUnitForCluster(z.g.cluster),e=eduMap.get(z.index);
+        const ink=lastInkFootprintByGlyph.get(z.index)||{score:0,coverageTol:0,extraRatio:1,iou:0},u=contextualUnitForCluster(z.g.cluster),e=eduMap.get(z.index);
         const eCls=e?.severity===3?'text-rose-700':e?.severity===2?'text-amber-700':'text-emerald-700';
-        return '<button type="button" onclick="selectShapingGlyph('+z.index+')" class="text-right rounded-xl border '+(z.index===selectedShapingGlyphIndex?'border-fuchsia-400 bg-fuchsia-50':'border-teal-100 bg-teal-50/50')+' p-2"><div class="flex items-center justify-between gap-2"><div class="font-black text-[10px] text-teal-950">g'+(z.index+1)+' • cluster '+z.g.cluster+'</div><span class="font-qalam text-2xl">'+(u?(u.char+u.marks.join('')):'◌')+'</span></div><div class="text-[9px] text-stone-600">'+arr.length+' جزء'+(arr.length?' • هندسي '+Math.round(avg*100)+'% • Outline '+Math.round(contourAvg*100)+'%':'')+'</div><div class="text-[8px] '+eCls+'">'+(e?.primary?.text||'لا توجد كتابة لهذا الحرف بعد.')+'</div></button>';
+        return '<button type="button" onclick="selectShapingGlyph('+z.index+')" class="text-right rounded-xl border '+(z.index===selectedShapingGlyphIndex?'border-fuchsia-400 bg-fuchsia-50':'border-teal-100 bg-teal-50/50')+' p-2"><div class="flex items-center justify-between gap-2"><div class="font-black text-[10px] text-teal-950">g'+(z.index+1)+' • cluster '+z.g.cluster+'</div><span class="font-qalam text-2xl">'+(u?(u.char+u.marks.join('')):'◌')+'</span></div><div class="text-[9px] text-stone-600">'+arr.length+' جزء'+(arr.length?' • موضع '+Math.round(avg*100)+'% • شكل '+Math.round(ink.score*100)+'%':'')+'</div><div class="text-[8px] text-stone-400">'+(arr.length?'تغطية '+Math.round(ink.coverageTol*100)+'% • زائد '+Math.round(ink.extraRatio*100)+'% • IoU '+Math.round(ink.iou*100)+'%':'')+'</div><div class="text-[8px] '+eCls+'">'+(e?.primary?.text||'لا توجد كتابة لهذا الحرف بعد.')+'</div></button>';
       }).join('');
 
       const avg=maps.length?maps.reduce((n,m)=>n+m.score,0)/maps.length:0,avgBaseline=maps.length?maps.reduce((n,m)=>n+m.parts.baseline,0)/maps.length:0;
-      const weight=maps.reduce((n,m)=>n+(m.contour?.sampleCount||0),0);
-      const contourAvg=weight?maps.reduce((n,m)=>n+(m.contour?.score||0)*(m.contour?.sampleCount||0),0)/weight:0;
-      const insideAvg=weight?maps.reduce((n,m)=>n+(m.contour?.insideRatio||0)*(m.contour?.sampleCount||0),0)/weight:0;
-      const coverageAvg=weight?maps.reduce((n,m)=>n+(m.contour?.coverage||0)*(m.contour?.sampleCount||0),0)/weight:0;
-      const outsideWeighted=maps.reduce((n,m)=>n+((m.contour?.meanOutside||0)*(m.contour?.sampleCount||0)),0),meanOutside=weight?outsideWeighted/weight:0;
+      const activeInk=[...lastInkFootprintByGlyph.values()].filter(x=>x.studentArea>0),inkWeight=activeInk.reduce((n,x)=>n+x.studentArea,0);
+      const contourAvg=inkWeight?activeInk.reduce((n,x)=>n+x.score*x.studentArea,0)/inkWeight:0;
+      const insideAvg=inkWeight?activeInk.reduce((n,x)=>n+x.coverageTol*x.studentArea,0)/inkWeight:0;
+      const coverageAvg=inkWeight?activeInk.reduce((n,x)=>n+x.iou*x.studentArea,0)/inkWeight:0;
+      const meanOutside=inkWeight?activeInk.reduce((n,x)=>n+x.extraRatio*x.studentArea,0)/inkWeight:0;
       const pct=Math.round(avg*100),contourPct=Math.round(contourAvg*100),val=document.getElementById('shapingConfidenceValue'),bar=document.getElementById('shapingConfidenceBar'),fb=document.getElementById('shapingFeedbackList');
       const cv=document.getElementById('contourMatchValue'),cb=document.getElementById('contourMatchBar'),ci=document.getElementById('contourInsideValue'),cc=document.getElementById('contourCoverageValue'),ce=document.getElementById('contourErrorValue');
       if(val)val.textContent=pct+'%';if(bar)bar.style.width=pct+'%';
-      if(cv)cv.textContent=contourPct+'%';if(cb)cb.style.width=contourPct+'%';if(ci)ci.textContent=Math.round(insideAvg*100)+'%';if(cc)cc.textContent=Math.round(coverageAvg*100)+'%';if(ce)ce.textContent=meanOutside.toFixed(1)+'px';
+      if(cv)cv.textContent=contourPct+'%';if(cb)cb.style.width=contourPct+'%';if(ci)ci.textContent=Math.round(insideAvg*100)+'%';if(cc)cc.textContent=Math.round(coverageAvg*100)+'%';if(ce)ce.textContent=Math.round(meanOutside*100)+'%';
 
       const represented=new Set(maps.map(m=>m.zone.index)).size,notes=[];
-      notes.push(insideAvg>=.82?['check','معظم نقاط المسار تقع داخل مساحة الحبر المرجعية.']:insideAvg>=.60?['warn','بعض المسار يخرج من الشكل المرجعي؛ راجع خريطة الخطأ.']:['warn','المسار بعيد عن جسم الحروف في عدة مناطق.']);
-      notes.push(coverageAvg>=.65?['check','التغطية العامة للـOutline جيدة.']:['warn','التغطية العامة ناقصة؛ راجع الملاحظات التعليمية لكل حرف.']);
-      notes.push(meanOutside<=contourTolerancePx*.55?['check','متوسط الخطأ خارج Ink ضمن التسامح.']:['warn','متوسط الابتعاد خارج Ink مرتفع مقارنة بالتسامح '+contourTolerancePx+'px.']);
+      notes.push(insideAvg>=.78?['check','حبر الطالب يغطي معظم مساحة المرجع ضمن هامش التسامح.']:insideAvg>=.55?['warn','تغطية الحبر المرجعي متوسطة؛ راجع المناطق الكهرمانية.']:['warn','هناك أجزاء كبيرة من النموذج لم يصل إليها حبر الطالب.']);
+      notes.push(coverageAvg>=.50?['check','تداخل الحبر مع المرجع جيد (IoU).']:['warn','تداخل الحبر مع المرجع منخفض؛ راجع الحجم والموضع وشكل الحرف.']);
+      notes.push(meanOutside<=.18?['check','الحبر الزائد خارج النموذج محدود.']:['warn','يوجد حبر زائد خارج النموذج بنسبة '+Math.round(meanOutside*100)+'%.']);
       notes.push(represented===zones.length?['check','جميع Glyphs استقبلت أجزاء من كتابة الطالب.']:['warn','بعض Glyphs لم تصل إليها الكتابة بعد.']);
       notes.push(avgBaseline>=.72?['check','خط الأساس متقارب مع النموذج.']:['warn','محاذاة خط الأساس تحتاج ضبطًا.']);
       notes.push(['info','V6.34.3 يحول القياسات الآن إلى ملاحظات تعليمية للحروف، مع تحديد أولوية الحرف الأضعف.']);
       if(fb)fb.innerHTML=notes.map(n=>'<div class="rounded-xl border p-2 '+(n[0]==='check'?'bg-emerald-50 border-emerald-100 text-emerald-800':n[0]==='warn'?'bg-amber-50 border-amber-100 text-amber-800':'bg-sky-50 border-sky-100 text-sky-800')+'"><i class="fa-solid '+(n[0]==='check'?'fa-circle-check':n[0]==='warn'?'fa-triangle-exclamation':'fa-circle-info')+' ml-1"></i>'+n[1]+'</div>').join('');
       const eduWeak=edu.filter(e=>e.severity>=2).length;
-      status.textContent='V6.34.3: '+strokes.length+' ضربة → '+maps.length+' أجزاء → '+represented+'/'+zones.length+' glyphs • Outline '+contourPct+'% • '+eduWeak+' حروف تحتاج مراجعة تعليمية.';
+      status.textContent='V6.34.3.1: '+strokes.length+' ضربة → '+maps.length+' أجزاء → '+represented+'/'+zones.length+' glyphs • مطابقة الشكل والحبر '+contourPct+'% • '+eduWeak+' حروف تحتاج مراجعة.';
       renderShapingPracticeCanvas();
     }
 
