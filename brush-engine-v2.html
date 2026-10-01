@@ -6290,7 +6290,7 @@
     function deriveBrushProfileFromMetrics(metrics,fontName=''){
       const valid=(metrics||[]).filter(Boolean);if(!valid.length)return null;
       const strokeRatio=brushQuantile(valid.map(m=>m.strokeRatio),.50);
-      const aspect=clamp(brushQuantile(valid.map(m=>m.aspect),.50),.06,.45);
+      const coarseAspect=clamp(brushQuantile(valid.map(m=>m.aspect),.50),.06,.45);
       const variation=clamp(brushQuantile(valid.map(m=>m.variation),.50),0,1);
       const sharp=clamp(brushQuantile(valid.map(m=>m.sharpFraction),.50),0,1);
       const hist=new Float64Array(31);
@@ -6301,21 +6301,41 @@
         if(smooth[i]>0){sum+=smooth[i];active++}
         if(smooth[i]>best){best=smooth[i];bestI=i}
       }
-      let angle=bestI*3;
+      let contourAngle=bestI*3;
       const meanBin=active?sum/active:0,peakRatio=meanBin>0?best/meanBin:0;
-      let angleConfidence=clamp((peakRatio-1)/3.2,0,1);
-      if(!Number.isFinite(angle)||angle<12||angle>78||angleConfidence<.08){angle=42;angleConfidence=Math.min(angleConfidence,.08)}
-      const brushSize=clamp(strokeRatio*112,5,30);
+      let contourAngleConfidence=clamp((peakRatio-1)/3.2,0,1);
+      if(!Number.isFinite(contourAngle)||contourAngle<12||contourAngle>78||contourAngleConfidence<.08){contourAngle=42;contourAngleConfidence=Math.min(contourAngleConfidence,.08)}
+
+      const ridgeSamples=valid.flatMap(m=>m.ridgeSamples||[]);
+      const fit=fitFlatNibModel(ridgeSamples);
+      const fitAngle=fit?.angle,fitAspect=fit?.aspect,fitConfidence=fit?.confidence||0;
+      const rawDiff=Number.isFinite(fitAngle)?Math.abs(contourAngle-fitAngle):45;
+      const angleDiff=Math.min(rawDiff,90-rawDiff),angleAgreement=clamp(1-angleDiff/45,0,1);
+
+      let angle=contourAngle,aspect=coarseAspect,angleConfidence=contourAngleConfidence;
+      if(fit&&fitConfidence>=.18){
+        const w=clamp(.35+.45*fitConfidence,0,.82);
+        angle=contourAngle*(1-w)+fitAngle*w;
+        aspect=clamp(coarseAspect*(1-w)+fitAspect*w,.06,.45);
+        angleConfidence=clamp(.45*contourAngleConfidence+.40*fitConfidence+.15*angleAgreement,0,1);
+      }
+
+      const sizeFromStroke=strokeRatio*112;
+      const sizeFromFit=fit?.majorRatio?fit.majorRatio*112:sizeFromStroke;
+      const sizeBlend=fitConfidence>=.18?clamp(.35+.35*fitConfidence,.35,.70):0;
+      const brushSize=clamp(sizeFromStroke*(1-sizeBlend)+sizeFromFit*sizeBlend,5,30);
       const roundness=clamp(Math.round(5+(1-sharp)*22),4,30);
       const widthVariationPct=Math.round(variation*100);
       const variationLabel=variation<.22?'منخفض':variation<.42?'متوسط':'مرتفع';
       const terminalStyle=sharp>.17?'حادة/مقطوعة':sharp<.075?'ناعمة':'مختلطة';
       const sampleConfidence=clamp(valid.length/26,0,1),consistency=clamp(1-variation/.95,0,1);
-      const confidence=clamp(.45*angleConfidence+.30*sampleConfidence+.25*consistency,0,1);
+      const confidence=clamp(.30*angleConfidence+.25*fitConfidence+.20*sampleConfidence+.15*consistency+.10*angleAgreement,0,1);
       return{
         fontName,glyphCount:valid.length,angle:clamp(angle,0,90),angleConfidence,
+        contourAngle,contourAngleConfidence,fitAngle,fitAspect,fitConfidence,
+        fitError:fit?.error??null,fitSampleCount:fit?.sampleCount||0,angleAgreement,
         brushSize,aspect,nibThicknessPct:clamp(aspect*100,5,45),variation,widthVariationPct,variationLabel,
-        sharpFraction:sharp,roundness,terminalStyle,confidence,strokeRatio
+        sharpFraction:sharp,roundness,terminalStyle,confidence,strokeRatio,fitMajorRatio:fit?.majorRatio??null
       };
     }
 
@@ -6352,9 +6372,15 @@
       set('derivedRoundness','Roundness مقترح '+a.roundness+'%');
       set('derivedBrushConfidence',Math.round(a.confidence*100)+'%');
       set('derivedGlyphCount',a.glyphCount+' Glyphs محللة');
+      set('derivedNibFitError',a.fitError==null?'—':Math.round(a.fitError*100)+'%');
+      set('derivedNibFitSamples',(a.fitSampleCount||0)+' ridge samples');
+      set('derivedAngleAgreement',Math.round((a.angleAgreement||0)*100)+'%');
       set('derivedBrushLabel',(a.fontName||'Font')+' → preset');
       const reasoning=document.getElementById('fontBrushReasoning');
-      if(reasoning)reasoning.innerHTML='النتيجة مبنية على <b>'+a.glyphCount+'</b> Glyphs: سماكات داخلية عبر Distance Transform، اتجاهات حواف مستقرة، تباين السماكة، وحدّة الزوايا. <b>زاوية القطّة استنتاج هندسي</b> وليست معلومة مخزنة داخل الخط.';
+      if(reasoning){
+        const ca=Math.round(a.contourAngle||a.angle),fa=Number.isFinite(a.fitAngle)?Math.round(a.fitAngle)+'°':'—';
+        reasoning.innerHTML='النتيجة مبنية على <b>'+a.glyphCount+'</b> Glyphs. زاوية الحواف المستقرة أعطت <b>'+ca+'°</b>، وNib Model على الـmedial ridges أعطى <b>'+fa+'</b>. نسبة الاتفاق <b>'+Math.round((a.angleAgreement||0)*100)+'%</b>. السماكات تُقاس عبر Distance Transform ثم يُجرى fit لنموذج قصبة مسطحة؛ لذلك تبقى الزاوية <b>استنتاجًا هندسيًا</b> وليست معلومة مخزنة داخل الخط.';
+      }
       const btn=document.getElementById('applyDerivedBrushBtn');if(btn){btn.disabled=false;btn.className='px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold'}
       renderDerivedBrushPreview(a);
     }
