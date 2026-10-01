@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-34-3-3-gross-shape-validation-2026-10-01-19';
+const CACHE_VERSION = 'makhtuta-pwa-v6-34-3-4-result-semantics-2026-10-01-20';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
