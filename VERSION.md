@@ -1,3 +1,15 @@
+# V6.33 β — Segment-level Glyph Mapping
+
+- Fixed a structural limitation in the 2D matcher: one physical handwriting stroke can span several connected Arabic glyphs.
+- A continuous student stroke is now split into consecutive geometric segments before Glyph assignment.
+- Segment assignment uses the corrected HarfBuzz Ink Bounds, baseline, cluster geometry, and hysteresis near boundaries.
+- The same physical stroke can therefore contribute to several Glyphs instead of being incorrectly owned by one Glyph.
+- Exact HarfBuzz glyph outlines are now captured with glyphToPath() and used for the reference rendering when available.
+- The handwriting canvas uses the same exact shaped Glyph outlines and geometry as the reference panel.
+- Mapping cards now report linked segments rather than only whole strokes.
+- This prepares the next stage: per-segment Outline/Contour similarity scoring.
+- App/PWA version bumped to V6.33 β.
+
 # V6.32.2 β — Correct HarfBuzz positions & Glyph selection
 
 - Fixed the main selection bug: harfbuzzjs v1.x exposes xAdvance/yAdvance/xOffset/yOffset in camelCase; the lab had still been reading the old snake_case fields, which produced undefined advances and effectively equal-width Glyph regions.
