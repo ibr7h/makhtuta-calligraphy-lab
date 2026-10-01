@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.31.0-beta">
+<html lang="ar" dir="rtl" data-app-version="6.31.1-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -113,7 +113,7 @@
   </style>
 </head>
 <body class="font-sans text-stone-800 min-h-screen flex flex-col justify-between selection:bg-amber-200">
-  <header class="border-b border-amber-200/80 bg-parchment-50/95 sticky top-0 z-30 shadow-sm backdrop-blur-md">
+  <header id="mainAppHeader" class="border-b border-amber-200/80 bg-parchment-50/95 sticky top-0 z-30 shadow-sm backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center space-x-reverse space-x-3">
         <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-800 via-amber-700 to-amber-500 flex items-center justify-center text-white shadow-md shadow-amber-900/15">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.31 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.31.1 β</span>
           </p>
         </div>
       </div>
@@ -144,12 +144,12 @@
     </div>
   </header>
 
-  <div class="max-w-7xl mx-auto w-full px-3 sm:px-6 pt-3">
+  <div id="betaBanner" class="max-w-7xl mx-auto w-full px-3 sm:px-6 pt-3">
     <div class="bg-violet-50 border border-violet-200 rounded-xl px-3 py-2 text-[10px] text-violet-900 flex flex-wrap items-center justify-center gap-2">
       <i class="fa-solid fa-flask"></i><strong>Brush Engine V2 — نسخة تجريبية</strong><span>V6.11 المستقرة لم تتغير</span>
     </div>
   </div>
-  <main class="max-w-7xl mx-auto px-3 sm:px-6 py-4 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-5">
+  <main id="mainAppPage" class="max-w-7xl mx-auto px-3 sm:px-6 py-4 flex-grow w-full grid grid-cols-1 lg:grid-cols-12 gap-5">
     
     <!-- LEFT COLUMN: Canvas and controls (8 cols on lg) -->
     <section id="practiceSection" class="lg:col-span-8 flex flex-col gap-4">
@@ -566,11 +566,15 @@
   </main>
 
 
-  <!-- Arabic Shaping / HarfBuzz Lab — isolated workspace -->
-  <div id="shapingLabModal" class="fixed inset-0 z-[74] bg-black/55 backdrop-blur-sm hidden items-center justify-center p-3" onclick="if(event.target===this)toggleShapingLab(false)">
-    <div class="bg-parchment-50 w-full max-w-6xl max-h-[94vh] rounded-3xl border-2 border-violet-300 shadow-2xl overflow-hidden flex flex-col">
-      <div class="bg-violet-950 text-white px-4 py-3 flex items-center justify-between gap-3"><div><h3 class="font-bold font-kufi text-base"><i class="fa-solid fa-language text-violet-300 ml-2"></i>مختبر تشكيل الكلمات</h3><p class="text-[10px] text-violet-200">HarfBuzz • Glyph Geometry • مطابقة كتابة الطالب</p></div><button type="button" onclick="toggleShapingLab(false)" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button></div>
-      <div class="p-4 overflow-y-auto custom-scrollbar flex flex-col gap-3">
+  <!-- Arabic Shaping / HarfBuzz Lab — full application page -->
+  <section id="shapingLabPage" class="hidden min-h-screen bg-parchment-50">
+    <div class="sticky top-0 z-40 bg-violet-950 text-white border-b border-violet-800 shadow-md">
+      <div class="max-w-7xl mx-auto px-3 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <div><h2 class="font-black font-kufi text-lg sm:text-xl"><i class="fa-solid fa-language text-violet-300 ml-2"></i>مختبر تشكيل الكلمات</h2><p class="text-[10px] text-violet-200">HarfBuzz • Glyph Geometry • مطابقة كتابة الطالب</p></div>
+        <button type="button" onclick="toggleShapingLab(false)" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-bold"><i class="fa-solid fa-arrow-right ml-1"></i>العودة إلى معمل الحروف</button>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto w-full p-3 sm:p-6 flex flex-col gap-3">
       <div id="arabicShapingInspector" class="bg-white rounded-2xl p-3 border border-violet-200 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center gap-2">
           <div class="flex-1"><div class="text-xs font-black text-violet-950"><i class="fa-solid fa-language ml-1"></i>Arabic Shaping Inspector <span class="text-[9px] font-bold text-violet-600">Contextual</span></div><div class="text-[9px] text-stone-500 mt-0.5">تحليل Unicode والاتصال والسياق — ليس ناتج HarfBuzz/WASM بعد.</div></div>
@@ -593,9 +597,8 @@
           <div id="glyphStrokeMappingStatus" class="mt-2 text-[9px] text-teal-800">حمّل خطًا، حلّل كلمة، ثم اكتب المحاولة في لوحة التدريب.</div>
           <div id="glyphStrokeMappingGrid" class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5"></div>
         </div>
-      </div>
     </div>
-  </div>
+  </section>
 
   <!-- Brush Lab A/B — diagnostic renderer; never mutates strokeHistory -->
   <div id="brushLabModal" class="fixed inset-0 z-[75] bg-black/55 backdrop-blur-sm hidden items-center justify-center p-3" onclick="if(event.target===this)closeBrushLab()">
@@ -766,7 +769,7 @@
               <div class="mt-2 pt-2 border-t border-amber-100">
                 <div class="flex items-center justify-between gap-2 text-[9px] text-stone-500 mb-1.5">
                   <span>إصدار التطبيق</span>
-                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.31.0-beta</span>
+                  <span id="pwaCurrentVersion" class="font-mono font-bold text-amber-900">6.31.1-beta</span>
                 </div>
                 <button type="button" onclick="window.MakhtutaUpdater?.checkNow()" class="w-full px-2 py-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold hover:bg-amber-100"><i class="fa-solid fa-arrows-rotate ml-1"></i>فحص التحديث الآن</button>
                 <div id="pwaUpdateSettingsStatus" class="text-[9px] text-stone-500 mt-1.5 min-h-[14px]"></div>
@@ -4945,8 +4948,10 @@
     }
 
     function toggleShapingLab(show){
-      const m=document.getElementById('shapingLabModal');if(!m)return;m.classList.toggle('hidden',!show);m.classList.toggle('flex',show);
-      if(show)inspectArabicShaping(document.getElementById('shapingInspectorInput')?.value||'محمد');
+      const page=document.getElementById('shapingLabPage'),main=document.getElementById('mainAppPage'),header=document.getElementById('mainAppHeader'),banner=document.getElementById('betaBanner');if(!page)return;
+      page.classList.toggle('hidden',!show);main?.classList.toggle('hidden',show);header?.classList.toggle('hidden',show);banner?.classList.toggle('hidden',show);
+      document.body.style.overflow=show?'auto':'';
+      if(show){window.scrollTo(0,0);inspectArabicShaping(document.getElementById('shapingInspectorInput')?.value||'محمد')}else window.scrollTo(0,0);
     }
     function visibleStudentStrokesForMapping(){
       let lastClear=-1;for(let i=0;i<strokeHistory.length;i++)if(strokeHistory[i].kind==='clear')lastClear=i;
