@@ -4089,10 +4089,10 @@
     }
 
 
-    function currentBrushCalibrationSnapshot(){return{size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,nibShapeMode,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,descenderFlipEnabled:qalamDescenderFlipEnabled,velocityDynamicsEnabled,velocityDynamicsStrength,startTaperStrength,endTaperStrength,taperLengthPx,savedAt:new Date().toISOString()}}
+    function currentBrushCalibrationSnapshot(){return{size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,nibShapeMode,spacing:brushSpacing,smoothing:qalamSmoothing,movingAverage:qalamMovingAverage,uniformResampling:qalamUniformResampling,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,descenderFlipEnabled:qalamDescenderFlipEnabled,velocityDynamicsEnabled,velocityDynamicsStrength,startTaperStrength,endTaperStrength,taperLengthPx,savedAt:new Date().toISOString()}}
     function readBrushCalibrations(){try{return JSON.parse(localStorage.getItem(BRUSH_CALIBRATION_STORAGE_KEY)||'{}')}catch(_){return{}}}
     function saveActiveBrushCalibration(){if(!activeBrushPresetKey)return;const all=readBrushCalibrations();all[activeBrushPresetKey]=currentBrushCalibrationSnapshot();localStorage.setItem(BRUSH_CALIBRATION_STORAGE_KEY,JSON.stringify(all));const el=document.getElementById('brushCalibrationSavedStatus');if(el)el.textContent='تم حفظ معايرة '+activeBrushPresetKey+' ✓';renderAliCalibrationPanel()}
-    function applyCalibrationSnapshot(d){if(!d)return false;setBrushType('calligraphy');brushSize=Number(d.size??brushSize);nibAngleDeg=Number(d.angle??nibAngleDeg);nibRoundness=Number(d.roundness??nibRoundness);nibThicknessRatio=Number(d.nibThickness??nibThicknessRatio);nibShapeMode=d.nibShapeMode||nibShapeMode;brushSpacing=Number(d.spacing??brushSpacing);qalamSmoothing=Number(d.smoothing??qalamSmoothing);brushOpacity=Number(d.opacity??brushOpacity);pressureEnabled=!!d.pressureEnabled;pressureSensitivity=Number(d.pressureSensitivity??pressureSensitivity);pressureMinWidth=Number(d.pressureMinWidth??pressureMinWidth);pressureCurve=d.pressureCurve||pressureCurve;rotationSource=d.rotationSource||rotationSource;twistInfluence=Number(d.twistInfluence??twistInfluence);stabilizerEnabled=!!d.stabilizerEnabled;stabilizerRadiusPx=Number(d.stabilizerRadiusPx??stabilizerRadiusPx);stabilizerFriction=Number(d.stabilizerFriction??stabilizerFriction);qalamDescenderFlipEnabled=!!d.descenderFlipEnabled;velocityDynamicsEnabled=!!d.velocityDynamicsEnabled;velocityDynamicsStrength=Number(d.velocityDynamicsStrength??velocityDynamicsStrength);startTaperStrength=Number(d.startTaperStrength??startTaperStrength);endTaperStrength=Number(d.endTaperStrength??endTaperStrength);taperLengthPx=Number(d.taperLengthPx??taperLengthPx);syncBrushSettingsUI();renderAliCalibrationPanel();return true}
+    function applyCalibrationSnapshot(d){if(!d)return false;setBrushType('calligraphy');brushSize=Number(d.size??brushSize);nibAngleDeg=Number(d.angle??nibAngleDeg);nibRoundness=Number(d.roundness??nibRoundness);nibThicknessRatio=Number(d.nibThickness??nibThicknessRatio);nibShapeMode=d.nibShapeMode||nibShapeMode;brushSpacing=Number(d.spacing??brushSpacing);qalamSmoothing=Number(d.smoothing??qalamSmoothing);qalamMovingAverage=clamp(Number(d.movingAverage??qalamMovingAverage),0,.70);qalamUniformResampling=d.uniformResampling===true;brushOpacity=Number(d.opacity??brushOpacity);pressureEnabled=!!d.pressureEnabled;pressureSensitivity=Number(d.pressureSensitivity??pressureSensitivity);pressureMinWidth=Number(d.pressureMinWidth??pressureMinWidth);pressureCurve=d.pressureCurve||pressureCurve;rotationSource=d.rotationSource||rotationSource;twistInfluence=Number(d.twistInfluence??twistInfluence);stabilizerEnabled=!!d.stabilizerEnabled;stabilizerRadiusPx=Number(d.stabilizerRadiusPx??stabilizerRadiusPx);stabilizerFriction=Number(d.stabilizerFriction??stabilizerFriction);qalamDescenderFlipEnabled=!!d.descenderFlipEnabled;velocityDynamicsEnabled=!!d.velocityDynamicsEnabled;velocityDynamicsStrength=Number(d.velocityDynamicsStrength??velocityDynamicsStrength);startTaperStrength=Number(d.startTaperStrength??startTaperStrength);endTaperStrength=Number(d.endTaperStrength??endTaperStrength);taperLengthPx=Number(d.taperLengthPx??taperLengthPx);syncBrushSettingsUI();renderAliCalibrationPanel();return true}
     function applySavedBrushCalibration(){const d=readBrushCalibrations()[activeBrushPresetKey],el=document.getElementById('brushCalibrationSavedStatus');if(!d){if(el)el.textContent='لا توجد معايرة محفوظة لهذه الفرشاة.';return}applyCalibrationSnapshot(d);if(el)el.textContent='تم تطبيق المعايرة المحفوظة ✓'}
     function archiveMappedDefaults(preset) {
       const a = preset?.archive;
@@ -4106,6 +4106,8 @@
         nibShapeMode: 'ellipse',
         spacing: Number(preset.spacing ?? 1) / 100,
         smoothing: clamp(Number(a.plotSmoothing ?? 0.8), 0, 0.95),
+        movingAverage: clamp(Number(a.movingAverage ?? 0), 0, 0.70),
+        uniformResampling: true,
         opacity: Number(preset.opacity ?? 100) / 100,
         pressureEnabled: pressureSize > 0,
         pressureSensitivity: pressureSize,
@@ -4134,7 +4136,10 @@
         near(nibAngleDeg,d.angle,0.01) &&
         near(nibThicknessRatio,d.nibThickness,0.0001) &&
         nibShapeMode === d.nibShapeMode &&
+        near(brushSpacing,d.spacing,0.0001) &&
         near(qalamSmoothing,d.smoothing,0.001) &&
+        near(qalamMovingAverage,d.movingAverage,0.001) &&
+        qalamUniformResampling === d.uniformResampling &&
         pressureEnabled === d.pressureEnabled &&
         near(pressureSensitivity,d.pressureSensitivity,0.001)
       );
@@ -4169,7 +4174,7 @@
       setText('aliOriginalPressure', Number(a.pressureSize || 0).toFixed(4));
       setText('aliEffectivePressure', pressureEnabled ? `${Math.round(pressureSensitivity*100)}%` : 'OFF');
       setText('aliOriginalMovingAverage', Number(a.movingAverage ?? 0.3).toFixed(2));
-      setText('aliEffectiveMovingAverage', stabilizerEnabled ? `تقريب ${Math.round(stabilizerFriction*100)}%` : 'غير مطبق');
+      setText('aliEffectiveMovingAverage', `${Math.round(qalamMovingAverage*100)}% • ${qalamUniformResampling?'Resample ON':'Resample OFF'}`);
 
       const changed = aliEffectiveDiffersFromArchive(p);
       const state = document.getElementById('aliCalibrationState');
@@ -4195,6 +4200,8 @@
       nibShapeMode=d.nibShapeMode;
       brushSpacing=d.spacing;
       qalamSmoothing=d.smoothing;
+      qalamMovingAverage=d.movingAverage;
+      qalamUniformResampling=d.uniformResampling;
       brushOpacity=d.opacity;
       pressureEnabled=d.pressureEnabled;
       pressureSensitivity=d.pressureSensitivity;
@@ -4260,6 +4267,8 @@
       set('bsNibThickness',nibThicknessRatio*100); txt('bsNibThicknessVal',`${Number((nibThicknessRatio*100).toFixed(1))}%`);
       set('bsSpacing',Math.round(brushSpacing*100)); txt('bsSpacingVal',`${Math.round(brushSpacing*100)}%`);
       set('bsSmoothing',Math.round(qalamSmoothing*100)); txt('bsSmoothingVal',`${Math.round(qalamSmoothing*100)}%`);
+      set('bsMovingAverage',Math.round(qalamMovingAverage*100)); txt('bsMovingAverageVal',`${Math.round(qalamMovingAverage*100)}%`);
+      const urs=document.getElementById('bsUniformResampling'); if(urs) urs.checked=qalamUniformResampling;
       set('bsOpacity',Math.round(brushOpacity*100)); txt('bsOpacityVal',`${Math.round(brushOpacity*100)}%`);
       set('bsPressureSens',Math.round(pressureSensitivity*100)); txt('bsPressureSensVal',`${Math.round(pressureSensitivity*100)}%`);
       set('bsMinWidth',Math.round(pressureMinWidth*100)); txt('bsMinWidthVal',`${Math.round(pressureMinWidth*100)}%`);
@@ -4289,6 +4298,8 @@
         case 'nibThickness': nibThicknessRatio=clamp((parseFloat(value)||16)/100,0.02,0.40); break;
         case 'spacing': brushSpacing=clamp((parseFloat(value)||1)/100,0.01,0.30); break;
         case 'smoothing': qalamSmoothing=clamp((parseFloat(value)||0)/100,0,0.95); break;
+        case 'movingAverage': qalamMovingAverage=clamp((parseFloat(value)||0)/100,0,0.70); break;
+        case 'uniformResampling': qalamUniformResampling=!!value; break;
         case 'opacity': brushOpacity=clamp((parseFloat(value)||100)/100,0.1,1); break;
         case 'pressureEnabled': setPressureEnabled(!!value); break;
         case 'pressureSensitivity': updatePressureSensitivity(value); break;
@@ -4321,7 +4332,7 @@
         applyAliMappedDefaults(name);
       } else {
       setBrushType(p.tool); brushSize=p.size; nibAngleDeg=p.angle; nibRoundness=p.roundness/100; nibThicknessRatio=(p.nibThickness??16)/100; nibShapeMode=p.nibShape==='ellipse'?'ellipse':'roundedRect';
-      brushSpacing=p.spacing/100; qalamSmoothing=p.smoothing/100; brushOpacity=p.opacity/100;
+      brushSpacing=p.spacing/100; qalamSmoothing=p.smoothing/100; qalamMovingAverage=clamp(Number(p.movingAverage??0)/100,0,.70); qalamUniformResampling=p.resampling===true; brushOpacity=p.opacity/100;
       pressureEnabled=p.pressure; pressureSensitivity=p.pressureSensitivity/100; pressureMinWidth=p.minWidth/100;
       pressureCurve=p.curve; rotationSource=p.rotation; twistInfluence=p.twist/100;
       stabilizerEnabled=!!p.stabilizer; stabilizerRadiusPx=p.stabilizerRadius??12; stabilizerFriction=(p.stabilizerFriction??45)/100; resetStrokeStabilizer();
@@ -4341,7 +4352,7 @@
     }
 
     function currentBrushPresetData() {
-      return { sourcePresetKey:isAliPresetKey(activeBrushPresetKey)?activeBrushPresetKey:null,tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,nibShapeMode,spacing:brushSpacing,smoothing:qalamSmoothing,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,descenderFlipEnabled:qalamDescenderFlipEnabled,velocityDynamicsEnabled,velocityDynamicsStrength,startTaperStrength,endTaperStrength,taperLengthPx,pressureMin,pressureMax };
+      return { sourcePresetKey:isAliPresetKey(activeBrushPresetKey)?activeBrushPresetKey:null,tool:brushType,size:brushSize,angle:nibAngleDeg,roundness:nibRoundness,nibThickness:nibThicknessRatio,nibShapeMode,spacing:brushSpacing,smoothing:qalamSmoothing,movingAverage:qalamMovingAverage,uniformResampling:qalamUniformResampling,opacity:brushOpacity,pressureEnabled,pressureSensitivity,pressureMinWidth,pressureCurve,rotationSource,twistInfluence,stabilizerEnabled,stabilizerRadiusPx,stabilizerFriction,descenderFlipEnabled:qalamDescenderFlipEnabled,velocityDynamicsEnabled,velocityDynamicsStrength,startTaperStrength,endTaperStrength,taperLengthPx,pressureMin,pressureMax };
     }
 
     let qalamDiagnosticLetter = '';
@@ -4604,6 +4615,8 @@
       nibShapeMode = p.nibShapeMode === 'ellipse' ? 'ellipse' : 'roundedRect';
       brushSpacing = clamp(Number(p.spacing ?? 0.08), 0.01, 0.30);
       qalamSmoothing = clamp(Number(p.smoothing ?? 0.58), 0, 0.95);
+      qalamMovingAverage = clamp(Number(p.movingAverage ?? 0), 0, 0.70);
+      qalamUniformResampling = p.uniformResampling === true;
       brushOpacity = clamp(Number(p.opacity ?? 1), 0.1, 1);
       pressureEnabled = p.pressureEnabled !== false;
       pressureSensitivity = clamp(Number(p.pressureSensitivity ?? 0.62), 0, 1);
@@ -4828,7 +4841,7 @@
       let p=null; try { p=JSON.parse(localStorage.getItem('makhtuta.personalBrush.v1')||'null'); } catch(_) {}
       if(!p) return;
       setBrushType(p.tool||'calligraphy'); brushSize=p.size??15; nibAngleDeg=p.angle??42; nibRoundness=p.roundness??0.12; nibThicknessRatio=p.nibThickness??0.16;
-      brushSpacing=p.spacing??0.08; qalamSmoothing=p.smoothing??0.58; brushOpacity=p.opacity??1;
+      brushSpacing=p.spacing??0.08; qalamSmoothing=p.smoothing??0.58; qalamMovingAverage=clamp(Number(p.movingAverage??0),0,.70); qalamUniformResampling=p.uniformResampling===true; brushOpacity=p.opacity??1;
       pressureEnabled=p.pressureEnabled!==false; pressureSensitivity=p.pressureSensitivity??0.62; pressureMinWidth=p.pressureMinWidth??0.70;
       pressureCurve=p.pressureCurve||'linear'; rotationSource=p.rotationSource||'fixed'; twistInfluence=p.twistInfluence??0.22;
       pressureMin=p.pressureMin??pressureMin; pressureMax=p.pressureMax??pressureMax;
