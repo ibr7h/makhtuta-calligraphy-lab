@@ -674,7 +674,7 @@
 
           <div class="bg-white rounded-2xl p-4 border border-teal-200 shadow-sm">
             <strong class="text-sm text-teal-950"><i class="fa-solid fa-bullseye ml-1"></i>نتيجة المطابقة</strong>
-            <div class="mt-3 flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">الموضع والمحاذاة</span><span id="shapingConfidenceValue" class="text-2xl font-black text-teal-700">—</span></div>
+            <div class="mt-3 flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">الموضع فقط — مؤشر تشخيصي</span><span id="shapingConfidenceValue" class="text-2xl font-black text-teal-700">—</span></div>
             <div class="mt-2 h-2.5 rounded-full bg-stone-100 overflow-hidden"><div id="shapingConfidenceBar" class="h-full bg-teal-600 rounded-full transition-all" style="width:0%"></div></div>
             <div class="mt-4 pt-3 border-t border-fuchsia-100">
               <div class="flex items-end justify-between gap-2"><span class="text-[10px] text-stone-500">مطابقة الشكل والحبر</span><span id="contourMatchValue" class="text-2xl font-black text-fuchsia-700">—</span></div>
@@ -5834,6 +5834,7 @@
       if(refAscender>.16&&stuAscender<refAscender*.68)messages.push({level:'warn',code:'ascender',text:'الجزء الصاعد أقصر من النموذج؛ ارفع رأس الحرف قليلًا.'});
 
       const effectiveCoverage=ink?(.72*ink.strictCoverage+.28*ink.coverageTol):stats.coverage,effectiveInside=ink?(.78*ink.strictPrecision+.22*ink.precisionTol):stats.insideRatio;
+      if(ink&&ink.strictCoverage>.80&&ink.extraRatio>.60)messages.push({level:'error',code:'gross-shape',text:'التغطية مرتفعة لكن شكل الحبر غير قريب من الحرف؛ قلّل الحبر الزائد واتبع حدود الحرف بدل تغطيته بالكامل.'});
       if(ink&&ink.sizeBalance<.45&&ink.studentArea>ink.refArea*1.35)messages.push({level:'error',code:'oversize-ink',text:'مساحة الحبر أكبر بكثير من النموذج؛ خفّف سماكة القلم أو لا تملأ جسم الحرف بالكامل.'});
       if(ink&&ink.extraRatio>.48)messages.push({level:'error',code:'extra-ink',text:'هناك حبر زائد كثير خارج الشكل المرجعي؛ أعد رسم الحرف بمسار أوضح وأقل تكدسًا.'});
       else if(ink&&ink.extraRatio>.25)messages.push({level:'warn',code:'extra-ink',text:'يوجد حبر زائد ملحوظ خارج الشكل المرجعي؛ راجع سماكة القلم ومسار الحرف.'});
@@ -5938,6 +5939,7 @@
       const represented=new Set(maps.map(m=>m.zone.index)).size,notes=[];
       notes.push(insideAvg>=.78?['check','تغطية مساحة المرجع جيدة.']:insideAvg>=.55?['warn','تغطية مساحة المرجع متوسطة؛ راجع المناطق الكهرمانية.']:['warn','هناك أجزاء كبيرة من المرجع لم يصل إليها الحبر.']);
       notes.push(coverageAvg>=.55?['check','التداخل الفعلي بين حبر الطالب والمرجع جيد.']:coverageAvg>=.32?['warn','IoU متوسط؛ يوجد اختلاف ملحوظ في الحجم أو الشكل.']:['warn','IoU منخفض؛ مجرد تغطية المرجع لا تعني أن شكل الحرف صحيح.']);
+      if(insideAvg>.85&&coverageAvg<.35)notes.push(['warn','التغطية مرتفعة لكن التداخل منخفض؛ تم الوصول إلى معظم المرجع مع حبر زائد كبير، لذلك لا تُعد المحاولة قريبة من شكل الحرف.']);
       notes.push(meanOutside<=.18?['check','الحبر الزائد خارج النموذج محدود.']:meanOutside<=.35?['warn','يوجد حبر زائد ملحوظ خارج النموذج بنسبة '+Math.round(meanOutside*100)+'%.']:['warn','الحبر الزائد مرتفع جدًا ('+Math.round(meanOutside*100)+'%)؛ النتيجة لن تُعد قريبة من النموذج حتى لو كانت التغطية 100%.']);
       notes.push(represented===zones.length?['check','جميع Glyphs استقبلت أجزاء من كتابة الطالب.']:['warn','بعض Glyphs لم تصل إليها الكتابة بعد.']);
       notes.push(avgBaseline>=.72?['check','خط الأساس متقارب مع النموذج.']:['warn','محاذاة خط الأساس تحتاج ضبطًا.']);
