@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.35.5-beta">
+<html lang="ar" dir="rtl" data-app-version="6.35.6-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.5 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.6 β</span>
           </p>
         </div>
       </div>
@@ -6979,6 +6979,50 @@
         {name:'wrong-size-penalized',ok:sizeCmp.iou<sameCmp.iou-.12&&sizeCmp.score<=.58,iou:sizeCmp.iou,score:sizeCmp.score}
       ];
       return{ok:tests.every(t=>t.ok),tests,same:sameCmp,wrongAngle:wrongCmp,wrongSize:sizeCmp};
+    }
+
+    function runReconstructionAutoCalibrationSelfTests(){
+      const target={angle:47,aspect:.18,fitMajorUnits:26,roundness:10,nibShapeMode:'roundedRect'};
+      const groups=['vertical','teeth','bowl','descender'],metrics=[];
+      for(let gi=0;gi<4;gi++)for(let k=0;k<2;k++){
+        const w=110,h=110,ridge=[];
+        if(gi===0){
+          for(let y=18;y<=92;y+=3)ridge.push({x:48+k*5,y,confidence:.9});
+        }else if(gi===1){
+          for(let x=18;x<=92;x+=3)ridge.push({x,y:52+5*Math.sin((x+k*4)/17),confidence:.9});
+        }else if(gi===2){
+          for(let a=-2.7;a<=.2;a+=.11)ridge.push({x:58+28*Math.cos(a),y:57+23*Math.sin(a),confidence:.9});
+        }else{
+          for(let y=20;y<=92;y+=3)ridge.push({x:78-(y-20)*.55+k*3,y,confidence:.9});
+        }
+        const ref=new Uint8Array(w*h);
+        ridge.forEach(p=>stampNibIntoMask(ref,w,h,p.x+.5,p.y+.5,target.fitMajorUnits,target.aspect,target.angle,target.roundness/100,target.nibShapeMode));
+        metrics.push({
+          glyphId:gi*10+k,sourceChar:['ا','س','م','و'][gi],structuralGroup:groups[gi],
+          rasterMask:ref,rasterW:w,rasterH:h,rasterScale:1,inkHeightUnits:82,inkHeight:82,
+          ridgeSamples:ridge,strokeRatio:.14
+        });
+      }
+      const initial={angle:63,aspect:.35,fitMajorUnits:37,roundness:10,nibShapeMode:'roundedRect',brushSize:20};
+      const before=reconstructionObjective(initial,metrics);
+      const best=optimizeReconstructionProfileSync(initial,metrics,{broad:true});
+      const after=reconstructionObjective(best.profile,metrics);
+      const uniformGroups=groups.map(key=>({key,gain:.01,best:{profile:{angle:47+(key==='teeth'?1:0),aspect:.18,fitMajorUnits:26}}}));
+      const divergentGroups=[
+        {key:'vertical',gain:.08,best:{profile:{angle:38,aspect:.12,fitMajorUnits:22}}},
+        {key:'teeth',gain:.07,best:{profile:{angle:66,aspect:.30,fitMajorUnits:34}}},
+        {key:'bowl',gain:.06,best:{profile:{angle:48,aspect:.18,fitMajorUnits:26}}}
+      ];
+      const single=contextualBrushVerdict(best.profile,uniformGroups),contextual=contextualBrushVerdict(best.profile,divergentGroups);
+      const tests=[
+        {name:'auto-cal-improves-score',ok:after.score>before.score+.18,before:before.score,after:after.score},
+        {name:'auto-cal-angle',ok:Math.abs(best.profile.angle-target.angle)<=4,got:best.profile.angle},
+        {name:'auto-cal-aspect',ok:Math.abs(best.profile.aspect-target.aspect)<=.06,got:best.profile.aspect},
+        {name:'auto-cal-size',ok:Math.abs(best.profile.fitMajorUnits-target.fitMajorUnits)<=4,got:best.profile.fitMajorUnits},
+        {name:'single-model-verdict',ok:single.key==='single',got:single.key},
+        {name:'contextual-model-verdict',ok:contextual.key==='contextual',got:contextual.key}
+      ];
+      return{ok:tests.every(t=>t.ok),tests,before,after,best:{angle:best.profile.angle,aspect:best.profile.aspect,fitMajorUnits:best.profile.fitMajorUnits},target,single,contextual};
     }
 
     function deriveBrushProfileFromMetrics(metrics,fontName=''){
