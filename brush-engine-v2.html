@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.34.3.2-beta">
+<html lang="ar" dir="rtl" data-app-version="6.34.3.3-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.34.3.2 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.34.3.3 β</span>
           </p>
         </div>
       </div>
@@ -633,7 +633,7 @@
             </div>
             <div class="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-fuchsia-100 bg-fuchsia-50/60 px-3 py-2">
               <div>
-                <strong class="text-[10px] text-fuchsia-900"><i class="fa-solid fa-fill-drip ml-1"></i>V6.34.3.2 — Ink Footprint Calibration</strong>
+                <strong class="text-[10px] text-fuchsia-900"><i class="fa-solid fa-fill-drip ml-1"></i>V6.34.3.3 — Gross-Shape Validation</strong>
                 <div class="text-[8px] text-stone-500">نقارن مساحة الحبر التي ينتجها قلم الطالب بمساحة حبر الـGlyph، وليس Centerline فقط.</div>
               </div>
               <div class="flex flex-wrap items-center gap-3">
@@ -5871,7 +5871,7 @@
 
       const primary=primaryEducationalIssue(messages);
       const severity=primary.level==='error'?3:primary.level==='warn'?2:primary.level==='good'?0:1;
-      const quality=ink?clamp((ink.score||0)*.72+(stats.score||0)*.18+(stats.coverage||0)*.10,0,1):clamp((stats.score||0)*.55+(stats.coverage||0)*.25+(stats.insideRatio||0)*.20,0,1);
+      const quality=ink?clamp(ink.score||0,0,1):clamp((stats.score||0)*.55+(stats.coverage||0)*.25+(stats.insideRatio||0)*.20,0,1);
       return{glyphIndex:z.index,char,score:quality,severity,stats,ink,sb,region,detached,messages,primary};
     }
 
@@ -5952,7 +5952,7 @@
       notes.push(['info','V6.34.3 يحول القياسات الآن إلى ملاحظات تعليمية للحروف، مع تحديد أولوية الحرف الأضعف.']);
       if(fb)fb.innerHTML=notes.map(n=>'<div class="rounded-xl border p-2 '+(n[0]==='check'?'bg-emerald-50 border-emerald-100 text-emerald-800':n[0]==='warn'?'bg-amber-50 border-amber-100 text-amber-800':'bg-sky-50 border-sky-100 text-sky-800')+'"><i class="fa-solid '+(n[0]==='check'?'fa-circle-check':n[0]==='warn'?'fa-triangle-exclamation':'fa-circle-info')+' ml-1"></i>'+n[1]+'</div>').join('');
       const eduWeak=edu.filter(e=>e.severity>=2).length;
-      status.textContent='V6.34.3.2: '+strokes.length+' ضربة → '+maps.length+' أجزاء → '+represented+'/'+zones.length+' glyphs • مطابقة الشكل والحبر '+contourPct+'% • '+eduWeak+' حروف تحتاج مراجعة.';
+      status.textContent='V6.34.3.3: '+strokes.length+' ضربة → '+maps.length+' أجزاء → '+represented+'/'+zones.length+' glyphs • مطابقة الشكل والحبر '+contourPct+'% • '+eduWeak+' حروف تحتاج مراجعة.';
       renderShapingPracticeCanvas();
     }
 
