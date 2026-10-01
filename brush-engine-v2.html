@@ -698,9 +698,13 @@
                   </details>
                 </div>
               <div id="brushReconstructionPanel" class="mt-3 rounded-2xl border border-violet-200 bg-violet-50/35 p-3">
-                <div class="flex items-center justify-between gap-2">
-                  <div><strong class="text-[10px] text-violet-950"><i class="fa-solid fa-shapes ml-1"></i>V6.35.5 — Brush Reconstruction Validation</strong><div class="text-[8px] text-stone-500">نعيد بناء Glyphs بالقصبة المستنتجة على الـmedial ridges ثم نقارن الحبر الناتج بالخط الأصلي.</div></div>
-                  <button type="button" onclick="runBrushReconstructionValidation()" class="px-2 py-1 rounded-lg bg-violet-700 text-white text-[8px] font-bold">أعد الاختبار</button>
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div><strong class="text-[10px] text-violet-950"><i class="fa-solid fa-shapes ml-1"></i>V6.35.6 — Reconstruction-Guided Auto Calibration</strong><div class="text-[8px] text-stone-500">نستخدم نتيجة إعادة البناء نفسها للبحث عن أفضل Angle + Aspect + Nib Size عالميًا ولكل مجموعة بنيوية.</div></div>
+                  <div class="flex flex-wrap gap-1">
+                    <button type="button" onclick="runBrushReconstructionValidation()" class="px-2 py-1 rounded-lg border border-violet-200 bg-white text-violet-800 text-[8px] font-bold">أعد الاختبار</button>
+                    <button id="runReconAutoCalBtn" type="button" onclick="runReconstructionGuidedAutoCalibration(false)" class="px-2 py-1 rounded-lg bg-violet-700 text-white text-[8px] font-bold"><i class="fa-solid fa-wand-magic-sparkles ml-1"></i>معايرة تلقائية</button>
+                    <button id="applyReconAutoCalBtn" type="button" onclick="applyReconstructionOptimizedProfile()" disabled class="px-2 py-1 rounded-lg bg-stone-100 border border-stone-200 text-stone-400 text-[8px] font-bold disabled:cursor-not-allowed">اعتماد أفضل قصبة</button>
+                  </div>
                 </div>
                 <div class="mt-2 grid grid-cols-4 gap-1 text-center">
                   <div class="rounded-lg bg-white border border-violet-100 p-1.5"><div id="reconScoreValue" class="font-black text-[12px] text-violet-800">—</div><div class="text-[7px] text-stone-500">Reconstruction</div></div>
@@ -709,6 +713,17 @@
                   <div class="rounded-lg bg-white border border-rose-100 p-1.5"><div id="reconExtraValue" class="font-black text-[12px] text-rose-800">—</div><div class="text-[7px] text-stone-500">Extra Ink</div></div>
                 </div>
                 <div id="reconStatus" class="mt-2 text-[8px] leading-4 text-stone-500">يعمل تلقائيًا بعد تحليل الخط.</div>
+                <div id="reconAutoCalibrationSummary" class="mt-2 rounded-xl border border-violet-100 bg-white/80 p-2">
+                  <div class="flex items-center justify-between gap-2"><strong class="text-[9px] text-violet-950">Auto Calibration</strong><span id="reconAutoCalBadge" class="px-2 py-0.5 rounded-full border border-stone-200 bg-stone-50 text-[7px] font-black text-stone-600">بانتظار التحليل</span></div>
+                  <div class="mt-2 grid grid-cols-3 gap-1 text-center">
+                    <div class="rounded-lg bg-stone-50 p-1.5"><div id="reconAutoBefore" class="font-black text-[11px] text-stone-700">—</div><div class="text-[7px] text-stone-500">قبل</div></div>
+                    <div class="rounded-lg bg-emerald-50 p-1.5"><div id="reconAutoAfter" class="font-black text-[11px] text-emerald-700">—</div><div class="text-[7px] text-stone-500">بعد</div></div>
+                    <div class="rounded-lg bg-sky-50 p-1.5"><div id="reconAutoGain" class="font-black text-[11px] text-sky-700">—</div><div class="text-[7px] text-stone-500">التحسن</div></div>
+                  </div>
+                  <div id="reconAutoParams" class="mt-2 text-[8px] leading-4 text-stone-600">سيظهر هنا انتقال Angle / Aspect / Nib Size.</div>
+                  <div id="reconAutoModelVerdict" class="mt-1 rounded-lg bg-stone-50 px-2 py-1.5 text-[8px] leading-4 text-stone-600">سنقارن أيضًا أفضل قصبة عالمية بأفضل قصبة لكل مجموعة.</div>
+                  <div id="reconAutoGroupGrid" class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-1"></div>
+                </div>
                 <canvas id="brushReconstructionCanvas" width="420" height="220" class="mt-2 w-full h-[180px] rounded-xl bg-white border border-violet-100"></canvas>
                 <div class="mt-1 text-[7px] text-stone-500">أخضر = تداخل صحيح • أحمر = حبر زائد من الفرشاة • كهرماني = حبر الخط لم تستطع الفرشاة إعادة بنائه.</div>
                 <div id="brushReconstructionGlyphs" class="mt-2 flex gap-1 overflow-x-auto custom-scrollbar pb-1"></div>
@@ -6318,7 +6333,7 @@
     }
 
     /* --- V6.35 Font → Brush Analyzer --- */
-    let lastFontBrushAnalysis=null,lastBrushReconstructionValidation=null,selectedBrushReconstructionGlyphId=null;
+    let lastFontBrushAnalysis=null,lastBrushReconstructionValidation=null,lastReconstructionAutoCalibration=null,selectedBrushReconstructionGlyphId=null;
     const FONT_DERIVED_BRUSH_STORAGE_KEY='makhtuta-font-derived-brush-v1';
 
     function brushQuantile(values,q){
