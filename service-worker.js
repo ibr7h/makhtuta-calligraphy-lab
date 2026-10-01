@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-32-1-natural-word-layout-2026-10-01-10';
+const CACHE_VERSION = 'makhtuta-pwa-v6-32-2-harfbuzz-v1-glyph-bounds-2026-10-01-11';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
