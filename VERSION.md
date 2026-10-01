@@ -1,3 +1,13 @@
+# V6.34.2.1 β — Stable Shaping Layout
+
+- Fixed a race condition that made the reference word appear very large before handwriting and then shrink after matching started.
+- Reference and handwriting canvases are now rendered in a strict sequence so the natural word layout is established before the practice canvas draws.
+- Removed the temporary 62% fallback layout from the handwriting canvas.
+- The normalized word span remains fixed for the current shaped text; handwriting no longer changes the reference scale.
+- Resize events invalidate and recompute the layout once, then redraw both canvases consistently.
+- Mapping waits for a valid shaping layout instead of silently generating fallback geometry.
+- App/PWA version bumped to V6.34.2.1 β.
+
 # V6.34.2 β — Outline Distance Matching
 
 - Added point-to-contour distance analysis for student handwriting segments against the exact HarfBuzz Glyph outline.
