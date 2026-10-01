@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-27-beta-qalam-dot-metrics-2026-10-01-2';
+const CACHE_VERSION = 'makhtuta-pwa-v6-28-beta-arabic-shaping-inspector-2026-10-01-3';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
