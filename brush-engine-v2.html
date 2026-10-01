@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.32.1-beta">
+<html lang="ar" dir="rtl" data-app-version="6.32.2-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.32.1 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.32.2 β</span>
           </p>
         </div>
       </div>
@@ -1798,10 +1798,27 @@
           try{
             if(typeof font.glyphExtents==='function'){
               const e=font.glyphExtents(g.codepoint);
-              if(e)extents={xBearing:Number(e.x_bearing??e.xBearing??0),yBearing:Number(e.y_bearing??e.yBearing??0),width:Number(e.width??0),height:Number(e.height??0)};
+              if(e)extents={
+                xBearing:Number(e.xBearing??e.x_bearing??0),
+                yBearing:Number(e.yBearing??e.y_bearing??0),
+                width:Number(e.width??0),
+                height:Number(e.height??0)
+              };
             }
           }catch(_){}
-          return{index:i,glyphId:g.codepoint,cluster:g.cluster,xAdvance:g.x_advance,yAdvance:g.y_advance,xOffset:g.x_offset,yOffset:g.y_offset,name:font.glyphName?font.glyphName(g.codepoint):'',extents};
+          // harfbuzzjs v1.x renamed GlyphPosition fields to camelCase.
+          // Keep snake_case fallbacks so the lab also tolerates older builds.
+          return{
+            index:i,
+            glyphId:g.codepoint,
+            cluster:g.cluster,
+            xAdvance:Number(g.xAdvance??g.x_advance??0),
+            yAdvance:Number(g.yAdvance??g.y_advance??0),
+            xOffset:Number(g.xOffset??g.x_offset??0),
+            yOffset:Number(g.yOffset??g.y_offset??0),
+            name:font.glyphName?font.glyphName(g.codepoint):'',
+            extents
+          };
         });
       }finally{
         try{buffer.destroy?.()}catch(_){}try{font.destroy?.()}catch(_){}try{face.destroy?.()}catch(_){}try{blob.destroy?.()}catch(_){}
@@ -1842,37 +1859,64 @@
         naturalWidth=Math.max(1,ctx.measureText(lastHarfBuzzText||'').width);
       }
       const span=clamp(naturalWidth/W,.10,.86),left=(1-span)/2;
-      return{span,left,right:left+span,fontPx,fontRatio:fontPx/W,baseline:.72,naturalWidth};
+      return{span,left,right:left+span,fontPx,fontRatio:fontPx/W,baseline:.72,naturalWidth,canvasW:W,canvasH:H};
     }
 
     function buildShapingGlyphZones(layout=lastShapingLayout){
       const glyphs=lastHarfBuzzGlyphs||[];if(!glyphs.length)return[];
-      const advances=glyphs.map(g=>Math.max(1,Math.abs(Number(g.xAdvance)||0)));
-      const total=Math.max(1,advances.reduce((a,b)=>a+b,0));
+      const advances=glyphs.map(g=>Math.max(0,Math.abs(Number(g.xAdvance)||0)));
+      const fallbackAdvance=Math.max(1,advances.find(v=>v>0)||1);
+      const safeAdvances=advances.map(v=>v>0?v:fallbackAdvance*.18);
+      const total=Math.max(1,safeAdvances.reduce((a,b)=>a+b,0));
       const span=clamp(Number(layout?.span)||.62,.10,.90),rawLeft=Number(layout?.left),edge=clamp(Number.isFinite(rawLeft)?rawLeft:((1-span)/2),0,1-span),baseline=.72;
       const firstCluster=Number(glyphs[0]?.cluster),lastCluster=Number(glyphs[glyphs.length-1]?.cluster);
-      const visualLTR=!Number.isFinite(firstCluster)||!Number.isFinite(lastCluster)||firstCluster>=lastCluster;
-      let cursor=visualLTR?edge:edge+span;
-      const verticalUnits=Math.max(1,...glyphs.flatMap(g=>{
-        const e=g.extents;if(!e)return[0];
-        return[Math.abs(Number(e.yBearing)||0),Math.abs((Number(e.yBearing)||0)+(Number(e.height)||0))];
-      }));
+      // Arabic HarfBuzz output is in visual glyph order with descending clusters.
+      const outputRunsLeftToRight=!Number.isFinite(firstCluster)||!Number.isFinite(lastCluster)||firstCluster>=lastCluster;
+      let cursor=outputRunsLeftToRight?edge:edge+span;
+      const unitNormX=span/total;
+      const canvasW=Math.max(1,Number(layout?.canvasW)||1000),canvasH=Math.max(1,Number(layout?.canvasH)||260);
+      const unitPx=unitNormX*canvasW;
       const zones=glyphs.map((g,i)=>{
-        const w=span*advances[i]/total;
-        let left,right;
-        if(visualLTR){left=cursor;right=cursor+w;cursor=right}else{right=cursor;left=cursor-w;cursor=left}
-        const shift=(Number(g.xOffset)||0)/total*span;left+=shift;right+=shift;
-        let top=.18,bottom=.82;
-        const e=g.extents;
-        if(e&&verticalUnits>1){
-          const yScale=.50/verticalUnits;
-          const y1=baseline-(Number(e.yBearing)||0)*yScale;
-          const y2=baseline-((Number(e.yBearing)||0)+(Number(e.height)||0))*yScale;
-          top=clamp(Math.min(y1,y2),.08,.86);bottom=clamp(Math.max(y1,y2),.14,.90);
-          if(bottom-top<.10){const c=(top+bottom)/2;top=clamp(c-.05,.08,.84);bottom=clamp(c+.05,.16,.92)}
+        const advanceNorm=safeAdvances[i]*unitNormX;
+        let cellLeft,cellRight,penOrigin;
+        if(outputRunsLeftToRight){
+          cellLeft=cursor;cellRight=cursor+advanceNorm;penOrigin=cellLeft;cursor=cellRight;
+        }else{
+          cellRight=cursor;cellLeft=cursor-advanceNorm;penOrigin=cellRight;cursor=cellLeft;
         }
-        left=clamp(left,0,1);right=clamp(right,0,1);
-        return{index:i,g,left,right,top,bottom,baseline,centerX:(left+right)/2,centerY:(top+bottom)/2};
+
+        const xOffset=(Number(g.xOffset)||0)*unitNormX;
+        const yOffset=(Number(g.yOffset)||0)*unitPx;
+        const e=g.extents;
+        let left=cellLeft,right=cellRight,top=.18,bottom=.82,usedExtents=false;
+
+        if(e&&Number.isFinite(Number(e.width))&&Math.abs(Number(e.width))>0){
+          const x1=penOrigin+xOffset+(Number(e.xBearing)||0)*unitNormX;
+          const x2=x1+(Number(e.width)||0)*unitNormX;
+          left=Math.min(x1,x2);right=Math.max(x1,x2);usedExtents=true;
+          // Keep a small hit target for very narrow glyphs/marks.
+          const minW=Math.max(.012,advanceNorm*.18);
+          if(right-left<minW){const cx=(left+right)/2;left=cx-minW/2;right=cx+minW/2}
+        }
+
+        if(e&&Number.isFinite(Number(e.height))&&Math.abs(Number(e.height))>0){
+          const baselinePx=baseline*canvasH;
+          const y1=baselinePx-yOffset-(Number(e.yBearing)||0)*unitPx;
+          const y2=y1-(Number(e.height)||0)*unitPx;
+          top=Math.min(y1,y2)/canvasH;bottom=Math.max(y1,y2)/canvasH;usedExtents=true;
+          const minH=.08;
+          if(bottom-top<minH){const cy=(top+bottom)/2;top=cy-minH/2;bottom=cy+minH/2}
+        }
+
+        // Extents are ink bounds; advance cells remain useful as a fallback and for hit testing.
+        const hitLeft=Math.min(left,cellLeft),hitRight=Math.max(right,cellRight);
+        left=clamp(left,0,1);right=clamp(right,0,1);top=clamp(top,.04,.94);bottom=clamp(bottom,.06,.96);
+        return{
+          index:i,g,left,right,top,bottom,baseline,
+          cellLeft:clamp(cellLeft,0,1),cellRight:clamp(cellRight,0,1),
+          hitLeft:clamp(hitLeft,0,1),hitRight:clamp(hitRight,0,1),
+          centerX:(left+right)/2,centerY:(top+bottom)/2,usedExtents
+        };
       });
       lastShapingZones=zones;return zones;
     }
@@ -1884,9 +1928,9 @@
     }
 
     function contextualUnitForCluster(cluster){
-      const units=arabicContextualUnits(lastHarfBuzzText||'');
-      const n=Number(cluster);
-      return Number.isInteger(n)&&n>=0&&n<units.length?units[n]:null;
+      const units=arabicContextualUnits(lastHarfBuzzText||''),n=Number(cluster);
+      if(!Number.isFinite(n))return null;
+      return units.find(u=>u.start===n)||units.find(u=>n>=u.start&&n<u.end)||[...units].reverse().find(u=>u.start<=n)||units[0]||null;
     }
 
     function renderShapingGlyphCards(){
@@ -1928,8 +1972,8 @@
         ctx.fillText(lastHarfBuzzText,W/2,baselineY);
         ctx.restore();
       }
-      c.onclick=(ev)=>{const rect=c.getBoundingClientRect(),nx=(ev.clientX-rect.left)/rect.width,ny=(ev.clientY-rect.top)/rect.height;const hit=zones.filter(z=>nx>=z.left&&nx<=z.right&&ny>=z.top-.08&&ny<=z.bottom+.08).sort((a,b)=>Math.abs(nx-a.centerX)-Math.abs(nx-b.centerX))[0]||zones.reduce((a,b)=>Math.abs(nx-a.centerX)<Math.abs(nx-b.centerX)?a:b);if(hit)selectShapingGlyph(hit.index)};
-      if(sum)sum.textContent='تمت معايرة الإطارات على العرض الطبيعي للكلمة نفسها؛ لا يوجد تمديد أفقي. HarfBuzz advances/xOffset يحددان موضع كل Glyph داخل العرض الحقيقي للنص.';
+      c.onclick=(ev)=>{const rect=c.getBoundingClientRect(),nx=(ev.clientX-rect.left)/rect.width,ny=(ev.clientY-rect.top)/rect.height;const hit=zones.filter(z=>nx>=z.hitLeft&&nx<=z.hitRight&&ny>=z.top-.08&&ny<=z.bottom+.08).sort((a,b)=>Math.abs(nx-a.centerX)-Math.abs(nx-b.centerX))[0]||zones.reduce((a,b)=>Math.abs(nx-a.centerX)<Math.abs(nx-b.centerX)?a:b);if(hit)selectShapingGlyph(hit.index)};
+      if(sum)sum.textContent='الإطار الآن يمثل Ink Bounds الفعلية للـGlyph عند توفر extents، بينما HarfBuzz xAdvance/xOffset يحدد موضعه داخل العرض الطبيعي للكلمة. تم تصحيح حقول harfbuzzjs v1.x إلى camelCase.';
       renderShapingGlyphCards();
     }
 
@@ -1949,7 +1993,15 @@
     const ARABIC_LETTER_RE=/[\u0621-\u063A\u0641-\u064A\u066E\u066F\u0671-\u06D3\u06FA-\u06FC]/u;
 
     function arabicBaseUnits(text){
-      const units=[];for(const ch of Array.from(String(text||'').normalize('NFC'))){if(ARABIC_TRANSPARENT_RE.test(ch)&&units.length){units[units.length-1].marks.push(ch);continue}units.push({char:ch,marks:[],codePoint:ch.codePointAt(0)})}return units;
+      const units=[],src=String(text||'').normalize('NFC');let utf16Offset=0;
+      for(const ch of src){
+        const start=utf16Offset;utf16Offset+=ch.length;
+        if(ARABIC_TRANSPARENT_RE.test(ch)&&units.length){
+          units[units.length-1].marks.push(ch);units[units.length-1].end=utf16Offset;continue;
+        }
+        units.push({char:ch,marks:[],codePoint:ch.codePointAt(0),start,end:utf16Offset});
+      }
+      return units;
     }
     function arabicCanJoinPrev(ch){return ARABIC_LETTER_RE.test(ch)&&ch!=='ء'}
     function arabicCanJoinNext(ch){return arabicCanJoinPrev(ch)&&!ARABIC_NON_JOINING_LEFT.has(ch)}
