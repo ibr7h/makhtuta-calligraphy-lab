@@ -6188,6 +6188,65 @@
       return out;
     }
 
+    function brushRidgeSamples(mask,dist,w,h,inkHeight){
+      const ridge=[];
+      for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++){
+        const i=y*w+x;if(!mask[i]||dist[i]<1.15)continue;
+        const v=dist[i];let higher=false;
+        for(let yy=-1;yy<=1&&!higher;yy++)for(let xx=-1;xx<=1;xx++){
+          if(!xx&&!yy)continue;if(dist[(y+yy)*w+x+xx]>v+.12){higher=true;break}
+        }
+        if(!higher)ridge.push({x,y,d:2*v});
+      }
+      if(ridge.length<12)return[];
+      const out=[],radius=9,r2=radius*radius,step=Math.max(1,Math.ceil(ridge.length/180));
+      for(let ri=0;ri<ridge.length;ri+=step){
+        const p=ridge[ri],near=[];
+        for(let j=0;j<ridge.length;j++){
+          const q=ridge[j],dx=q.x-p.x,dy=q.y-p.y;if(dx*dx+dy*dy<=r2)near.push(q);
+        }
+        if(near.length<4)continue;
+        const mx=brushMean(near.map(q=>q.x)),my=brushMean(near.map(q=>q.y));
+        let xx=0,yy=0,xy=0;
+        near.forEach(q=>{const dx=q.x-mx,dy=q.y-my;xx+=dx*dx;yy+=dy*dy;xy+=dx*dy});
+        const tr=xx+yy,disc=Math.sqrt(Math.max(0,(xx-yy)*(xx-yy)+4*xy*xy)),l1=(tr+disc)/2,l2=(tr-disc)/2;
+        if(l1<1e-6)continue;
+        const anisotropy=clamp((l1-l2)/l1,0,1);if(anisotropy<.28)continue;
+        let phi=.5*Math.atan2(2*xy,xx-yy)*180/Math.PI;phi=((phi%180)+180)%180;
+        out.push({tangentDeg:phi,diameterNorm:p.d/Math.max(1,inkHeight),confidence:anisotropy});
+      }
+      return out;
+    }
+
+    function fitFlatNibModel(samples){
+      const valid=(samples||[]).filter(q=>Number.isFinite(q.tangentDeg)&&Number.isFinite(q.diameterNorm)&&q.diameterNorm>0);
+      if(valid.length<10)return null;
+      const weightedMedian=(vals)=>{
+        const a=vals.filter(x=>Number.isFinite(x.v)&&Number.isFinite(x.w)&&x.w>0).sort((x,y)=>x.v-y.v);
+        if(!a.length)return 0;const total=a.reduce((n,x)=>n+x.w,0);let acc=0;
+        for(const x of a){acc+=x.w;if(acc>=total*.5)return x.v}return a[a.length-1].v;
+      };
+      let best=null;
+      for(let angle=10;angle<=80;angle+=2){
+        for(let aspect=.06;aspect<=.42+1e-9;aspect+=.03){
+          const factors=valid.map(q=>{
+            const d=(angle-q.tangentDeg)*Math.PI/180;
+            return Math.abs(Math.sin(d))+aspect*Math.abs(Math.cos(d));
+          });
+          const ratios=valid.map((q,i)=>({v:q.diameterNorm/Math.max(.035,factors[i]),w:.35+.65*(q.confidence||0)}));
+          const major=weightedMedian(ratios);if(!Number.isFinite(major)||major<=0)continue;
+          const errs=valid.map((q,i)=>({v:Math.abs(major*factors[i]-q.diameterNorm)/Math.max(.018,q.diameterNorm),w:.35+.65*(q.confidence||0)}));
+          const medErr=weightedMedian(errs);
+          const p75=brushQuantile(errs.map(e=>e.v),.75);
+          const objective=.72*medErr+.28*p75;
+          if(!best||objective<best.error)best={angle,aspect:Math.round(aspect*1000)/1000,majorRatio:major,error:objective,medianError:medErr,p75Error:p75,sampleCount:valid.length};
+        }
+      }
+      if(!best)return null;
+      best.confidence=clamp((1-best.error/.55)*clamp(best.sampleCount/120,0,1),0,1);
+      return best;
+    }
+
     function brushContourEvidence(g){
       const contours=parseGlyphSvgPath(g?.path||'',10),hist=new Float64Array(31);
       let sharp=0,turnCount=0,totalStableWeight=0;
@@ -6220,11 +6279,11 @@
       if(area<20||!diam.length)return null;
       const inkHeight=Math.max(1,maxY-minY+1),median=brushQuantile(diam,.50),p25=brushQuantile(diam,.25),p85=brushQuantile(diam,.85);
       const mean=brushMean(diam),variation=mean>0?brushStd(diam,mean)/mean:0,aspect=clamp(p85>0?p25/p85:.18,.06,.60);
-      const edge=brushContourEvidence(g);
+      const edge=brushContourEvidence(g),ridgeSamples=brushRidgeSamples(mask,dist,size,size,inkHeight);
       return{
         glyphId:g.glyphId,area,inkHeight,strokeRatio:clamp(median/inkHeight,.025,.45),
         aspect,variation:clamp(variation,0,1.5),sharpFraction:edge.sharpFraction,
-        angleHist:Array.from(edge.hist),angleWeight:edge.totalStableWeight
+        angleHist:Array.from(edge.hist),angleWeight:edge.totalStableWeight,ridgeSamples
       };
     }
 
