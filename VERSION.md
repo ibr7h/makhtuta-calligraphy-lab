@@ -1,3 +1,16 @@
+# V6.34.3 β — Educational Feedback Engine
+
+- Converts the geometric and Outline diagnostics into actionable Arabic feedback per Glyph.
+- Added per-Glyph analysis for horizontal/vertical placement, width, height, ascender/descender length, coverage, and outside-ink deviation.
+- Added regional Outline coverage for upper/lower/left/right parts of each Glyph.
+- Added detection of detached small Outline components to flag missing dots or isolated marks when they are not covered by student writing.
+- Added an Arabic-specific hint for س/ش when upper-shape coverage is weak, pointing the learner to the teeth area.
+- Added a dedicated educational-feedback panel with one primary message per Glyph.
+- Added a "focus weakest" action that selects the Glyph with the highest-priority issue.
+- Glyph cards now surface the primary educational note instead of only numeric diagnostics.
+- The engine deliberately remains relative to the selected reference font; it does not claim an absolute calligraphy grade.
+- App/PWA version bumped to V6.34.3 β.
+
 # V6.34.2.1 β — Stable Shaping Layout
 
 - Fixed a race condition that made the reference word appear very large before handwriting and then shrink after matching started.
