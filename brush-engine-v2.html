@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.35.2-beta">
+<html lang="ar" dir="rtl" data-app-version="6.35.3-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.2 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.3 β</span>
           </p>
         </div>
       </div>
@@ -6604,19 +6604,38 @@
 
     function runFontBrushAnalyzerSelfTests(){
       const histAt=a=>{const h=Array(31).fill(0),i=clamp(Math.round(a/3),0,30);h[i]=12;if(i>0)h[i-1]=4;if(i+1<h.length)h[i+1]=4;return h};
-      const mk=(angle,ratio,aspect,variation,sharp)=>({strokeRatio:ratio,aspect,variation,sharpFraction:sharp,angleHist:histAt(angle),angleWeight:20,ridgeSamples:[]});
+      const ridgeFor=(angle,aspect,major,seed=0)=>{
+        const out=[];for(let i=0;i<64;i++){
+          const tangent=(i*19+seed*7)%180,d=(angle-tangent)*Math.PI/180;
+          const base=major*(Math.abs(Math.sin(d))+aspect*Math.abs(Math.cos(d)));
+          const noise=1+.016*Math.sin(i*.67+seed);
+          out.push({tangentDeg:tangent,diameterNorm:base*noise,confidence:.86});
+        }return out;
+      };
+      const mk=(angle,ratio,aspect,variation,sharp,ridgeSamples=[])=>({strokeRatio:ratio,aspect,variation,sharpFraction:sharp,angleHist:histAt(angle),angleWeight:20,ridgeSamples});
       const p1=deriveBrushProfileFromMetrics(Array.from({length:30},()=>mk(45,.12,.18,.18,.20)),'test');
       const p2=deriveBrushProfileFromMetrics(Array.from({length:28},()=>mk(60,.16,.25,.38,.08)),'test');
 
-      const synth=[];
       const target={angle:48,aspect:.18,major:.145};
-      for(let i=0;i<72;i++){
-        const tangent=(i*17)%180,d=(target.angle-tangent)*Math.PI/180;
-        const base=target.major*(Math.abs(Math.sin(d))+target.aspect*Math.abs(Math.cos(d)));
-        const noise=1+.018*Math.sin(i*.73);
-        synth.push({tangentDeg:tangent,diameterNorm:base*noise,confidence:.88});
-      }
+      const synth=ridgeFor(target.angle,target.aspect,target.major,1);
       const fit=fitFlatNibModel(synth);
+
+      const groups=['vertical','teeth','bowl','descender'];
+      const realMetrics=[];
+      for(let i=0;i<16;i++){
+        const a=46+(i%3-1)*2,asp=.18+(i%2?0.015:-0.01),maj=.14+(i%4-1.5)*.004;
+        realMetrics.push({
+          glyphId:100+i,sourceChar:['ا','س','م','و'][i%4],structuralGroup:groups[i%4],
+          strokeRatio:.125+(i%3)*.004,aspect:asp,variation:.22+(i%3)*.02,sharpFraction:.13,
+          angleHist:histAt(a),angleWeight:20,ridgeSamples:ridgeFor(a,asp,maj,i)
+        });
+      }
+      for(let i=0;i<3;i++)realMetrics.push({
+        glyphId:900+i,sourceChar:'غ',structuralGroup:groups[i%4],strokeRatio:.24,aspect:.40,variation:.68,sharpFraction:.35,
+        angleHist:histAt(78),angleWeight:20,ridgeSamples:ridgeFor(78,.40,.25,50+i)
+      });
+      const calibration=calibrateFontBrushMetrics(realMetrics);
+      const calibratedProfile=deriveBrushProfileFromMetrics(calibration.balanced,'cal-test');
 
       const tests=[
         {name:'contour-angle-45',ok:!!p1&&Math.abs(p1.angle-45)<=3},
@@ -6627,9 +6646,14 @@
         {name:'nib-fit-angle',ok:!!fit&&Math.abs(fit.angle-target.angle)<=4},
         {name:'nib-fit-aspect',ok:!!fit&&Math.abs(fit.aspect-target.aspect)<=.06},
         {name:'nib-fit-major',ok:!!fit&&Math.abs(fit.majorRatio-target.major)<=.03},
-        {name:'nib-fit-error',ok:!!fit&&fit.error<.12}
+        {name:'nib-fit-error',ok:!!fit&&fit.error<.12},
+        {name:'real-calibration-rejects-outliers',ok:calibration.rejected.length>=3},
+        {name:'real-calibration-keeps-majority',ok:calibration.accepted.length>=14},
+        {name:'real-calibration-groups',ok:calibration.groups.length>=4},
+        {name:'real-calibration-angle',ok:!!calibratedProfile&&Math.abs(calibratedProfile.angle-46)<=6},
+        {name:'real-calibration-aspect',ok:!!calibratedProfile&&Math.abs(calibratedProfile.aspect-.18)<=.07}
       ];
-      return{ok:tests.every(t=>t.ok),tests,p1,p2,fit,target};
+      return{ok:tests.every(t=>t.ok),tests,p1,p2,fit,target,calibration:{accepted:calibration.accepted.length,rejected:calibration.rejected.length,groups:calibration.groups.map(g=>({key:g.key,count:g.count,angle:g.profile.angle,aspect:g.profile.aspect})),confidence:calibration.confidence},calibratedProfile};
     }
 
     /* --- أوراق العمل --- */
