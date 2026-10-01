@@ -6680,7 +6680,10 @@
       const coverage=refArea?inter/refArea:0,precision=reconArea?inter/reconArea:0,iou=union?inter/union:0;
       const extra=1-precision,missing=1-coverage;
       const f1=(coverage+precision)>0?2*coverage*precision/(coverage+precision):0;
-      const score=clamp(.55*iou+.25*f1+.10*coverage+.10*precision,0,1);
+      let score=clamp(.55*iou+.25*f1+.10*coverage+.10*precision,0,1);
+      if(extra>.45||missing>.45)score=Math.min(score,.48);
+      else if(extra>.32||missing>.32)score=Math.min(score,.58);
+      if(iou<.35)score=Math.min(score,.50);
       return{score,iou,coverage,precision,extra,missing,refArea,reconArea,intersection:inter,union};
     }
 
@@ -6771,7 +6774,7 @@
       const tests=[
         {name:'reconstruction-self-match',ok:sameCmp.iou>.98,iou:sameCmp.iou},
         {name:'wrong-angle-lower-iou',ok:wrongCmp.iou<sameCmp.iou-.12,iou:wrongCmp.iou},
-        {name:'wrong-size-lower-iou',ok:sizeCmp.iou<sameCmp.iou-.12,iou:sizeCmp.iou}
+        {name:'wrong-size-penalized',ok:sizeCmp.iou<sameCmp.iou-.12&&sizeCmp.score<=.58,iou:sizeCmp.iou,score:sizeCmp.score}
       ];
       return{ok:tests.every(t=>t.ok),tests,same:sameCmp,wrongAngle:wrongCmp,wrongSize:sizeCmp};
     }
@@ -6979,7 +6982,7 @@
           const tangent=(i*19+seed*7)%180,d=(angle-tangent)*Math.PI/180;
           const base=major*(Math.abs(Math.sin(d))+aspect*Math.abs(Math.cos(d)));
           const noise=1+.016*Math.sin(i*.67+seed);
-          out.push({tangentDeg:tangent,diameterNorm:base*noise,confidence:.86});
+          out.push({tangentDeg:tangent,diameterNorm:base*noise,diameterUnits:base*noise*1000,confidence:.86});
         }return out;
       };
       const mk=(angle,ratio,aspect,variation,sharp,ridgeSamples=[])=>({strokeRatio:ratio,aspect,variation,sharpFraction:sharp,angleHist:histAt(angle),angleWeight:20,ridgeSamples});
@@ -6989,6 +6992,7 @@
       const target={angle:48,aspect:.18,major:.145};
       const synth=ridgeFor(target.angle,target.aspect,target.major,1);
       const fit=fitFlatNibModel(synth);
+      const unitFit=fitFlatNibModel(synth,'diameterUnits');
 
       const groups=['vertical','teeth','bowl','descender'];
       const realMetrics=[];
@@ -7017,6 +7021,7 @@
         {name:'nib-fit-aspect',ok:!!fit&&Math.abs(fit.aspect-target.aspect)<=.06},
         {name:'nib-fit-major',ok:!!fit&&Math.abs(fit.majorRatio-target.major)<=.03},
         {name:'nib-fit-error',ok:!!fit&&fit.error<.12},
+        {name:'font-unit-nib-fit',ok:!!unitFit&&Math.abs(unitFit.majorRatio-target.major*1000)<=30},
         {name:'real-calibration-rejects-outliers',ok:calibration.rejected.length>=3},
         {name:'real-calibration-keeps-majority',ok:calibration.accepted.length>=14},
         {name:'real-calibration-groups',ok:calibration.groups.length>=4},
