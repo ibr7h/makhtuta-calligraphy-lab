@@ -653,6 +653,42 @@
             <div id="glyphStrokeMappingGrid" class="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"></div>
           </div>
 
+          <section id="fontBrushAnalyzerPanel" class="bg-white rounded-2xl p-3 sm:p-4 border border-amber-200 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <strong class="text-sm text-amber-950"><i class="fa-solid fa-pen-nib ml-1"></i>V6.35.1 — Font → Brush Analyzer</strong>
+                <div class="text-[9px] text-stone-500 mt-1">يستنتج نموذج قصبة محتملًا من هندسة Glyph Outlines. النتيجة تقديرية وليست استخراجًا للقلم الأصلي.</div>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="analyzeFontBrush()" class="px-3 py-1.5 rounded-xl bg-amber-800 hover:bg-amber-900 text-white text-[10px] font-bold"><i class="fa-solid fa-magnifying-glass-chart ml-1"></i>حلّل الخط</button>
+                <button id="applyDerivedBrushBtn" type="button" onclick="applyDerivedBrushPreset()" disabled class="px-3 py-1.5 rounded-xl bg-stone-100 border border-stone-200 text-stone-400 text-[10px] font-bold disabled:cursor-not-allowed"><i class="fa-solid fa-wand-magic-sparkles ml-1"></i>إنشاء فرشاة من الخط</button>
+              </div>
+            </div>
+
+            <div class="mt-3 grid grid-cols-1 lg:grid-cols-[1.2fr_.8fr] gap-3">
+              <div>
+                <label class="block text-[9px] font-bold text-stone-600 mb-1">عينة التحليل</label>
+                <textarea id="fontBrushSampleText" rows="2" dir="rtl" class="w-full rounded-xl border border-amber-200 bg-amber-50/40 px-3 py-2 text-sm font-qalam outline-none focus:ring-2 focus:ring-amber-100">ابتث جحخ دذر زسش صضط ظعغ فقك لمن هوي سلام قلم نور بيت محمد يوسف</textarea>
+                <div id="fontBrushAnalyzerStatus" class="mt-2 text-[9px] text-stone-500">حمّل خط TTF/OTF في مختبر التشكيل ثم اضغط «حلّل الخط».</div>
+
+                <div class="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div class="rounded-xl border border-amber-100 bg-amber-50/50 p-2"><div class="text-[8px] text-stone-500">زاوية القطّة</div><div id="derivedNibAngle" class="text-xl font-black text-amber-900">—</div><div id="derivedNibAngleConfidence" class="text-[7px] text-stone-400">—</div></div>
+                  <div class="rounded-xl border border-amber-100 bg-amber-50/50 p-2"><div class="text-[8px] text-stone-500">عرض القصبة المقترح</div><div id="derivedNibSize" class="text-xl font-black text-amber-900">—</div><div class="text-[7px] text-stone-400">Brush size</div></div>
+                  <div class="rounded-xl border border-amber-100 bg-amber-50/50 p-2"><div class="text-[8px] text-stone-500">Aspect Ratio</div><div id="derivedNibAspect" class="text-xl font-black text-amber-900">—</div><div class="text-[7px] text-stone-400">minor / major</div></div>
+                  <div class="rounded-xl border border-sky-100 bg-sky-50/50 p-2"><div class="text-[8px] text-stone-500">تغيّر العرض</div><div id="derivedWidthVariation" class="text-lg font-black text-sky-900">—</div><div id="derivedWidthVariationText" class="text-[7px] text-stone-400">—</div></div>
+                  <div class="rounded-xl border border-violet-100 bg-violet-50/50 p-2"><div class="text-[8px] text-stone-500">النهايات</div><div id="derivedTerminalStyle" class="text-lg font-black text-violet-900">—</div><div id="derivedRoundness" class="text-[7px] text-stone-400">—</div></div>
+                  <div class="rounded-xl border border-emerald-100 bg-emerald-50/50 p-2"><div class="text-[8px] text-stone-500">ثقة الاستنتاج</div><div id="derivedBrushConfidence" class="text-xl font-black text-emerald-900">—</div><div id="derivedGlyphCount" class="text-[7px] text-stone-400">—</div></div>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-amber-100 bg-[#fffdf8] p-3">
+                <div class="flex items-center justify-between gap-2"><strong class="text-[10px] text-amber-950">معاينة القصبة المستنتجة</strong><span id="derivedBrushLabel" class="text-[8px] text-stone-400">Font-derived</span></div>
+                <canvas id="fontBrushPreviewCanvas" width="420" height="220" class="mt-2 w-full h-[180px] rounded-xl bg-white border border-amber-100"></canvas>
+                <div id="fontBrushReasoning" class="mt-2 text-[8px] leading-4 text-stone-500">سنستخدم سماكات داخلية، اتجاهات الحواف المستقيمة، تغيّر سماكة الضربات، وحدّة الزوايا لتكوين Brush Preset مبدئي.</div>
+              </div>
+            </div>
+          </section>
+
           <details class="bg-white rounded-2xl p-3 border border-violet-100 shadow-sm">
             <summary class="cursor-pointer text-xs font-black text-violet-900">التفاصيل التقنية للحروف والسياق</summary>
             <div id="shapingInspectorGrid" class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-1.5"></div>
