@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.35.3-beta">
+<html lang="ar" dir="rtl" data-app-version="6.35.4-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.3 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.4 β</span>
           </p>
         </div>
       </div>
@@ -656,7 +656,7 @@
           <section id="fontBrushAnalyzerPanel" class="bg-white rounded-2xl p-3 sm:p-4 border border-amber-200 shadow-sm">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <strong class="text-sm text-amber-950"><i class="fa-solid fa-pen-nib ml-1"></i>V6.35.3 — Real Font Calibration</strong>
+                <strong class="text-sm text-amber-950"><i class="fa-solid fa-pen-nib ml-1"></i>V6.35.4 — Brush Motion Engine</strong>
                 <div class="text-[9px] text-stone-500 mt-1">يستنتج نموذج قصبة محتملًا من هندسة Glyph Outlines. النتيجة تقديرية وليست استخراجًا للقلم الأصلي.</div>
               </div>
               <div class="flex flex-wrap items-center gap-2">
@@ -1872,10 +1872,21 @@
       const r=resampleMotionSegment(state,{nx:1,ny:.2,t:100,pressure:.5},10,100,100,false),xs=r.points.map(p=>p.nx*100);
       const gaps=[];for(let i=1;i<xs.length;i++)gaps.push(xs[i]-xs[i-1]);
       const mean=brushMean(gaps),sd=brushStd(gaps,mean);
+      const feed=(count)=>{
+        let st={lastSource:{nx:0,ny:.3,t:0,pressure:.5},lastOutput:{nx:0,ny:.3,t:0,pressure:.5},distanceSinceLast:0},out=[];
+        for(let i=1;i<=count;i++){
+          const p={nx:i/count,ny:.3,t:i*(100/count),pressure:.5};
+          const rr=resampleMotionSegment(st,p,10,100,100,i===count);st=rr.state;out.push(...rr.points);
+        }
+        return out;
+      };
+      const sparse=feed(5),dense=feed(50),sameCount=sparse.length===dense.length;
+      let maxDelta=0;if(sameCount)for(let i=0;i<sparse.length;i++)maxDelta=Math.max(maxDelta,Math.hypot((sparse[i].nx-dense[i].nx)*100,(sparse[i].ny-dense[i].ny)*100));
       const tests=[
         {name:'moving-average-reduces-jitter',ok:jitter(smoothed)<jitter(noisy)*.85,raw:jitter(noisy),smooth:jitter(smoothed)},
         {name:'uniform-resampling-count',ok:r.points.length===10,count:r.points.length},
-        {name:'uniform-resampling-spacing',ok:gaps.length?sd<.001:false,mean,sd}
+        {name:'uniform-resampling-spacing',ok:gaps.length?sd<.001:false,mean,sd},
+        {name:'event-rate-independent-resampling',ok:sameCount&&maxDelta<.001,sparse:sparse.length,dense:dense.length,maxDelta}
       ];
       return{ok:tests.every(t=>t.ok),tests};
     }
@@ -4300,7 +4311,7 @@
       }else if(name==='balanced'){
         qalamSmoothing=.68;qalamMovingAverage=.16;qalamUniformResampling=true;brushSpacing=Math.min(brushSpacing,.035);
       }else{
-        qalamMovingAverage=0;qalamUniformResampling=false;
+        qalamSmoothing=0;qalamMovingAverage=0;qalamUniformResampling=false;brushSpacing=.08;
       }
       resetQalamMotionEngine();syncBrushSettingsUI();
     }
