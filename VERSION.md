@@ -1,3 +1,28 @@
+# V6.35.1 β — Font → Brush Analyzer
+
+Reference snapshot preserved before this phase:
+- Branch: `reference-v6.34.3.4`
+- Commit: `ed65ea62735bbf68821f16b1097a1d8be93c5f38`
+- The V6.34.3.4 scoring formula is frozen on that branch and should not be changed unless cross-letter testing exposes a clear defect.
+
+New in V6.35.1:
+- Added a dedicated Font → Brush Analyzer inside the full-page shaping lab.
+- Uses actual HarfBuzz Glyph outlines from the loaded TTF/OTF font.
+- Rasterizes representative Glyphs and computes an interior distance transform to estimate stroke-width structure.
+- Estimates:
+  - likely nib angle from stable contour-direction evidence,
+  - suggested brush size,
+  - nib aspect ratio (minor/major),
+  - stroke-width variation,
+  - terminal character (sharp / mixed / smooth),
+  - inference confidence.
+- Added a visual preview of the inferred nib.
+- Added "إنشاء فرشاة من الخط" to create and apply a `font_derived` Brush Preset.
+- The generated preset is persisted in localStorage and restored in Brush Settings as "مشتقة من الخط".
+- Pressure is intentionally disabled in the first derived preset because a static font outline cannot prove pen pressure; width variation is reported diagnostically instead.
+- Added deterministic analyzer regression tests for angle, size, aspect ratio, and width-variation ordering.
+- App/PWA version bumped to V6.35.1 β.
+
 # V6.34.3.4 β — Result Semantics & Clean Heatmap
 
 - Made "مطابقة الشكل والحبر" the only primary large score.
