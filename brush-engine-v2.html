@@ -2258,7 +2258,7 @@
       if(!glyphs?.length){box.classList.add('hidden');lastHarfBuzzGlyphs=[];lastShapingZones=[];return}
       box.innerHTML='<div class="text-[9px] font-black text-violet-950 mb-1">HarfBuzz OpenType output — glyph IDs / clusters / advances / offsets</div><div class="flex gap-1.5 min-w-max" dir="ltr">'+glyphs.map(g=>'<div class="w-28 rounded-xl border border-violet-100 bg-white p-2 text-[8px]"><div class="font-black text-violet-900">gid '+g.glyphId+(g.name?' · '+g.name:'')+'</div><div>cluster '+g.cluster+'</div><div>adv '+g.xAdvance+', '+g.yAdvance+'</div><div>off '+g.xOffset+', '+g.yOffset+'</div></div>').join('')+'</div>';
       box.classList.remove('hidden');if(status)status.textContent='HarfBuzz shaping فعلي ✓ • '+harfBuzzFontName+' • '+glyphs.length+' glyphs';
-      lastHarfBuzzGlyphs=glyphs.map(g=>({...g}));lastHarfBuzzText=String(text||document.getElementById('shapingInspectorInput')?.value||'');lastShapingLayout=null;lastShapingZones=[];shapingLastMappings=[];
+      lastHarfBuzzGlyphs=glyphs.map(g=>({...g}));lastHarfBuzzText=String(text||document.getElementById('shapingInspectorInput')?.value||'');lastShapingLayout=null;lastShapingZones=[];shapingLastMappings=[];lastInkFootprintByGlyph=new Map();lastEducationalFeedback=[];
       selectedShapingGlyphIndex=Math.min(Math.max(selectedShapingGlyphIndex,0),glyphs.length-1);
       if(selectedShapingGlyphIndex<0)selectedShapingGlyphIndex=0;
       await refreshShapingVisuals();
@@ -5509,9 +5509,9 @@
       const c=document.getElementById('shapingPracticeCanvas');if(!c)return;
       if(!shapingPracticeInitialized){
         const pointFromEvent=e=>{const r=c.getBoundingClientRect();return{nx:clamp((e.clientX-r.left)/Math.max(1,r.width),0,1),ny:clamp((e.clientY-r.top)/Math.max(1,r.height),0,1),pressure:Number.isFinite(e.pressure)?e.pressure:.5}};
-        c.addEventListener('pointerdown',e=>{e.preventDefault();try{c.setPointerCapture(e.pointerId)}catch(_){}shapingPracticeActive={pointerId:e.pointerId,points:[pointFromEvent(e)]};renderShapingPracticeCanvas()});
+        c.addEventListener('pointerdown',e=>{e.preventDefault();try{c.setPointerCapture(e.pointerId)}catch(_){}shapingLastMappings=[];lastInkFootprintByGlyph=new Map();shapingPracticeActive={pointerId:e.pointerId,points:[pointFromEvent(e)]};renderShapingPracticeCanvas()});
         c.addEventListener('pointermove',e=>{if(!shapingPracticeActive||shapingPracticeActive.pointerId!==e.pointerId)return;e.preventDefault();shapingPracticeActive.points.push(pointFromEvent(e));renderShapingPracticeCanvas()});
-        const finish=e=>{if(!shapingPracticeActive||shapingPracticeActive.pointerId!==e.pointerId)return;e.preventDefault();shapingPracticeActive.points.push(pointFromEvent(e));if(shapingPracticeActive.points.length>1)shapingPracticeStrokes.push({kind:'stroke',tool:'lab-ink',points:shapingPracticeActive.points});shapingPracticeActive=null;shapingLastMappings=[];const st=document.getElementById('glyphStrokeMappingStatus');if(st)st.textContent='تم تسجيل '+shapingPracticeStrokes.length+' ضربة. اضغط «شاهد المطابقة» لتحليلها.';renderShapingPracticeCanvas()};
+        const finish=e=>{if(!shapingPracticeActive||shapingPracticeActive.pointerId!==e.pointerId)return;e.preventDefault();shapingPracticeActive.points.push(pointFromEvent(e));if(shapingPracticeActive.points.length>1)shapingPracticeStrokes.push({kind:'stroke',tool:'lab-ink',points:shapingPracticeActive.points});shapingPracticeActive=null;shapingLastMappings=[];lastInkFootprintByGlyph=new Map();const st=document.getElementById('glyphStrokeMappingStatus');if(st)st.textContent='تم تسجيل '+shapingPracticeStrokes.length+' ضربة. اضغط «شاهد المطابقة» لتحليلها.';renderShapingPracticeCanvas()};
         c.addEventListener('pointerup',finish);c.addEventListener('pointercancel',finish);c.addEventListener('pointerleave',e=>{if(e.buttons===0&&shapingPracticeActive)finish(e)});
         shapingPracticeInitialized=true;
       }
