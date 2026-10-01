@@ -6514,15 +6514,17 @@
       set('derivedTerminalStyle',a.terminalStyle);
       set('derivedRoundness','Roundness مقترح '+a.roundness+'%');
       set('derivedBrushConfidence',Math.round(a.confidence*100)+'%');
-      set('derivedGlyphCount',a.glyphCount+' Glyphs محللة');
+      set('derivedGlyphCount',(a.acceptedGlyphCount??a.glyphCount)+' / '+(a.analysisGlyphCount??a.glyphCount)+' Glyphs معتمدة');
       set('derivedNibFitError',a.fitError==null?'—':Math.round(a.fitError*100)+'%');
       set('derivedNibFitSamples',(a.fitSampleCount||0)+' ridge samples');
       set('derivedAngleAgreement',Math.round((a.angleAgreement||0)*100)+'%');
-      set('derivedBrushLabel',(a.fontName||'Font')+' → preset');
+      set('derivedBrushLabel',(a.fontName||'Font')+' → calibrated preset');
+      renderFontBrushCalibration(a.calibration);
       const reasoning=document.getElementById('fontBrushReasoning');
       if(reasoning){
-        const ca=Math.round(a.contourAngle||a.angle),fa=Number.isFinite(a.fitAngle)?Math.round(a.fitAngle)+'°':'—';
-        reasoning.innerHTML='النتيجة مبنية على <b>'+a.glyphCount+'</b> Glyphs. زاوية الحواف المستقرة أعطت <b>'+ca+'°</b>، وNib Model على الـmedial ridges أعطى <b>'+fa+'</b>. نسبة الاتفاق <b>'+Math.round((a.angleAgreement||0)*100)+'%</b>. السماكات تُقاس عبر Distance Transform ثم يُجرى fit لنموذج قصبة مسطحة؛ لذلك تبقى الزاوية <b>استنتاجًا هندسيًا</b> وليست معلومة مخزنة داخل الخط.';
+        const ca=Math.round(a.contourAngle||a.angle),fa=Number.isFinite(a.fitAngle)?Math.round(a.fitAngle)+'°':'—',cal=a.calibration;
+        const calText=cal?(' بعد المعايرة قُبل <b>'+cal.accepted.length+'</b> من <b>'+cal.all.length+'</b> Glyphs واستُبعد <b>'+cal.rejected.length+'</b> outliers، واتفاق المجموعات <b>'+Math.round((cal.groupAgreement||0)*100)+'%</b>.'):'';
+        reasoning.innerHTML='زاوية الحواف المستقرة أعطت <b>'+ca+'°</b>، وNib Model على الـmedial ridges أعطى <b>'+fa+'</b>. نسبة الاتفاق <b>'+Math.round((a.angleAgreement||0)*100)+'%</b>.'+calText+' النتيجة النهائية مشتقة من Glyphs المقبولة والموزونة بين المجموعات البنيوية.';
       }
       const btn=document.getElementById('applyDerivedBrushBtn');if(btn){btn.disabled=false;btn.className='px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-[10px] font-bold'}
       renderDerivedBrushPreview(a);
@@ -6539,14 +6541,28 @@
         for(const g of shaped||[]){
           if(!g?.path||seen.has(g.glyphId))continue;
           const b=glyphBrushBounds(g);if(!b||(b.right-b.left)<1||(b.top-b.bottom)<1)continue;
-          seen.add(g.glyphId);glyphs.push(g);if(glyphs.length>=48)break;
+          const unit=analyzerUnitForCluster(sample,g.cluster),sourceChar=unit?.char||'';
+          seen.add(g.glyphId);glyphs.push({...g,sourceChar,structuralGroup:fontBrushStructuralGroup(sourceChar)});if(glyphs.length>=48)break;
         }
         if(status)status.textContent='جارٍ قياس السماكات واتجاهات الحواف لـ '+glyphs.length+' Glyphs…';
-        const metrics=[];for(const g of glyphs){const m=rasterGlyphBrushMetrics(g,180);if(m)metrics.push(m)}
-        const profile=deriveBrushProfileFromMetrics(metrics,harfBuzzFontName||'Loaded font');
-        if(!profile)throw new Error('لم نحصل على Glyphs كافية قابلة للتحليل.');
+        const metrics=[];
+        for(const g of glyphs){
+          const m=rasterGlyphBrushMetrics(g,180);
+          if(m)metrics.push({...m,sourceChar:g.sourceChar,structuralGroup:g.structuralGroup,cluster:g.cluster});
+        }
+        if(metrics.length<3)throw new Error('لم نحصل على Glyphs كافية قابلة للتحليل.');
+        if(status)status.textContent='جارٍ إجراء Real Font Calibration واستبعاد القيم الشاذة…';
+        const calibration=calibrateFontBrushMetrics(metrics);
+        const calibratedMetrics=calibration.balanced?.length?calibration.balanced:metrics;
+        const profile=deriveBrushProfileFromMetrics(calibratedMetrics,harfBuzzFontName||'Loaded font');
+        if(!profile)throw new Error('تعذر بناء نموذج قصبة بعد المعايرة.');
+        profile.calibration=calibration;
+        profile.analysisGlyphCount=calibration.all.length;
+        profile.acceptedGlyphCount=calibration.accepted.length;
+        profile.rawConfidence=profile.confidence;
+        profile.confidence=clamp(.72*profile.confidence+.28*calibration.confidence,0,1);
         renderFontBrushAnalysis(profile);
-        if(status)status.textContent='اكتمل التحليل ✓ • '+profile.glyphCount+' Glyphs • الثقة الإجمالية '+Math.round(profile.confidence*100)+'%. يمكنك الآن إنشاء Brush Preset مشتق من الخط.';
+        if(status)status.textContent='اكتملت المعايرة ✓ • قبل '+calibration.accepted.length+'/'+calibration.all.length+' Glyphs • استبعد '+calibration.rejected.length+' • اتفاق المجموعات '+Math.round(calibration.groupAgreement*100)+'% • الثقة النهائية '+Math.round(profile.confidence*100)+'%.';
       }catch(err){
         lastFontBrushAnalysis=null;if(status)status.textContent='تعذر تحليل الفرشاة: '+(err?.message||err);
       }
