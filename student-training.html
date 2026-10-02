@@ -6092,7 +6092,7 @@
         t.setAttribute('lengthAdjust','spacingAndGlyphs');
       }
     }
-    function syncGhostOverlayVisibility    function syncGhostOverlayVisibility(show = document.getElementById('toggleGhostCheckbox')?.checked !== false) {
+    function syncGhostOverlayVisibility(show = document.getElementById('toggleGhostCheckbox')?.checked !== false) {
       const ghostGroup = document.getElementById('svgGhostGroup');
       if (ghostGroup) ghostGroup.style.display = show ? '' : 'none';
     }
