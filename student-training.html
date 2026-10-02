@@ -360,6 +360,21 @@
     #studentSetupBar{position:sticky;top:calc(var(--st-header-h) + 8px);z-index:22}
     #studentFlowStrip{position:sticky;top:var(--st-header-h);background:linear-gradient(#f7f5f1 75%,transparent);padding-bottom:8px}
   }
+
+  body[data-window-class="compact"] #sidePanel:not(.is-open),
+  body[data-window-class="medium"] #sidePanel:not(.is-open){display:none!important}
+  body[data-window-class="expanded"] #sidePanel,
+  body[data-window-class="large"] #sidePanel{display:flex!important}
+  #btnToggleReferencePanel[aria-expanded="true"]{background:#fff7ed;border-color:#fdba74;color:#9a3412}
+  @media(max-width:839px){
+    #sidePanel.is-open{display:flex!important}
+  }
+  @media(max-height:620px) and (orientation:landscape){
+    #canvasContainer{height:280px!important;min-height:260px!important}
+    .student-preview-wrap{height:280px!important}
+    #studentFlowStrip{display:none}
+    #mainAppPage{padding-top:8px!important}
+  }
 </style>
 
 <style id="studentModeStyles">
@@ -467,6 +482,7 @@
             <i class="fa-solid fa-ruler-horizontal"></i><span>ضبط السطور</span>
           </button>
           <button type="button" onclick="openStudentModelLibrary()"><i class="fa-solid fa-folder-open"></i><span>النماذج</span></button>
+          <button type="button" id="btnToggleReferencePanel" onclick="toggleStudentReferencePanel()" aria-expanded="false" aria-controls="sidePanel"><i class="fa-solid fa-book-open"></i><span>المراجع</span></button>
         </div>
       </section>
       <div id="studentContentCard" class="bg-white rounded-2xl p-2.5 border border-amber-200 shadow-sm flex flex-wrap items-center justify-between gap-2">
@@ -934,7 +950,7 @@
 
     </section>
 
-    <aside id="sidePanel" class="lg:col-span-4 flex flex-col gap-4">
+    <aside id="sidePanel" aria-label="مراجع الحرف والحروف الهجائية" class="lg:col-span-4 flex flex-col gap-4">
 
       <!-- Current Letter Details Hero Card -->
       <div class="bg-gradient-to-br from-amber-850 via-amber-900 to-amber-950 rounded-3xl p-5 text-white shadow-md relative overflow-hidden flex items-center justify-between">
@@ -2745,12 +2761,19 @@
       document.body.dataset.windowClass=cls;
       const panel=document.getElementById('studentManualGuidePanel');
       const btn=document.getElementById('btnToggleGuideSettings');
+      const refPanel=document.getElementById('sidePanel');
+      const refBtn=document.getElementById('btnToggleReferencePanel');
       const always=cls==='expanded'||cls==='large';
       if(panel){
         if(always)panel.classList.add('is-open');
         else if(!panel.dataset.userOpened)panel.classList.remove('is-open');
       }
       if(btn)btn.setAttribute('aria-expanded',String(always||panel?.classList.contains('is-open')));
+      if(refPanel){
+        if(always)refPanel.classList.add('is-open');
+        else if(!refPanel.dataset.userOpened)refPanel.classList.remove('is-open');
+      }
+      if(refBtn)refBtn.setAttribute('aria-expanded',String(always||refPanel?.classList.contains('is-open')));
       return cls;
     }
     function toggleStudentGuideSettings(force){
@@ -2767,6 +2790,20 @@
       const open=always||panel.classList.contains('is-open');
       if(btn)btn.setAttribute('aria-expanded',String(open));
       if(open&&force===true){
+        const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+        panel.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+      }
+    }
+
+    function toggleStudentReferencePanel(force){
+      const panel=document.getElementById('sidePanel'),btn=document.getElementById('btnToggleReferencePanel');
+      if(!panel)return;
+      const cls=studentWindowClass(),always=cls==='expanded'||cls==='large';
+      const next=always?true:(typeof force==='boolean'?force:!panel.classList.contains('is-open'));
+      panel.classList.toggle('is-open',next);
+      panel.dataset.userOpened=next?'1':'';
+      if(btn)btn.setAttribute('aria-expanded',String(next));
+      if(next&&!always&&force===true){
         const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
         panel.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
       }
@@ -6738,14 +6775,14 @@
     }
     function selectCustomTrainingItem(index){
       if(index<0||index>=CUSTOM_TRAINING_ITEMS.length)return;
-      mode='custom';itemIdx=index;updateModeLayout();renderCustomTrainingItems();updateLetterView();
+      mode='custom';itemIdx=index;updateModeLayout();renderCustomTrainingItems();updateLetterView();updateStudentSessionSummary();
     }
     function deleteCustomTrainingItem(index,event){
       event?.stopPropagation?.();
       if(index<0||index>=CUSTOM_TRAINING_ITEMS.length)return;
       CUSTOM_TRAINING_ITEMS.splice(index,1);persistCustomTrainingItems();
       itemIdx=Math.max(0,Math.min(itemIdx,CUSTOM_TRAINING_ITEMS.length-1));
-      renderCustomTrainingItems();updateLetterView();
+      renderCustomTrainingItems();updateLetterView();updateStudentSessionSummary();
     }
     function renderCustomTrainingItems(){
       const box=document.getElementById('customTrainingChips'),empty=document.getElementById('customTrainingEmpty');
@@ -6974,7 +7011,7 @@
     function selectLetter(index) {
       if (mode !== 'letters') setMode('letters');
       currentLetterIndex = index; currentTashkeel = "";
-      updateLetterView(); clearCanvas();
+      updateLetterView(); updateStudentSessionSummary(); clearCanvas();
     }
     function updateModeLayout(){
       const m=mode,letters=m==='letters',phrases=m==='phrases',custom=m==='custom';
@@ -7003,13 +7040,13 @@
         b.className = 'px-2.5 py-1 rounded-lg border text-base whitespace-nowrap';
         b.style.fontFamily = FONTS[fontKey]?.css || "'Amiri',serif";
         b.textContent = wordTashkeel ? it.t : stripTashkeel(it.t);
-        b.onclick = () => { itemIdx = i; updateLetterView(); };
+        b.onclick = () => { itemIdx = i; updateLetterView(); updateStudentSessionSummary(); };
         box.appendChild(b);
       });
     }
-    function stepItem(d) { const n = curList().length; itemIdx = (itemIdx + d + n) % n; updateLetterView(); }
-    function setCategory(c) { wordCat = c; itemIdx = 0; renderChips(); updateLetterView(); }
-    function toggleWordTashkeel(v) { wordTashkeel = v; renderChips(); updateLetterView(); }
+    function stepItem(d) { const n = curList().length; if(!n)return; itemIdx = (itemIdx + d + n) % n; updateLetterView(); updateStudentSessionSummary(); }
+    function setCategory(c) { wordCat = c; itemIdx = 0; renderChips(); updateLetterView(); updateStudentSessionSummary(); }
+    function toggleWordTashkeel(v) { wordTashkeel = v; renderChips(); updateLetterView(); updateStudentSessionSummary(); }
     function setFont(k) { fontKey = k; document.getElementById('fontSelect').value = k; if(mode==='custom')renderCustomTrainingItems(); else if(mode!=='letters')renderChips(); updateLetterView(); updateStudentSessionSummary(); }
 
     /* --- ملء الشاشة --- */
