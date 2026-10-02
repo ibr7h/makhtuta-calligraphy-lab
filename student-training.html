@@ -121,7 +121,11 @@
   body.student-mode #btnMakeObject,
   body.student-mode #btnUngroupObject,
   body.student-mode #btnDuplicateObject,
-  body.student-mode #selectionCountBadge { display:none !important; }
+  body.student-mode #selectionCountBadge,
+  body.student-mode #btnLasso,
+  body.student-mode #sessionReplayControls { display:none !important; }
+  body.student-mode label:has(#autoGroupEnabled),
+  body.student-mode label:has(#modelOpacity) { display:none !important; }
   body.student-mode label:has(#objectSnapEnabled),
   body.student-mode #lassoHitMode,
   body.student-mode #lassoCombineMode { display:none !important; }
@@ -325,7 +329,7 @@
           </div>
 
           <!-- Stroke replay: forward or rewind the visible session after the most recent clear -->
-          <div class="flex items-center gap-1 bg-white px-1.5 py-1 rounded-xl border border-amber-200">
+          <div id="sessionReplayControls" class="flex items-center gap-1 bg-white px-1.5 py-1 rounded-xl border border-amber-200">
             <button id="btnReplay" type="button" onclick="toggleStrokeReplay(false)" title="إعادة تشغيل حركة الكتابة للأمام" class="px-2 py-1 rounded-lg hover:bg-amber-50 text-amber-900 text-xs font-bold transition flex items-center gap-1">
               <i class="fa-solid fa-play"></i><span class="hidden xl:inline">إعادة</span>
             </button>
