@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="student-0.1">
+<html lang="ar" dir="rtl" data-app-version="student-0.2">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,8 @@
   body.student-mode #btnDuplicateObject,
   body.student-mode #selectionCountBadge,
   body.student-mode #btnLasso,
-  body.student-mode #sessionReplayControls { display:none !important; }
+  body.student-mode #sessionReplayControls,
+  body.student-mode #betaBanner { display:none !important; }
   body.student-mode label:has(#autoGroupEnabled),
   body.student-mode label:has(#modelOpacity) { display:none !important; }
   body.student-mode label:has(#objectSnapEnabled),
@@ -148,7 +149,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.6.1 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2</span>
           </p>
         </div>
       </div>
@@ -184,6 +185,7 @@
           <button data-mode="letters" onclick="setMode('letters')" class="mode-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border"><i class="fa-solid fa-font ml-1"></i>حروف</button>
           <button data-mode="words" onclick="setMode('words')" class="mode-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border"><i class="fa-solid fa-spell-check ml-1"></i>كلمات</button>
           <button data-mode="phrases" onclick="setMode('phrases')" class="mode-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border"><i class="fa-solid fa-align-right ml-1"></i>عبارات</button>
+          <button data-mode="custom" onclick="setMode('custom')" class="mode-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border"><i class="fa-solid fa-plus ml-1"></i>محتوى خاص</button>
         </div>
         <label class="flex items-center gap-1.5 text-xs font-bold text-amber-950">الخط:
           <select id="fontSelect" onchange="setFont(this.value)" class="bg-white border border-amber-300 rounded-lg text-xs py-1 px-2"></select>
@@ -206,6 +208,28 @@
           <label class="flex items-center gap-1.5 text-xs font-bold cursor-pointer"><input type="checkbox" id="wordTashkeelChk" checked onchange="toggleWordTashkeel(this.checked)" class="w-4 h-4"> إظهار التشكيل</label>
         </div>
         <div id="wordChips" class="flex gap-1.5 overflow-x-auto custom-scrollbar pb-1"></div>
+      </div>
+
+      <div id="customTrainingPanel" class="hidden bg-violet-50/70 rounded-2xl p-3 border border-violet-200 shadow-sm flex-col gap-2">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <label class="flex-1">
+            <span class="block text-[10px] font-black text-violet-950 mb-1">نص التدريب</span>
+            <input id="customTrainingInput" type="text" maxlength="160" dir="rtl"
+              placeholder="مثال: لا — ب ت ث — مدرسة — العلم نور"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomTrainingItem()}"
+              class="w-full bg-white border border-violet-300 rounded-xl px-3 py-2 text-base font-bold text-stone-800 outline-none focus:ring-2 focus:ring-violet-300">
+          </label>
+          <button type="button" onclick="addCustomTrainingItem()" class="self-end px-3 py-2 rounded-xl bg-violet-700 hover:bg-violet-800 text-white text-xs font-bold shadow-sm whitespace-nowrap">
+            <i class="fa-solid fa-plus ml-1"></i>إضافة للتدريب
+          </button>
+        </div>
+        <div class="text-[9px] text-stone-500 leading-5">
+          اكتب النص كما تريد ظهوره: بدون مسافات للحروف المتصلة مثل «بلا»، أو بمسافات للحروف المنفصلة مثل «ب ت ث». التشكيل يُحفظ كما كتبته.
+        </div>
+        <div id="customTrainingChips" class="flex flex-wrap gap-1.5"></div>
+        <div id="customTrainingEmpty" class="text-[10px] text-stone-500 border border-dashed border-violet-200 bg-white/60 rounded-xl px-3 py-2">
+          لم تضف محتوى مخصصًا بعد.
+        </div>
       </div>
 
 
@@ -5763,9 +5787,64 @@
     const PHRASES = ["بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ","الخَطُّ زِينَةُ اليَدِ","العِلْمُ نُورٌ","الصَّبْرُ مِفْتَاحُ الفَرَجِ","مَنْ جَدَّ وَجَدَ","الوَقْتُ كَالسَّيْفِ","خَيْرُ الكَلَامِ مَا قَلَّ وَدَلَّ","النَّظَافَةُ مِنَ الإِيمَانِ","القَنَاعَةُ كَنْزٌ لَا يَفْنَى","صَبَاحُ الخَيْرِ","السَّلَامُ عَلَيْكُمْ وَرَحْمَةُ اللهِ","الصَّدِيقُ وَقْتَ الضِّيقِ"].map(t => ({ t }));
 
     let mode = 'letters', itemIdx = 0, wordCat = 'الكل', wordTashkeel = true, fontKey = 'amiri';
+    const CUSTOM_TRAINING_STORAGE='makhtuta-student-custom-training-v1';
+    let CUSTOM_TRAINING_ITEMS=[];
+    try{
+      const saved=JSON.parse(localStorage.getItem(CUSTOM_TRAINING_STORAGE)||'[]');
+      if(Array.isArray(saved))CUSTOM_TRAINING_ITEMS=saved.filter(x=>typeof x?.t==='string'&&x.t.trim()).slice(0,60);
+    }catch(_){}
     const stripTashkeel = t => t.replace(/[\u064B-\u0652]/g, '');
-    const curList = () => mode === 'phrases' ? PHRASES : (wordCat === 'الكل' ? WORDS : WORDS.filter(w => w.c === wordCat));
-    const curItemText = () => { const l = curList(); const it = l[itemIdx] || l[0]; return wordTashkeel ? it.t : stripTashkeel(it.t); };
+    const curList = () => mode === 'custom'
+      ? CUSTOM_TRAINING_ITEMS
+      : mode === 'phrases'
+        ? PHRASES
+        : (wordCat === 'الكل' ? WORDS : WORDS.filter(w => w.c === wordCat));
+    const curItemText = () => {
+      const l=curList(),it=l[itemIdx]||l[0];
+      if(!it)return mode==='custom'?'': '';
+      if(mode==='custom')return it.t;
+      return wordTashkeel ? it.t : stripTashkeel(it.t);
+    };
+
+    function persistCustomTrainingItems(){
+      try{localStorage.setItem(CUSTOM_TRAINING_STORAGE,JSON.stringify(CUSTOM_TRAINING_ITEMS.slice(0,60)))}catch(_){}
+    }
+    function addCustomTrainingItem(){
+      const input=document.getElementById('customTrainingInput');
+      const text=(input?.value||'').replace(/\s+/g,' ').trim();
+      if(!text)return;
+      let idx=CUSTOM_TRAINING_ITEMS.findIndex(x=>x.t===text);
+      if(idx<0){
+        CUSTOM_TRAINING_ITEMS.unshift({t:text,createdAt:Date.now()});
+        CUSTOM_TRAINING_ITEMS=CUSTOM_TRAINING_ITEMS.slice(0,60);
+        idx=0;persistCustomTrainingItems();
+      }
+      if(input)input.value='';
+      mode='custom';itemIdx=idx;renderCustomTrainingItems();updateModeLayout();updateLetterView();
+    }
+    function selectCustomTrainingItem(index){
+      if(index<0||index>=CUSTOM_TRAINING_ITEMS.length)return;
+      mode='custom';itemIdx=index;updateModeLayout();renderCustomTrainingItems();updateLetterView();
+    }
+    function deleteCustomTrainingItem(index,event){
+      event?.stopPropagation?.();
+      if(index<0||index>=CUSTOM_TRAINING_ITEMS.length)return;
+      CUSTOM_TRAINING_ITEMS.splice(index,1);persistCustomTrainingItems();
+      itemIdx=Math.max(0,Math.min(itemIdx,CUSTOM_TRAINING_ITEMS.length-1));
+      renderCustomTrainingItems();updateLetterView();
+    }
+    function renderCustomTrainingItems(){
+      const box=document.getElementById('customTrainingChips'),empty=document.getElementById('customTrainingEmpty');
+      if(!box)return;box.innerHTML='';
+      if(empty)empty.classList.toggle('hidden',CUSTOM_TRAINING_ITEMS.length>0);
+      CUSTOM_TRAINING_ITEMS.forEach((it,i)=>{
+        const wrap=document.createElement('div');
+        wrap.className='inline-flex items-center gap-1 rounded-xl border '+(mode==='custom'&&i===itemIdx?'bg-violet-700 border-violet-800 text-white':'bg-white border-violet-200 text-violet-950');
+        const b=document.createElement('button');b.type='button';b.className='px-2.5 py-1.5 text-sm font-bold';b.textContent=it.t;b.style.fontFamily=FONTS[fontKey]?.css||"'Amiri',serif";b.onclick=()=>selectCustomTrainingItem(i);
+        const del=document.createElement('button');del.type='button';del.className='px-2 py-1.5 text-[10px] opacity-75 hover:opacity-100';del.innerHTML='<i class="fa-solid fa-xmark"></i>';del.title='حذف';del.onclick=e=>deleteCustomTrainingItem(i,e);
+        wrap.appendChild(b);wrap.appendChild(del);box.appendChild(wrap);
+      });
+    }
     /* --- التشكيل حسب نوع الحرف وموقعه --- */
     function isAllowed(l, form, mark) {
       const id = TASHKEEL_LIST.find(t => t.mark === mark).id;
@@ -5960,17 +6039,18 @@
       const hero = document.getElementById('bigHeroGlyph');
       if (mode !== 'letters') {
         const text = curItemText(), list = curList();
-        document.getElementById('currentLetterName').textContent = mode === 'words' ? 'تدرب على الكلمات' : 'تدرب على العبارات';
-        document.getElementById('letterOrderBadge').textContent = `${itemIdx + 1} من ${list.length}`;
-        document.getElementById('letterMakhraj').textContent = mode === 'words' ? (list[itemIdx].c) : 'عبارات وحكم';
+        document.getElementById('currentLetterName').textContent = mode === 'words' ? 'تدرب على الكلمات' : mode === 'custom' ? 'محتوى تدريبي خاص' : 'تدرب على العبارات';
+        document.getElementById('letterOrderBadge').textContent = mode === 'custom' ? (list.length ? `${itemIdx + 1} من ${list.length}` : 'أضف نصًا') : `${itemIdx + 1} من ${list.length}`;
+        document.getElementById('letterMakhraj').textContent = mode === 'words' ? (list[itemIdx]?.c||'') : mode === 'custom' ? 'حروف، كلمات أو عبارات من اختيارك' : 'عبارات وحكم';
         document.getElementById('currentFormDescription').textContent = `الخط: ${FONTS[fontKey].name}`;
         document.getElementById('calligraphyTip').textContent = 'ابدأ من اليمين، اكتب الحروف المتصلة بحركة واحدة دون رفع القلم، ثم ضع النقاط والتشكيل في النهاية.';
-        hero.textContent = text; hero.style.fontSize = Math.max(13, Math.min(44, 170 / Array.from(text).length)) + 'px'; hero.className = 'text-center leading-tight font-bold text-amber-200 overflow-hidden px-1';
-        document.getElementById('ghostSvgText').textContent = text;
-        document.getElementById('itemCounter').textContent = `${itemIdx + 1}/${list.length}`;
+        const displayText=text||'أضف نصًا للتدريب';
+        hero.textContent = displayText; hero.style.fontSize = Math.max(13, Math.min(44, 170 / Math.max(1,Array.from(displayText).length))) + 'px'; hero.className = 'text-center leading-tight font-bold text-amber-200 overflow-hidden px-1';
+        document.getElementById('ghostSvgText').textContent = displayText;
+        document.getElementById('itemCounter').textContent = list.length?`${itemIdx + 1}/${list.length}`:'0/0';
         document.querySelectorAll('#wordChips button').forEach((b, i) => b.className = 'px-2.5 py-1 rounded-lg border text-base whitespace-nowrap ' + (i === itemIdx ? 'bg-amber-800 text-white border-amber-900' : 'bg-white border-amber-300 hover:bg-amber-100'));
         syncGhostOverlayVisibility();
-        fitGhost(text);
+        fitGhost(displayText);
         return;
       }
       hero.style.fontSize = ''; hero.className = 'font-qalam text-7xl font-bold text-amber-200';
@@ -6003,41 +6083,32 @@
       currentLetterIndex = index; currentTashkeel = "";
       updateLetterView(); clearCanvas();
     }
-    function setMode(m) {
-      mode = m; itemIdx = 0;
+    function updateModeLayout(){
+      const m=mode,letters=m==='letters',phrases=m==='phrases',custom=m==='custom';
       document.querySelectorAll('.mode-btn').forEach(b => b.className = 'mode-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border ' + (b.dataset.mode === m ? 'bg-amber-800 text-white border-amber-900' : 'bg-white text-stone-700 border-amber-200 hover:bg-amber-50'));
-      const letters = m === 'letters';
-      const phrases = m === 'phrases';
       document.getElementById('formBar').classList.toggle('hidden', !letters);
       document.getElementById('tashkeelBar').classList.toggle('hidden', !letters);
-      const wp = document.getElementById('wordsPanel');
-      wp.classList.toggle('hidden', letters); wp.classList.toggle('flex', !letters);
-      document.getElementById('catSelect').style.display = m === 'words' ? '' : 'none';
-
-      // Only phrase mode gets the full 12-column writing workspace.
-      // Letters and words keep their original 8/12 layout and side panel.
-      const practice = document.getElementById('practiceSection');
-      const side = document.getElementById('sidePanel');
-      practice.classList.toggle('lg:col-span-12', phrases);
-      practice.classList.toggle('lg:col-span-8', !phrases);
-      side.classList.toggle('hidden', phrases);
-
-      if (!letters) renderChips();
-      syncGhostOverlayVisibility();
-      updateLetterView();
-
-      // Wait for the grid to apply its new width, then resize the drawing surface and refit the phrase.
-      requestAnimationFrame(() => {
-        resizeCanvasToContainer();
-        updateLetterView();
-      });
+      const wp=document.getElementById('wordsPanel'),cp=document.getElementById('customTrainingPanel');
+      wp.classList.toggle('hidden',letters||custom);wp.classList.toggle('flex',!letters&&!custom);
+      cp?.classList.toggle('hidden',!custom);cp?.classList.toggle('flex',custom);
+      document.getElementById('catSelect').style.display=m==='words'?'':'none';
+      const practice=document.getElementById('practiceSection'),side=document.getElementById('sidePanel'),wide=phrases||custom;
+      practice.classList.toggle('lg:col-span-12',wide);practice.classList.toggle('lg:col-span-8',!wide);side.classList.toggle('hidden',wide);
+    }
+    function setMode(m) {
+      mode = ['letters','words','phrases','custom'].includes(m)?m:'letters'; itemIdx = 0;
+      updateModeLayout();
+      if(mode==='custom')renderCustomTrainingItems();
+      else if(mode!=='letters')renderChips();
+      syncGhostOverlayVisibility();updateLetterView();
+      requestAnimationFrame(()=>{resizeCanvasToContainer();updateLetterView();});
     }
     function renderChips() {
       const box = document.getElementById('wordChips'); box.innerHTML = '';
       curList().forEach((it, i) => {
         const b = document.createElement('button'); b.type = 'button';
         b.className = 'px-2.5 py-1 rounded-lg border text-base whitespace-nowrap';
-        b.style.fontFamily = "'Amiri',serif";
+        b.style.fontFamily = FONTS[fontKey]?.css || "'Amiri',serif";
         b.textContent = wordTashkeel ? it.t : stripTashkeel(it.t);
         b.onclick = () => { itemIdx = i; updateLetterView(); };
         box.appendChild(b);
@@ -6046,7 +6117,7 @@
     function stepItem(d) { const n = curList().length; itemIdx = (itemIdx + d + n) % n; updateLetterView(); }
     function setCategory(c) { wordCat = c; itemIdx = 0; renderChips(); updateLetterView(); }
     function toggleWordTashkeel(v) { wordTashkeel = v; renderChips(); updateLetterView(); }
-    function setFont(k) { fontKey = k; document.getElementById('fontSelect').value = k; updateLetterView(); }
+    function setFont(k) { fontKey = k; document.getElementById('fontSelect').value = k; if(mode==='custom')renderCustomTrainingItems(); else if(mode!=='letters')renderChips(); updateLetterView(); }
 
     /* --- ملء الشاشة --- */
     function toggleFullscreen() {
@@ -7819,6 +7890,7 @@
       sel.innerHTML = Object.entries(FONTS).map(([k, f]) => `<option value="${k}">${f.name}</option>`).join('');
       document.getElementById('catSelect').innerHTML = ['الكل', ...Object.keys(WORD_DATA)].map(c => `<option>${c}</option>`).join('');
       window.addEventListener('resize', () => updateLetterView());
+      renderCustomTrainingItems();
       setMode('letters');
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(() => updateLetterView()).catch(() => {});
@@ -7855,6 +7927,6 @@
     </div>
   </div>
 
-  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.1",label:"Student V0.1",build:"2026-10-02.01",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
+  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2",label:"Student V0.2",build:"2026-10-02.02",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
   </body>
 </html>
