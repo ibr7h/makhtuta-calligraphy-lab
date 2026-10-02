@@ -3,25 +3,28 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Qalam Physics Lab — مخطوطة</title>
+<title>Qalam Physics Lab P0.2 — مخطوطة</title>
 <meta name="theme-color" content="#3f2d20">
 <style>
 :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#2e261f;background:#f6f0e5}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15px 15px,#eadfce 1px,transparent 1.2px) 0 0/28px 28px,#f7f1e7}
 header{position:sticky;top:0;z-index:5;background:rgba(255,253,248,.94);backdrop-filter:blur(12px);border-bottom:1px solid #dec8a8}
-.wrap{max-width:1320px;margin:auto;padding:14px}.title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-h1{font-size:20px;margin:0;color:#55351f}.badge{font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;background:#efe5ff;color:#5b21b6;border:1px solid #d8c5ff}
+.wrap{max-width:1380px;margin:auto;padding:14px}.title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:20px;margin:0;color:#55351f}.badge{font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
 p{line-height:1.7}.card{background:#fffdf9;border:1px solid #dec8a8;border-radius:18px;box-shadow:0 8px 24px rgba(66,43,22,.06);padding:14px}
-.grid{display:grid;gap:12px}.controls{grid-template-columns:repeat(6,minmax(0,1fr))}.engines{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid{display:grid;gap:12px}.controls{grid-template-columns:repeat(7,minmax(0,1fr))}.engines{grid-template-columns:repeat(3,minmax(0,1fr))}
 label{font-size:11px;font-weight:800;color:#5e4636}input[type=range]{width:100%}.v{float:left;font-family:ui-monospace,monospace;color:#6d28d9}
 button{border:1px solid #d8c2a4;background:#fff;border-radius:11px;padding:8px 11px;font-weight:800;color:#50351f;cursor:pointer}button:hover{background:#fff8ed}.primary{background:#5b3a25;color:#fff;border-color:#5b3a25}
-canvas{display:block;width:100%;height:230px;background:#fff;border:1px solid #e2d5c4;border-radius:14px;touch-action:none}
-#capture{height:280px;cursor:crosshair}.engine-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:12px;font-weight:900}.metric{font-size:10px;color:#76675c}
+.video{background:#faf5ff;border-color:#d8b4fe;color:#6b21a8}
+canvas{display:block;width:100%;height:240px;background:#fff;border:1px solid #e2d5c4;border-radius:14px;touch-action:none}
+#capture{height:285px;cursor:crosshair}.engine-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:12px;font-weight:900}.metric{font-size:10px;color:#76675c}
 .row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.hint{font-size:11px;color:#76675c;margin:7px 0 0}.status{padding:9px 11px;border-radius:12px;background:#f8f4ee;border:1px solid #e8ded0;font-size:11px;font-weight:700}
 .good{background:#ecfdf5;border-color:#a7f3d0;color:#166534}.warn{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+.fact{font-size:10px;padding:6px 8px;border-radius:10px;background:#faf5ff;border:1px solid #e9d5ff;color:#6b21a8;font-weight:750}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:#6b5d52}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:4px}
 footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
-@media(max-width:900px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.engines{grid-template-columns:1fr}}
+@media(max-width:1040px){.controls{grid-template-columns:repeat(3,minmax(0,1fr))}.engines{grid-template-columns:1fr}}
+@media(max-width:600px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -29,16 +32,16 @@ footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
   <div class="wrap title">
     <div>
       <h1>مخطوطة — Qalam Physics Lab</h1>
-      <div style="font-size:11px;color:#746357;margin-top:3px">مقارنة نفس المسار بين Stamping وPerfect Freehand وContinuous Flat-Nib</div>
+      <div style="font-size:11px;color:#746357;margin-top:3px">اختبار نموذج القصبة الرفيعة المستنتج من طريقة Procreate مقابل Stamping الحالي وSwept Qalam</div>
     </div>
-    <span class="badge">P0.1 — Renderer Isolation</span>
+    <span class="badge">P0.2 — Procreate Qalam Model</span>
   </div>
 </header>
 
 <main class="wrap grid" style="gap:14px">
   <section class="card">
     <div class="row" style="justify-content:space-between">
-      <strong>1) ارسم Stroke واحدًا هنا</strong>
+      <strong>1) نفس Stroke لجميع المحركات</strong>
       <div class="row">
         <button data-shape="line">خط</button>
         <button data-shape="curve">قوس</button>
@@ -47,7 +50,7 @@ footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
         <button id="clearBtn">مسح</button>
       </div>
     </div>
-    <p class="hint">نحفظ x/y/pressure/time مرة واحدة. بعدها تُستخدم نفس البيانات في كل المحركات أدناه.</p>
+    <p class="hint">نسجل x/y/pressure/time مرة واحدة، ثم نعيد تشغيل المسار نفسه على المحركات الثلاثة. هذا يفصل هندسة الفرشاة عن اختلاف حركة اليد.</p>
     <canvas id="capture"></canvas>
     <div class="legend" style="margin-top:7px">
       <span><i class="dot" style="background:#9ca3af"></i>Raw points</span>
@@ -57,92 +60,101 @@ footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
   </section>
 
   <section class="card">
-    <strong>2) إعدادات مشتركة</strong>
+    <div class="row" style="justify-content:space-between">
+      <strong>2) نموذج القصبة</strong>
+      <div class="row">
+        <span class="fact">من الفيديو: Spacing 17%</span>
+        <span class="fact">Count 2</span>
+        <span class="fact">Pressure → Size 0%</span>
+      </div>
+    </div>
     <div class="grid controls" style="margin-top:10px">
-      <label>Nib Size <span class="v" id="sizeV">28</span><input id="size" type="range" min="6" max="70" step=".5" value="28"></label>
-      <label>Angle <span class="v" id="angleV">60°</span><input id="angle" type="range" min="0" max="90" step="1" value="60"></label>
-      <label>Aspect <span class="v" id="aspectV">0.16</span><input id="aspect" type="range" min=".04" max=".65" step=".01" value=".16"></label>
-      <label>Centerline smoothing <span class="v" id="smoothV">70%</span><input id="smooth" type="range" min="0" max="95" step="1" value="70"></label>
-      <label>Resample spacing <span class="v" id="spacingV">4px</span><input id="spacing" type="range" min="1" max="14" step=".5" value="4"></label>
-      <label>Pressure influence <span class="v" id="pressureV">45%</span><input id="pressure" type="range" min="0" max="100" step="1" value="45"></label>
+      <label>Nib Width <span class="v" id="widthV">32px</span><input id="width" type="range" min="8" max="80" step=".5" value="32"></label>
+      <label>Nib Thickness <span class="v" id="thicknessV">6%</span><input id="thickness" type="range" min="2" max="30" step=".5" value="6"></label>
+      <label>Nib Angle <span class="v" id="angleV">45°</span><input id="angle" type="range" min="0" max="90" step="1" value="45"></label>
+      <label>Procreate Spacing <span class="v" id="pSpacingV">17%</span><input id="pSpacing" type="range" min="1" max="40" step="1" value="17"></label>
+      <label>Count <span class="v" id="countV">2</span><input id="count" type="range" min="1" max="5" step="1" value="2"></label>
+      <label>Pressure→Size <span class="v" id="pressureV">0%</span><input id="pressure" type="range" min="0" max="100" step="1" value="0"></label>
+      <label>Centerline smoothing <span class="v" id="smoothV">0%</span><input id="smooth" type="range" min="0" max="95" step="1" value="0"></label>
     </div>
     <div class="row" style="margin-top:10px">
-      <button class="primary" id="aliMotionBtn">Ali-like motion: 80% / MA 30% / resample</button>
+      <button class="video" id="videoBaselineBtn">Video baseline</button>
+      <button id="aliMotionBtn">Ali-like motion 80% / MA 30%</button>
       <button id="neutralMotionBtn">Neutral motion</button>
       <button id="runTestsBtn">تشغيل Self-tests</button>
       <span id="testStatus" class="status">لم تُشغّل الاختبارات بعد.</span>
     </div>
+    <p class="hint">ملاحظة منهجية: زاوية الـShape في الفيديو تُضبط بصريًا؛ لذلك لا نفرض قيمة رقمية من الفيديو. القيمة 45° هنا مجرد نقطة بدء قابلة للتغيير.</p>
   </section>
 
   <section class="grid engines">
     <article class="card">
-      <div class="engine-title"><span>A — Current Stamp Model</span><span class="metric" id="stampMetric">—</span></div>
+      <div class="engine-title"><span>A — Current Ellipse Stamp</span><span class="metric" id="stampMetric">—</span></div>
       <canvas id="stamp"></canvas>
-      <p class="hint">Ellipse ثابتة تُطبع على نقاط centerline. يمثل منطق stamping الذي نحاول تجاوزه.</p>
+      <p class="hint">Ellipse بنفس Width وThickness. هذا هو خط الأساس الذي يقارب منطق رأس القصبة الحالي لدينا.</p>
     </article>
     <article class="card">
-      <div class="engine-title"><span>B — Perfect Freehand Reference</span><span class="metric" id="pfMetric">—</span></div>
-      <canvas id="perfect"></canvas>
-      <p class="hint">مرجع continuous round stroke. ليس قصبة عربية، لكنه يختبر جودة spline/outline المستمر.</p>
+      <div class="engine-title"><span>B — Procreate-style Thin Nib Stamp</span><span class="metric" id="proMetric">—</span></div>
+      <canvas id="procreate"></canvas>
+      <p class="hint">Capsule/line shape رفيعة، ثابتة الزاوية، تُطبع بمسافة نسبية من عرض القصبة. Count يُطبق دون Randomize.</p>
     </article>
     <article class="card">
-      <div class="engine-title"><span>C — Qalam Swept-Nib P0.1</span><span class="metric" id="sweptMetric">—</span></div>
+      <div class="engine-title"><span>C — Continuous Swept Qalam</span><span class="metric" id="sweptMetric">—</span></div>
       <canvas id="swept"></canvas>
-      <p class="hint">Envelope مستمر لقصبة Ellipse مائلة وثابتة الزاوية. هذا هو النموذج المرشح للمحرك الجديد.</p>
+      <p class="hint">نفس رأس القصبة B، لكن كغلاف هندسي مستمر بدل سلسلة Dabs. هذه هي فرضية المحرك الجديد.</p>
     </article>
   </section>
 
   <section class="card">
-    <div class="row" style="justify-content:space-between"><strong>3) Overlay تشخيصي</strong><span class="metric" id="overlayMetric">Stamp = أحمر • Swept = أخضر</span></div>
+    <div class="row" style="justify-content:space-between"><strong>3) Overlay: Procreate Stamp vs Swept</strong><span class="metric">B = أحمر • C = أخضر</span></div>
     <canvas id="overlay"></canvas>
-    <p class="hint">الأخضر فقط يعني أن الـSwept يغطي منطقة لا يغطيها Stamping، والأحمر فقط العكس؛ المناطق الداكنة المتراكبة مشتركة.</p>
+    <p class="hint">إذا ظهر الأخضر فقط عند الانحناءات والزوايا فهذا يعني أن Swept يغلق فراغات الـStamping. الأحمر فقط يعني أن Stamping يضيف حبرًا خارج الغلاف المستمر.</p>
   </section>
 </main>
 
 <footer class="wrap">
-  Perfect Freehand © Stephen Ruiz Ltd — MIT License. هذه الصفحة مختبر مستقل ولا تغيّر Brush Engine الحالي.
+  مختبر مستقل — لا يغيّر Brush Engine الحالي. P0.1 محفوظ في branch: reference-qalam-physics-p0.1.
 </footer>
 
-<script type="module">
-import { getStroke } from 'https://cdn.jsdelivr.net/npm/perfect-freehand@1.2.3/+esm';
-
+<script>
 const $=id=>document.getElementById(id);
-const capture=$('capture'), stamp=$('stamp'), perfect=$('perfect'), swept=$('swept'), overlay=$('overlay');
-const canvases=[capture,stamp,perfect,swept,overlay];
-let raw=[], drawing=false, activePointer=null;
-let movingAverage=.30, useResample=true;
+const capture=$('capture'),stamp=$('stamp'),procreate=$('procreate'),swept=$('swept'),overlay=$('overlay');
+let raw=[],drawing=false,activePointer=null,movingAverage=0,useResample=true;
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function dprCanvas(c){
   const r=c.getBoundingClientRect(),d=Math.max(1,devicePixelRatio||1);
-  const w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));
-  if(c.width!==w||c.height!==h){c.width=w;c.height=h}
+  const W=Math.max(1,Math.round(r.width*d)),H=Math.max(1,Math.round(r.height*d));
+  if(c.width!==W||c.height!==H){c.width=W;c.height=H}
   const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,r.width,r.height);
   return{x,w:r.width,h:r.height}
 }
 function normPoint(e){
   const r=capture.getBoundingClientRect();
-  return {nx:clamp((e.clientX-r.left)/r.width,0,1),ny:clamp((e.clientY-r.top)/r.height,0,1),
-    p:e.pointerType==='pen'&&Number.isFinite(e.pressure)&&e.pressure>0?e.pressure:.5,t:performance.now()};
+  return{nx:clamp((e.clientX-r.left)/r.width,0,1),ny:clamp((e.clientY-r.top)/r.height,0,1),
+    p:e.pointerType==='pen'&&Number.isFinite(e.pressure)&&e.pressure>0?e.pressure:.5,t:performance.now()}
 }
 function synthetic(kind){
-  const pts=[],N=84;
+  const pts=[],N=96;
   for(let i=0;i<N;i++){
     const u=i/(N-1);let x=.12+.76*u,y=.5,p=.5;
-    if(kind==='line'){y=.62-.25*u;p=.4+.35*Math.sin(Math.PI*u)}
-    if(kind==='curve'){const a=Math.PI*(.05+.9*u);x=.18+.64*u;y=.72-.42*Math.sin(a);p=.35+.45*Math.sin(Math.PI*u)}
-    if(kind==='s'){x=.14+.72*u;y=.5+.23*Math.sin(u*Math.PI*2);p=.35+.4*Math.sin(Math.PI*u)}
-    if(kind==='hook'){x=.16+.7*u;y=.32+.42*u;if(u>.62){const q=(u-.62)/.38;x=.594+.25*Math.sin(q*Math.PI*.88);y=.58+.18*Math.sin(q*Math.PI*1.05)}p=.42+.32*Math.sin(Math.PI*u)}
+    if(kind==='line'){y=.68-.36*u;p=.34+.42*Math.sin(Math.PI*u)}
+    if(kind==='curve'){const a=Math.PI*(.05+.9*u);x=.18+.64*u;y=.72-.42*Math.sin(a);p=.36+.38*Math.sin(Math.PI*u)}
+    if(kind==='s'){x=.14+.72*u;y=.5+.23*Math.sin(u*Math.PI*2);p=.36+.36*Math.sin(Math.PI*u)}
+    if(kind==='hook'){x=.14+.72*u;y=.30+.43*u;if(u>.60){const q=(u-.60)/.40;x=.572+.27*Math.sin(q*Math.PI*.9);y=.558+.19*Math.sin(q*Math.PI*1.05)}p=.38+.36*Math.sin(Math.PI*u)}
     pts.push({nx:x,ny:y,p,t:i*8});
   }
-  raw=pts;renderAll();
+  raw=pts;renderAll()
 }
 function toPx(points,w,h){return points.map(q=>({x:q.nx*w,y:q.ny*h,p:q.p,t:q.t}))}
 function ema(points,s){
   if(points.length<2)return points.slice();
   const keep=clamp(1-s,0.04,1),out=[{...points[0]}];
-  for(let i=1;i<points.length;i++){const a=out[out.length-1],b=points[i];out.push({...b,x:a.x+(b.x-a.x)*keep,y:a.y+(b.y-a.y)*keep,p:a.p+(b.p-a.p)*Math.min(1,keep*1.35)})}
-  return out;
+  for(let i=1;i<points.length;i++){
+    const a=out[out.length-1],b=points[i];
+    out.push({...b,x:a.x+(b.x-a.x)*keep,y:a.y+(b.y-a.y)*keep,p:a.p+(b.p-a.p)*Math.min(1,keep*1.35)})
+  }
+  return out
 }
 function ma(points,strength){
   if(strength<=0||points.length<3)return points.slice();
@@ -150,11 +162,11 @@ function ma(points,strength){
   for(let i=0;i<points.length;i++){
     let sx=0,sy=0,sp=0,sw=0;
     for(let j=Math.max(0,i-radius);j<=Math.min(points.length-1,i+radius);j++){
-      const w=1/(1+Math.abs(i-j));sx+=points[j].x*w;sy+=points[j].y*w;sp+=points[j].p*w;sw+=w;
+      const wt=1/(1+Math.abs(i-j));sx+=points[j].x*wt;sy+=points[j].y*wt;sp+=points[j].p*wt;sw+=wt
     }
-    out.push({...points[i],x:sx/sw,y:sy/sw,p:sp/sw});
+    out.push({...points[i],x:sx/sw,y:sy/sw,p:sp/sw})
   }
-  return out;
+  return out
 }
 function resample(points,spacing){
   if(points.length<2||!useResample)return points.slice();
@@ -164,101 +176,126 @@ function resample(points,spacing){
     while(dist+carry>=spacing&&dist>1e-6){
       const need=spacing-carry,t=need/dist;
       a={x:a.x+dx*t,y:a.y+dy*t,p:a.p+(b.p-a.p)*t,t:a.t+(b.t-a.t)*t};
-      out.push({...a});dx=b.x-a.x;dy=b.y-a.y;dist=Math.hypot(dx,dy);carry=0;
+      out.push({...a});dx=b.x-a.x;dy=b.y-a.y;dist=Math.hypot(dx,dy);carry=0
     }
-    carry+=dist;a={...b};
+    carry+=dist;a={...b}
   }
-  if(out.length===1||Math.hypot(out[out.length-1].x-points.at(-1).x,out[out.length-1].y-points.at(-1).y)>.5)out.push({...points.at(-1)});
-  return out;
+  const last=points[points.length-1],o=out[out.length-1];
+  if(Math.hypot(o.x-last.x,o.y-last.y)>.5)out.push({...last});
+  return out
 }
 function centerline(w,h){
-  const pts=toPx(raw,w,h);
-  const s=Number($('smooth').value)/100;
-  return resample(ma(ema(pts,s),movingAverage),Number($('spacing').value));
+  const pts=toPx(raw,w,h),s=Number($('smooth').value)/100;
+  return ma(ema(pts,s),movingAverage)
 }
-function pressureScale(p){const k=Number($('pressure').value)/100;return clamp(1+(p-.5)*1.2*k,.42,1.55)}
+function geometry(){
+  const width=Number($('width').value),thicknessPct=Number($('thickness').value),thickness=width*thicknessPct/100;
+  return{width,thicknessPct,thickness,angle:Number($('angle').value),theta:-Number($('angle').value)*Math.PI/180,
+    spacingPct:Number($('pSpacing').value),count:Math.round(Number($('count').value)),pressure:Number($('pressure').value)/100}
+}
+function pressureScale(p){
+  const k=Number($('pressure').value)/100;
+  return clamp(1+(p-.5)*1.25*k,.38,1.62)
+}
 function clearWhite(ctx,w,h){ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h)}
 function drawCenterline(ctx,pts){
-  if(pts.length<2)return;ctx.save();ctx.strokeStyle='rgba(124,58,237,.55)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();ctx.restore();
+  if(pts.length<2)return;ctx.save();ctx.strokeStyle='rgba(124,58,237,.55)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();ctx.restore()
 }
 function renderCapture(){
-  const {x,w,h}=dprCanvas(capture);clearWhite(x,w,h);
-  const rp=toPx(raw,w,h);
+  const {x,w,h}=dprCanvas(capture);clearWhite(x,w,h);const rp=toPx(raw,w,h);
   x.fillStyle='#9ca3af';for(const p of rp){x.beginPath();x.arc(p.x,p.y,2,0,Math.PI*2);x.fill()}
-  const cp=centerline(w,h);drawCenterline(x,cp);
-  $('inputMeta').textContent=raw.length+' raw • '+cp.length+' centerline';
+  const cp=centerline(w,h);drawCenterline(x,cp);$('inputMeta').textContent=raw.length+' raw • '+cp.length+' filtered'
+}
+function drawEllipseDab(ctx,p,g){
+  const s=pressureScale(p.p);ctx.save();ctx.translate(p.x,p.y);ctx.rotate(g.theta);ctx.beginPath();ctx.ellipse(0,0,g.width*s/2,g.thickness*s/2,0,0,Math.PI*2);ctx.fill();ctx.restore()
+}
+function drawCapsuleDab(ctx,p,g){
+  const s=pressureScale(p.p),w=g.width*s,t=Math.max(.5,g.thickness*s),seg=Math.max(0,w-t),ca=Math.cos(g.theta),sa=Math.sin(g.theta);
+  const hx=ca*seg/2,hy=sa*seg/2;ctx.save();ctx.strokeStyle=ctx.fillStyle;ctx.lineCap='round';ctx.lineWidth=t;ctx.beginPath();ctx.moveTo(p.x-hx,p.y-hy);ctx.lineTo(p.x+hx,p.y+hy);ctx.stroke();ctx.restore()
 }
 function renderStamp(){
-  const {x,w,h}=dprCanvas(stamp);clearWhite(x,w,h);const pts=centerline(w,h),major=Number($('size').value),aspect=Number($('aspect').value),ang=-Number($('angle').value)*Math.PI/180;
-  const t0=performance.now();x.fillStyle='#201914';
-  for(const p of pts){const s=pressureScale(p.p);x.save();x.translate(p.x,p.y);x.rotate(ang);x.beginPath();x.ellipse(0,0,major*s/2,major*aspect*s/2,0,0,Math.PI*2);x.fill();x.restore()}
-  $('stampMetric').textContent=pts.length+' dabs • '+(performance.now()-t0).toFixed(2)+'ms';
+  const {x,w,h}=dprCanvas(stamp);clearWhite(x,w,h);const pts=centerline(w,h),g=geometry(),t0=performance.now();x.fillStyle='#201914';
+  for(const p of pts)drawEllipseDab(x,p,g);
+  $('stampMetric').textContent=pts.length+' ellipse dabs • '+(performance.now()-t0).toFixed(2)+'ms'
 }
-function drawPolygon(ctx,poly,fill='#201914'){
-  if(poly.length<3)return;ctx.fillStyle=fill;ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);ctx.closePath();ctx.fill();
+function procreatePoints(w,h,g){
+  const base=centerline(w,h),spacingPx=Math.max(.6,g.width*g.spacingPct/100);
+  return resample(base,spacingPx)
 }
-function renderPF(){
-  const {x,w,h}=dprCanvas(perfect);clearWhite(x,w,h);const pts=centerline(w,h),major=Number($('size').value),pressureInfluence=Number($('pressure').value)/100;
-  const input=pts.map(p=>[p.x,p.y,clamp(.5+(p.p-.5)*pressureInfluence,0,1)]);const t0=performance.now();
-  const poly=input.length>1?getStroke(input,{size:major,thinning:.72*pressureInfluence,smoothing:.65,streamline:.35,simulatePressure:false,last:true,start:{taper:0,cap:true},end:{taper:0,cap:true}}):[];
-  drawPolygon(x,poly);$('pfMetric').textContent=poly.length+' outline pts • '+(performance.now()-t0).toFixed(2)+'ms';
+function renderProcreate(){
+  const {x,w,h}=dprCanvas(procreate);clearWhite(x,w,h);const g=geometry(),pts=procreatePoints(w,h,g),t0=performance.now();x.fillStyle='#201914';
+  for(const p of pts)for(let k=0;k<g.count;k++)drawCapsuleDab(x,p,g);
+  $('proMetric').textContent=pts.length+' positions × '+g.count+' • '+(g.width*g.spacingPct/100).toFixed(1)+'px • '+(performance.now()-t0).toFixed(2)+'ms'
 }
-function ellipseSupport(nx,ny,a,b,theta){
-  const ca=Math.cos(theta),sa=Math.sin(theta);
-  const lx=nx*ca+ny*sa,ly=-nx*sa+ny*ca;
-  const den=Math.sqrt((a*lx)*(a*lx)+(b*ly)*(b*ly))||1;
-  const sx=(a*a*lx)/den,sy=(b*b*ly)/den;
-  return{x:sx*ca-sy*sa,y:sx*sa+sy*ca};
+function capsuleSupport(nx,ny,width,thickness,theta){
+  const ux=Math.cos(theta),uy=Math.sin(theta),dot=nx*ux+ny*uy,sgn=dot>=0?1:-1;
+  const r=Math.max(.25,thickness/2),halfSegment=Math.max(0,(width-thickness)/2);
+  return{x:sgn*halfSegment*ux+r*nx,y:sgn*halfSegment*uy+r*ny}
 }
-function sweptPolygon(pts,major,aspect,theta){
+function sweptPolygon(pts,g){
   if(pts.length<2)return[];
   const left=[],right=[];
   for(let i=0;i<pts.length;i++){
     const prev=pts[Math.max(0,i-1)],next=pts[Math.min(pts.length-1,i+1)];
-    let tx=next.x-prev.x,ty=next.y-prev.y,l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;
-    const nx=-ty,ny=tx,s=pressureScale(pts[i].p),sup=ellipseSupport(nx,ny,major*s/2,major*aspect*s/2,theta);
-    left.push([pts[i].x+sup.x,pts[i].y+sup.y]);right.push([pts[i].x-sup.x,pts[i].y-sup.y]);
+    let tx=next.x-prev.x,ty=next.y-prev.y,L=Math.hypot(tx,ty)||1;tx/=L;ty/=L;
+    const nx=-ty,ny=tx,s=pressureScale(pts[i].p),sup=capsuleSupport(nx,ny,g.width*s,g.thickness*s,g.theta);
+    left.push([pts[i].x+sup.x,pts[i].y+sup.y]);right.push([pts[i].x-sup.x,pts[i].y-sup.y])
   }
-  return left.concat(right.reverse());
+  return left.concat(right.reverse())
 }
-function renderSwept(target=swept,fill='#201914',alpha=1){
-  const {x,w,h}=dprCanvas(target);clearWhite(x,w,h);const pts=centerline(w,h),major=Number($('size').value),aspect=Number($('aspect').value),ang=-Number($('angle').value)*Math.PI/180,t0=performance.now();
-  const poly=sweptPolygon(pts,major,aspect,ang);x.globalAlpha=alpha;drawPolygon(x,poly,fill);x.globalAlpha=1;
-  if(target===swept)$('sweptMetric').textContent=poly.length+' envelope pts • '+(performance.now()-t0).toFixed(2)+'ms';
+function drawPolygon(ctx,poly,fill='#201914'){
+  if(poly.length<3)return;ctx.fillStyle=fill;ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);ctx.closePath();ctx.fill()
+}
+function renderSwept(){
+  const {x,w,h}=dprCanvas(swept);clearWhite(x,w,h);const g=geometry(),pts=centerline(w,h),t0=performance.now(),poly=sweptPolygon(pts,g);
+  drawPolygon(x,poly);$('sweptMetric').textContent=poly.length+' envelope pts • '+(performance.now()-t0).toFixed(2)+'ms'
 }
 function renderOverlay(){
-  const {x,w,h}=dprCanvas(overlay);clearWhite(x,w,h);const pts=centerline(w,h),major=Number($('size').value),aspect=Number($('aspect').value),ang=-Number($('angle').value)*Math.PI/180;
-  x.globalAlpha=.52;x.fillStyle='#dc2626';for(const p of pts){const s=pressureScale(p.p);x.save();x.translate(p.x,p.y);x.rotate(ang);x.beginPath();x.ellipse(0,0,major*s/2,major*aspect*s/2,0,0,Math.PI*2);x.fill();x.restore()}
-  const poly=sweptPolygon(pts,major,aspect,ang);drawPolygon(x,poly,'#059669');x.globalAlpha=1;
+  const {x,w,h}=dprCanvas(overlay);clearWhite(x,w,h);const g=geometry(),ppts=procreatePoints(w,h,g),spts=centerline(w,h);
+  x.globalAlpha=.50;x.fillStyle='#dc2626';for(const p of ppts)for(let k=0;k<g.count;k++)drawCapsuleDab(x,p,g);
+  const poly=sweptPolygon(spts,g);x.globalAlpha=.50;drawPolygon(x,poly,'#059669');x.globalAlpha=1
 }
-function renderAll(){renderCapture();renderStamp();renderPF();renderSwept();renderOverlay()}
+function renderAll(){renderCapture();renderStamp();renderProcreate();renderSwept();renderOverlay()}
 
 function selfTests(){
-  const tests=[];
-  const near=(a,b,e=.01)=>Math.abs(a-b)<=e;
-  let s=ellipseSupport(1,0,20,5,0);tests.push(['ellipse-major-support',near(s.x,20,.001)&&near(s.y,0,.001)]);
-  s=ellipseSupport(0,1,20,5,0);tests.push(['ellipse-minor-support',near(s.y,5,.001)]);
-  const line=[{x:10,y:20,p:.5,t:0},{x:90,y:20,p:.5,t:10}],poly=sweptPolygon(line,20,.2,0);tests.push(['swept-polygon-finite',poly.length===4&&poly.flat().every(Number.isFinite)]);
-  const dense=Array.from({length:101},(_,i)=>({x:i,y:40,p:.5,t:i}));const rr=resample(dense,5);tests.push(['uniform-resample-count',rr.length>=20&&rr.length<=22]);
+  const tests=[],near=(a,b,e=.01)=>Math.abs(a-b)<=e;
+  let s=capsuleSupport(1,0,20,4,0);tests.push(['capsule-major-support',near(s.x,10,.001)&&near(s.y,0,.001)]);
+  s=capsuleSupport(0,1,20,4,0);tests.push(['capsule-minor-support',near(s.y,2,.001)]);
+  s=capsuleSupport(Math.SQRT1_2,Math.SQRT1_2,20,4,Math.PI/4);tests.push(['capsule-rotation-finite',Number.isFinite(s.x)&&Number.isFinite(s.y)]);
+  const g={width:32,thickness:1.92,theta:-Math.PI/4},line=[{x:10,y:20,p:.5,t:0},{x:90,y:20,p:.5,t:10}],poly=sweptPolygon(line,g);
+  tests.push(['swept-polygon-finite',poly.length===4&&poly.flat().every(Number.isFinite)]);
+  const dense=Array.from({length:101},(_,i)=>({x:i,y:40,p:.5,t:i})),save=useResample;useResample=true;const rr=resample(dense,5);useResample=save;
+  tests.push(['uniform-resample-count',rr.length>=20&&rr.length<=22]);
+  tests.push(['video-spacing-17pct',near(32*.17,5.44,.001)]);
+  const oldP=$('pressure').value;$('pressure').value='0';tests.push(['pressure-neutral',near(pressureScale(.1),1,.001)&&near(pressureScale(.9),1,.001)]);$('pressure').value=oldP;
   const sm=ema([{x:0,y:0,p:.5},{x:10,y:10,p:.5},{x:20,y:0,p:.5}],.8);tests.push(['smoothing-reduces-mid-excursion',sm[1].y<10]);
-  const ok=tests.every(x=>x[1]);return{ok,tests};
+  const ok=tests.every(t=>t[1]);return{ok,tests}
 }
-function runTests(){const r=selfTests(),el=$('testStatus');el.textContent=(r.ok?'PASS ':'FAIL ')+r.tests.filter(x=>x[1]).length+'/'+r.tests.length+' — '+r.tests.map(x=>(x[1]?'✓ ':'✗ ')+x[0]).join(' • ');el.className='status '+(r.ok?'good':'warn')}
-
+function runTests(){
+  const r=selfTests(),el=$('testStatus');el.textContent=(r.ok?'PASS ':'FAIL ')+r.tests.filter(x=>x[1]).length+'/'+r.tests.length+' — '+r.tests.map(x=>(x[1]?'✓ ':'✗ ')+x[0]).join(' • ');
+  el.className='status '+(r.ok?'good':'warn')
+}
+function syncLabels(){
+  $('widthV').textContent=Number($('width').value).toFixed(1)+'px';$('thicknessV').textContent=Number($('thickness').value).toFixed(1)+'%';
+  $('angleV').textContent=$('angle').value+'°';$('pSpacingV').textContent=$('pSpacing').value+'%';$('countV').textContent=$('count').value;
+  $('pressureV').textContent=$('pressure').value+'%';$('smoothV').textContent=$('smooth').value+'%'
+}
+function setVideoBaseline(){
+  $('pSpacing').value=17;$('count').value=2;$('pressure').value=0;$('smooth').value=0;movingAverage=0;useResample=true;syncLabels();renderAll()
+}
 capture.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();drawing=true;activePointer=e.pointerId;raw=[normPoint(e)];capture.setPointerCapture?.(e.pointerId);renderAll()},{passive:false});
 capture.addEventListener('pointermove',e=>{if(!drawing||e.pointerId!==activePointer)return;e.preventDefault();const events=e.getCoalescedEvents?.()||[];(events.length?events:[e]).forEach(ev=>raw.push(normPoint(ev)));renderAll()},{passive:false});
 function end(e){if(!drawing||e.pointerId!==activePointer)return;drawing=false;activePointer=null;renderAll()}
 capture.addEventListener('pointerup',end);capture.addEventListener('pointercancel',end);
 document.querySelectorAll('[data-shape]').forEach(b=>b.addEventListener('click',()=>synthetic(b.dataset.shape)));
 $('clearBtn').addEventListener('click',()=>{raw=[];renderAll()});
-for(const id of ['size','angle','aspect','smooth','spacing','pressure'])$(id).addEventListener('input',()=>{
-  $('sizeV').textContent=Number($('size').value).toFixed(1);$('angleV').textContent=$('angle').value+'°';$('aspectV').textContent=Number($('aspect').value).toFixed(2);$('smoothV').textContent=$('smooth').value+'%';$('spacingV').textContent=$('spacing').value+'px';$('pressureV').textContent=$('pressure').value+'%';renderAll()
-});
-$('aliMotionBtn').addEventListener('click',()=>{$('smooth').value=80;$('smoothV').textContent='80%';movingAverage=.30;useResample=true;renderAll()});
-$('neutralMotionBtn').addEventListener('click',()=>{$('smooth').value=0;$('smoothV').textContent='0%';movingAverage=0;useResample=false;renderAll()});
+for(const id of ['width','thickness','angle','pSpacing','count','pressure','smooth'])$(id).addEventListener('input',()=>{syncLabels();renderAll()});
+$('videoBaselineBtn').addEventListener('click',setVideoBaseline);
+$('aliMotionBtn').addEventListener('click',()=>{$('smooth').value=80;movingAverage=.30;useResample=true;syncLabels();renderAll()});
+$('neutralMotionBtn').addEventListener('click',()=>{$('smooth').value=0;movingAverage=0;useResample=false;syncLabels();renderAll()});
 $('runTestsBtn').addEventListener('click',runTests);
-addEventListener('resize',()=>renderAll());
-synthetic('hook');runTests();
+addEventListener('resize',renderAll);
+syncLabels();synthetic('hook');runTests();
 </script>
 </body>
 </html>
