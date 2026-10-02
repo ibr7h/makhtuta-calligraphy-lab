@@ -605,6 +605,7 @@
               <button type="button" onclick="studentCaptureCurrentAsModel()" class="student-chip"><i class="fa-solid fa-bullseye ml-1"></i>تحويل الكتابة إلى نموذج</button>
               <button type="button" onclick="saveStudentTrainingModel()" class="student-chip bg-emerald-50 border-emerald-200 text-emerald-800"><i class="fa-solid fa-floppy-disk ml-1"></i>حفظ النموذج</button>
               <button type="button" onclick="openStudentModelLibrary()" class="student-chip bg-white"><i class="fa-solid fa-folder-open ml-1"></i>النماذج المحفوظة</button>
+              <button type="button" onclick="clearStudentCurrentModel()" class="student-chip bg-rose-50 border-rose-200 text-rose-700"><i class="fa-solid fa-xmark ml-1"></i>مسح الحالي</button>
               <button id="studentModelPlayBtn" type="button" onclick="studentToggleModelReplay()" class="student-chip"><i class="fa-solid fa-play ml-1"></i><span>تشغيل</span></button>
               <select id="studentModelSpeed" onchange="studentModelReplaySpeed=Number(this.value)||1" class="student-chip bg-white">
                 <option value="0.5">×0.5</option><option value="0.75">×0.75</option><option value="1" selected>×1</option><option value="1.5">×1.5</option><option value="2">×2</option>
@@ -2455,6 +2456,18 @@
       studentRenderModelStatic();
       if(status)status.textContent='النموذج جاهز • '+studentTrainingModelActions.length+' ضربة';
       if(document.getElementById('studentAutoClearAfterModel')?.checked)clearCanvas();
+    }
+
+    function clearStudentCurrentModel(){
+      if(!studentTrainingModelActions.length){
+        const st=document.getElementById('studentModelStatus');if(st)st.textContent='لا يوجد نموذج حالي لمسحه.';
+        return;
+      }
+      if(!confirm('مسح النموذج الحالي من شاشة التدريب؟ النماذج المحفوظة لن تتأثر.'))return;
+      studentStopModelReplay(false);
+      studentTrainingModelActions=[];
+      studentClearPreview();
+      const st=document.getElementById('studentModelStatus');if(st)st.textContent='تم مسح النموذج الحالي.';
     }
 
     function studentUpdateModelPlayButton(){
