@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="student-0.2.4">
+<html lang="ar" dir="rtl" data-app-version="student-0.2.5">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -149,7 +149,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2.4</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2.5</span>
           </p>
         </div>
       </div>
@@ -449,6 +449,8 @@
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
               <button type="button" onclick="studentCaptureCurrentAsModel()" class="student-chip"><i class="fa-solid fa-bullseye ml-1"></i>تحويل الكتابة إلى نموذج</button>
+              <button type="button" onclick="saveStudentTrainingModel()" class="student-chip bg-emerald-50 border-emerald-200 text-emerald-800"><i class="fa-solid fa-floppy-disk ml-1"></i>حفظ النموذج</button>
+              <button type="button" onclick="openStudentModelLibrary()" class="student-chip bg-white"><i class="fa-solid fa-folder-open ml-1"></i>النماذج المحفوظة</button>
               <button id="studentModelPlayBtn" type="button" onclick="studentToggleModelReplay()" class="student-chip"><i class="fa-solid fa-play ml-1"></i><span>تشغيل</span></button>
               <select id="studentModelSpeed" onchange="studentModelReplaySpeed=Number(this.value)||1" class="student-chip bg-white">
                 <option value="0.5">×0.5</option><option value="0.75">×0.75</option><option value="1" selected>×1</option><option value="1.5">×1.5</option><option value="2">×2</option>
@@ -1235,6 +1237,28 @@
     </div>
   </div>
 
+  <div id="studentModelLibraryModal" class="fixed inset-0 z-[55] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-parchment-50 w-full max-w-2xl max-h-[86vh] rounded-3xl border-2 border-violet-300 shadow-2xl overflow-hidden flex flex-col">
+      <div class="bg-violet-900 text-white p-4 flex items-center justify-between gap-3">
+        <div>
+          <h3 class="font-bold font-kufi text-lg"><i class="fa-solid fa-folder-open text-violet-200 ml-2"></i>النماذج المحفوظة</h3>
+          <p class="text-[10px] text-violet-200 mt-0.5">محفوظة على هذا الجهاز والمتصفح، ويمكن تصديرها أو استيرادها.</p>
+        </div>
+        <button type="button" onclick="closeStudentModelLibrary()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-4 overflow-y-auto custom-scrollbar">
+        <div class="flex flex-wrap gap-2 mb-3">
+          <button type="button" onclick="saveStudentTrainingModel()" class="px-3 py-2 rounded-xl bg-violet-800 text-white text-xs font-bold hover:bg-violet-900"><i class="fa-solid fa-floppy-disk ml-1"></i>حفظ النموذج الحالي</button>
+          <button type="button" onclick="exportAllStudentModels()" class="px-3 py-2 rounded-xl bg-emerald-700 text-white text-xs font-bold hover:bg-emerald-800"><i class="fa-solid fa-file-export ml-1"></i>تصدير الكل</button>
+          <button type="button" onclick="document.getElementById('studentModelImportFile').click()" class="px-3 py-2 rounded-xl bg-white border border-violet-300 text-violet-900 text-xs font-bold hover:bg-violet-50"><i class="fa-solid fa-file-import ml-1"></i>استيراد</button>
+          <input id="studentModelImportFile" type="file" accept=".json,application/json" class="hidden" onchange="importStudentModelsFile(this.files?.[0]);this.value=''">
+          <span id="studentModelLibraryStatus" class="self-center text-[10px] text-stone-500"></span>
+        </div>
+        <div id="studentModelLibraryList" class="flex flex-col gap-2"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="savedReplayModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
     <div class="bg-parchment-50 w-full max-w-xl max-h-[82vh] rounded-3xl border-2 border-amber-300 shadow-2xl overflow-hidden flex flex-col">
       <div class="bg-amber-900 text-white p-4 flex items-center justify-between">
@@ -1913,6 +1937,218 @@
     let studentModelRepeatCount = 3;
     let studentModelPreviewCanvas = null;
     let studentModelPreviewCtx = null;
+
+    const STUDENT_MODEL_DB_NAME='makhtuta-student-models';
+    const STUDENT_MODEL_DB_VERSION=1;
+    const STUDENT_MODEL_STORE='models';
+
+    function openStudentModelDB(){
+      return new Promise((resolve,reject)=>{
+        const req=indexedDB.open(STUDENT_MODEL_DB_NAME,STUDENT_MODEL_DB_VERSION);
+        req.onupgradeneeded=()=>{
+          const db=req.result;
+          if(!db.objectStoreNames.contains(STUDENT_MODEL_STORE)){
+            const store=db.createObjectStore(STUDENT_MODEL_STORE,{keyPath:'id'});
+            store.createIndex('updatedAt','updatedAt');
+            store.createIndex('name','name');
+          }
+        };
+        req.onsuccess=()=>resolve(req.result);
+        req.onerror=()=>reject(req.error);
+      });
+    }
+    function studentModelTx(db,mode,fn){
+      return new Promise((resolve,reject)=>{
+        const tx=db.transaction(STUDENT_MODEL_STORE,mode),store=tx.objectStore(STUDENT_MODEL_STORE);
+        let result;
+        try{result=fn(store)}catch(e){reject(e);return}
+        tx.oncomplete=()=>resolve(result);
+        tx.onerror=()=>reject(tx.error);
+        tx.onabort=()=>reject(tx.error||new Error('Model transaction aborted'));
+      });
+    }
+    function defaultStudentModelName(){
+      let text='';
+      try{text=String(curItemText?.()||'').trim()}catch(_){}
+      if(text&&text!=='أضف نصًا للتدريب')return text.slice(0,40);
+      try{return 'نموذج '+new Intl.DateTimeFormat('ar-SA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date())}
+      catch(_){return 'نموذج '+new Date().toLocaleString()}
+    }
+    function currentStudentModelRecord(name){
+      return{
+        schema:'makhtuta-student-model',
+        version:1,
+        id:(crypto.randomUUID?crypto.randomUUID():'model-'+Date.now()),
+        name,
+        createdAt:new Date().toISOString(),
+        updatedAt:new Date().toISOString(),
+        actionCount:studentTrainingModelActions.length,
+        actions:cloneReplayActions(studentTrainingModelActions),
+        guide:{...studentManualGuide},
+        referenceSizeScale:studentReferenceSizeScale,
+        brushPresetKey:activeBrushPresetKey||null,
+        fontKey:(typeof fontKey!=='undefined'?fontKey:null),
+        mode:(typeof mode!=='undefined'?mode:null),
+        text:(()=>{try{return String(curItemText?.()||'')}catch(_){return''}})()
+      };
+    }
+    function setStudentModelLibraryStatus(message){
+      const el=document.getElementById('studentModelLibraryStatus');
+      if(!el)return;
+      el.textContent=message||'';
+      if(message)setTimeout(()=>{if(el.textContent===message)el.textContent=''},2800);
+    }
+    async function saveStudentTrainingModel(){
+      if(!studentTrainingModelActions.length){
+        const st=document.getElementById('studentModelStatus');
+        if(st)st.textContent='حوّل الكتابة إلى نموذج أولًا ثم احفظه.';
+        return;
+      }
+      const proposed=defaultStudentModelName();
+      const entered=prompt('اسم النموذج:',proposed);
+      if(entered===null)return;
+      const name=entered.trim().replace(/\s+/g,' ').slice(0,80)||proposed;
+      try{
+        const db=await openStudentModelDB();
+        const record=currentStudentModelRecord(name);
+        await studentModelTx(db,'readwrite',store=>store.put(record));
+        const st=document.getElementById('studentModelStatus');
+        if(st)st.textContent='تم حفظ النموذج «'+name+'» ✓';
+        setStudentModelLibraryStatus('تم حفظ النموذج ✓');
+        if(document.getElementById('studentModelLibraryModal')?.classList.contains('flex'))await renderStudentModelLibrary();
+      }catch(e){
+        console.warn('Saving student model failed',e);
+        setStudentModelLibraryStatus('تعذّر حفظ النموذج');
+      }
+    }
+    async function getStudentModelRecords(){
+      const db=await openStudentModelDB();
+      return await new Promise((resolve,reject)=>{
+        const tx=db.transaction(STUDENT_MODEL_STORE,'readonly'),req=tx.objectStore(STUDENT_MODEL_STORE).getAll();
+        req.onsuccess=()=>{
+          const rows=Array.isArray(req.result)?req.result:[];
+          rows.sort((a,b)=>String(b.updatedAt||'').localeCompare(String(a.updatedAt||'')));
+          resolve(rows);
+        };
+        req.onerror=()=>reject(req.error);
+      });
+    }
+    async function getStudentModel(id){
+      const db=await openStudentModelDB();
+      return await new Promise((resolve,reject)=>{
+        const tx=db.transaction(STUDENT_MODEL_STORE,'readonly'),req=tx.objectStore(STUDENT_MODEL_STORE).get(id);
+        req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);
+      });
+    }
+    async function loadStudentModel(id){
+      try{
+        const record=await getStudentModel(id);
+        if(!record?.actions?.length)return;
+        studentStopModelReplay(false);
+        studentTrainingModelActions=cloneReplayActions(record.actions);
+        if(record.guide&&typeof record.guide==='object'){
+          for(const k of ['top','mid','base','bottom'])if(Number.isFinite(Number(record.guide[k])))studentManualGuide[k]=Number(record.guide[k]);
+          normalizeStudentManualGuides();syncStudentManualGuideUI();updateGuideSvgGeometry();
+        }
+        if(Number.isFinite(Number(record.referenceSizeScale))){
+          studentReferenceSizeScale=clamp(Number(record.referenceSizeScale),.5,1.8);
+          try{localStorage.setItem(STUDENT_REFERENCE_SIZE_STORAGE,String(studentReferenceSizeScale))}catch(_){}
+          syncStudentReferenceSizeUI();
+        }
+        if(record.brushPresetKey&&BRUSH_PRESETS?.[record.brushPresetKey]){
+          applyBrushPreset(record.brushPresetKey);
+          const sel=document.getElementById('studentAliBrushSelect');if(sel)sel.value=record.brushPresetKey;
+        }
+        if(record.fontKey&&typeof FONTS!=='undefined'&&FONTS[record.fontKey]){
+          fontKey=record.fontKey;
+          const fs=document.getElementById('fontSelect');if(fs)fs.value=fontKey;
+        }
+        studentRenderModelStatic();
+        const st=document.getElementById('studentModelStatus');if(st)st.textContent='تم تحميل النموذج «'+record.name+'»';
+        closeStudentModelLibrary();
+      }catch(e){console.warn('Loading student model failed',e);setStudentModelLibraryStatus('تعذّر تحميل النموذج')}
+    }
+    async function deleteStudentModel(id){
+      try{
+        const record=await getStudentModel(id);if(!record)return;
+        if(!confirm('حذف النموذج «'+record.name+'»؟'))return;
+        const db=await openStudentModelDB();
+        await studentModelTx(db,'readwrite',store=>store.delete(id));
+        await renderStudentModelLibrary();
+      }catch(e){console.warn('Deleting student model failed',e);setStudentModelLibraryStatus('تعذّر حذف النموذج')}
+    }
+    function safeStudentModelFilename(name){
+      return String(name||'model').replace(/[\\/:*?"<>|]+/g,'-').replace(/\s+/g,' ').trim().slice(0,60)||'model';
+    }
+    function downloadStudentModelJson(payload,filename){
+      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'});
+      const url=URL.createObjectURL(blob),a=document.createElement('a');
+      a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }
+    async function exportStudentModel(id){
+      try{
+        const record=await getStudentModel(id);if(!record)return;
+        downloadStudentModelJson(record,safeStudentModelFilename(record.name)+'.makhtuta-model.json');
+        setStudentModelLibraryStatus('تم تصدير النموذج ✓');
+      }catch(e){console.warn('Export student model failed',e);setStudentModelLibraryStatus('تعذّر التصدير')}
+    }
+    async function exportAllStudentModels(){
+      try{
+        const models=await getStudentModelRecords();
+        if(!models.length){setStudentModelLibraryStatus('لا توجد نماذج محفوظة');return}
+        downloadStudentModelJson({schema:'makhtuta-student-model-library',version:1,exportedAt:new Date().toISOString(),models},'makhtuta-models-backup.json');
+        setStudentModelLibraryStatus('تم تصدير جميع النماذج ✓');
+      }catch(e){console.warn('Export all student models failed',e);setStudentModelLibraryStatus('تعذّر التصدير')}
+    }
+    async function importStudentModelsFile(file){
+      if(!file)return;
+      try{
+        const data=JSON.parse(await file.text());
+        const models=data?.schema==='makhtuta-student-model-library'?data.models:[data];
+        if(!Array.isArray(models)||!models.length)throw new Error('No models');
+        const valid=models.filter(m=>m&&Array.isArray(m.actions)&&m.actions.length);
+        if(!valid.length)throw new Error('Invalid models');
+        const db=await openStudentModelDB(),now=new Date().toISOString();
+        await studentModelTx(db,'readwrite',store=>{
+          for(const m of valid){
+            const row={...m,schema:'makhtuta-student-model',version:1,id:m.id||('model-'+Date.now()+'-'+Math.random().toString(36).slice(2)),updatedAt:now};
+            store.put(row);
+          }
+        });
+        setStudentModelLibraryStatus('تم استيراد '+valid.length+' نموذج ✓');
+        await renderStudentModelLibrary();
+      }catch(e){console.warn('Import student models failed',e);setStudentModelLibraryStatus('ملف النماذج غير صالح')}
+    }
+    async function renderStudentModelLibrary(){
+      const box=document.getElementById('studentModelLibraryList');if(!box)return;
+      box.innerHTML='<div class="text-xs text-stone-500 text-center py-5">جارٍ التحميل…</div>';
+      try{
+        const records=await getStudentModelRecords();box.innerHTML='';
+        if(!records.length){box.innerHTML='<div class="text-xs text-stone-500 text-center py-7 border border-dashed border-violet-300 rounded-2xl">لا توجد نماذج محفوظة بعد</div>';return}
+        records.forEach(record=>{
+          const row=document.createElement('div');row.className='bg-white border border-violet-200 rounded-2xl p-3 flex flex-wrap items-center gap-2';
+          const info=document.createElement('div');info.className='flex-1 min-w-[160px]';
+          const name=document.createElement('div');name.className='font-bold text-xs text-violet-950 truncate';name.textContent=record.name||'نموذج';
+          const meta=document.createElement('div');meta.className='text-[9px] text-stone-500 mt-0.5';
+          const when=record.updatedAt?new Date(record.updatedAt).toLocaleString('ar-SA'):'';
+          meta.textContent=(record.actionCount||record.actions?.length||0)+' ضربة'+(record.text?' • '+record.text:'')+(when?' • '+when:'');
+          info.append(name,meta);
+          const load=document.createElement('button');load.type='button';load.className='px-2.5 py-1.5 rounded-lg bg-violet-800 text-white text-[10px] font-bold';load.textContent='تحميل';load.onclick=()=>loadStudentModel(record.id);
+          const exp=document.createElement('button');exp.type='button';exp.className='px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold';exp.innerHTML='<i class="fa-solid fa-file-export ml-1"></i>تصدير';exp.onclick=()=>exportStudentModel(record.id);
+          const del=document.createElement('button');del.type='button';del.className='w-8 h-8 rounded-lg text-rose-600 hover:bg-rose-50';del.title='حذف';del.innerHTML='<i class="fa-solid fa-trash-can"></i>';del.onclick=()=>deleteStudentModel(record.id);
+          row.append(info,load,exp,del);box.appendChild(row);
+        });
+      }catch(e){console.warn('Student model library failed',e);box.innerHTML='<div class="text-xs text-rose-600 text-center py-5">تعذّر فتح مكتبة النماذج</div>'}
+    }
+    async function openStudentModelLibrary(){
+      const modal=document.getElementById('studentModelLibraryModal');if(!modal)return;
+      modal.classList.remove('hidden');modal.classList.add('flex');await renderStudentModelLibrary();
+    }
+    function closeStudentModelLibrary(){
+      const modal=document.getElementById('studentModelLibraryModal');if(!modal)return;
+      modal.classList.add('hidden');modal.classList.remove('flex');
+    }
 
     function studentSelectAliBrush(key){
       if(!key)return;
@@ -8058,6 +8294,6 @@
     </div>
   </div>
 
-  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2.4",label:"Student V0.2.4",build:"2026-10-02.06",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
+  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2.5",label:"Student V0.2.5",build:"2026-10-02.07",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
   </body>
 </html>
