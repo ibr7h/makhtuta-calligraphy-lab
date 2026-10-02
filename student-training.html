@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="student-0.2.1">
+<html lang="ar" dir="rtl" data-app-version="student-0.2.2">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -149,7 +149,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2.1</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2.2</span>
           </p>
         </div>
       </div>
@@ -1760,11 +1760,11 @@
     // Student writing-scale metrics. Point counts follow the uploaded reference studio;
     // actual pixel spacing is normalized to this training surface and follows the active brush size/angle.
     const STUDENT_SCRIPT_METRICS = Object.freeze({
-      naskh:   {name:'النسخ',   ascenderPts:5,   meanPts:2,   descenderPts:3},
-      ruqaa:   {name:'الرقعة',  ascenderPts:3,   meanPts:1.5, descenderPts:2},
-      diwani:  {name:'الديواني',ascenderPts:6,   meanPts:2,   descenderPts:3.5},
-      thuluth: {name:'الثلث',   ascenderPts:7.5, meanPts:2.5, descenderPts:4},
-      farsi:   {name:'الفارسي', ascenderPts:4.5, meanPts:2,   descenderPts:3}
+      naskh:   {name:'النسخ',    angleDeg:72, defaultSize:34, ascenderPts:5,   meanPts:2,   descenderPts:3},
+      ruqaa:   {name:'الرقعة',   angleDeg:48, defaultSize:38, ascenderPts:3,   meanPts:1.5, descenderPts:2},
+      diwani:  {name:'الديواني', angleDeg:80, defaultSize:30, ascenderPts:6,   meanPts:2,   descenderPts:3.5},
+      thuluth: {name:'الثلث',    angleDeg:55, defaultSize:28, ascenderPts:7.5, meanPts:2.5, descenderPts:4},
+      farsi:   {name:'الفارسي',  angleDeg:65, defaultSize:32, ascenderPts:4.5, meanPts:2,   descenderPts:3}
     });
     function studentScriptKey(){
       const raw=String(activeBrushPresetKey||'naskh').replace(/^ali_/,'');
@@ -1776,23 +1776,48 @@
       const p=BRUSH_PRESETS?.[key]||BRUSH_PRESETS?.[studentScriptKey()]||null;
       return{size:Number(p?.size)||Math.max(1,brushSize),angle:Number(p?.angle)||nibAngleDeg};
     }
+    function studentGuideVirtualNibSize(){
+      // The uploaded studio uses canonical brush sizes (e.g. Naskh 34px).
+      // AliQaseef uses a different numerical size scale, so preserve the same
+      // calligraphy-line geometry by mapping Ali's current size proportionally
+      // onto the studio's canonical size for the script.
+      const spec=studentScriptSpec(),ref=studentPresetReference();
+      return spec.defaultSize*(brushSize/Math.max(1e-6,ref.size));
+    }
     function studentGuideMetricsForHeight(h){
       h=Math.max(180,Number(h)||440);
-      const spec=studentScriptSpec(),ref=studentPresetReference();
-      const base=h*.62,pad=Math.max(12,h*.035);
-      const topAvail=Math.max(30,base-pad),bottomAvail=Math.max(30,h-base-pad);
-      const canonicalPoint=Math.min(topAvail/spec.ascenderPts,bottomAvail/spec.descenderPts)*.90;
-      const sizeRatio=clamp(brushSize/Math.max(1,ref.size),.60,1.55);
-      const sinNow=Math.max(.18,Math.sin(clamp(nibAngleDeg,10,90)*Math.PI/180));
-      const sinRef=Math.max(.18,Math.sin(clamp(ref.angle,10,90)*Math.PI/180));
-      const pointUnit=canonicalPoint*sizeRatio*(sinNow/sinRef);
-      const maxPoint=Math.min(topAvail/spec.ascenderPts,bottomAvail/spec.descenderPts)*.98;
-      const p=clamp(pointUnit,Math.max(8,canonicalPoint*.52),maxPoint);
+      const spec=studentScriptSpec();
+      const virtualSize=studentGuideVirtualNibSize();
+      const rad=clamp(nibAngleDeg,0,90)*Math.PI/180;
+      let pointUnit=Math.max(12,virtualSize*Math.sin(rad));
+      let ascenderDist=spec.ascenderPts*pointUnit;
+      let meanDist=spec.meanPts*pointUnit;
+      let descenderDist=spec.descenderPts*pointUnit;
+
+      // Same first-row placement used by the uploaded studio.
+      let base=Math.max(160,ascenderDist+50);
+
+      // The source canvas is 1200px tall and can repeat rows. Student mode shows
+      // one training row, so only when that exact row would be clipped on a short
+      // mobile surface do we uniformly reduce the point unit.
+      const maxBottom=Math.max(180,h-25);
+      if(base+descenderDist>maxBottom){
+        const denom=spec.ascenderPts+spec.descenderPts;
+        const fit=(h-75)/Math.max(1,denom);
+        pointUnit=Math.max(12,Math.min(pointUnit,fit));
+        ascenderDist=spec.ascenderPts*pointUnit;
+        meanDist=spec.meanPts*pointUnit;
+        descenderDist=spec.descenderPts*pointUnit;
+        base=Math.max(160,ascenderDist+50);
+        if(base+descenderDist>h-25) base=Math.max(ascenderDist+25,h-descenderDist-25);
+      }
+
       return{
-        ...spec,pointUnit:p,base,
-        top:base-spec.ascenderPts*p,
-        mid:base-spec.meanPts*p,
-        bottom:base+spec.descenderPts*p
+        ...spec,virtualSize,pointUnit,base,
+        top:base-ascenderDist,
+        mid:base-meanDist,
+        bottom:base+descenderDist,
+        ascenderDist,meanDist,descenderDist
       };
     }
     function syncStudentModelGuideGeometry(){
@@ -6015,7 +6040,7 @@
         const tx=badge.querySelector('text');if(tx)tx.textContent=label;
       });
       const st=document.getElementById('studentGuideStatus');
-      if(st)st.textContent=`${g.name} • النقطة ${g.pointUnit.toFixed(1)}px • ${Number(brushSize.toFixed(1))}px / ${Math.round(nibAngleDeg)}°`;
+      if(st)st.textContent=`${g.name} • النقطة ${g.pointUnit.toFixed(1)}px • ميزان ${g.virtualSize.toFixed(1)}px • فرشاة ${Number(brushSize.toFixed(1))} / ${Math.round(nibAngleDeg)}°`;
       syncStudentModelGuideGeometry();
     }
     function fitGhost(text) {
@@ -6024,36 +6049,50 @@
       updateGuideSvgGeometry();
       const w=Math.max(1,box.clientWidth||600),h=Math.max(1,box.clientHeight||400),g=studentGuideMetricsForHeight(h);
       const sidePadding=Math.max(20,Math.min(44,w*.04)),actual=String(text||'');
-      t.style.fontFamily=FONTS[fontKey].css;t.style.fontWeight='700';t.setAttribute('y',String(g.base));
 
-      // Calibrate the selected font to the script's ascender line using alif as the reference.
-      t.textContent='ا';t.style.fontSize='100px';
+      t.style.fontFamily=FONTS[fontKey].css;
+      t.style.fontWeight='700';
+      t.setAttribute('y',String(g.base));
+
+      // Size the chosen font from the same writing scale: alif rise == ascender distance.
+      // This keeps the reference content tied to the lines instead of merely fitting a box.
+      t.textContent='ا';
+      t.style.fontSize='100px';
       let alifRise=72;
-      try{const bb=t.getBBox();alifRise=Math.max(20,g.base-bb.y)}catch(_){}
-      let size=100*Math.max(20,g.base-g.top)/Math.max(20,alifRise);
-
-      const wide=(mode==='phrases'||mode==='custom');
-      if(mode==='letters'){t.setAttribute('x',String(w/2));t.setAttribute('text-anchor','middle')}
-      else if(mode==='words'){t.setAttribute('x',String(w/2));t.setAttribute('text-anchor','middle')}
-      else{t.setAttribute('x',String(w-sidePadding));t.setAttribute('text-anchor','start')}
-
-      t.textContent=actual;t.style.fontSize=size+'px';
-      const available=mode==='letters'?w*.72:mode==='words'?w*.88:Math.max(120,w-sidePadding*2);
-      let measured=0;try{measured=t.getComputedTextLength()}catch(_){}
-      if(measured>available&&measured>0){size*=available/measured;t.style.fontSize=size+'px'}
-
-      // Never let the selected text cross the script-specific top/bottom limits.
       try{
-        const bb=t.getBBox(),topPad=5,bottomPad=5;
-        const topNeed=Math.max(0,g.base-bb.y),bottomNeed=Math.max(0,(bb.y+bb.height)-g.base);
-        const topAvail=Math.max(1,g.base-g.top-topPad),bottomAvail=Math.max(1,g.bottom-g.base-bottomPad);
-        let shrink=1;
-        if(topNeed>topAvail)shrink=Math.min(shrink,topAvail/topNeed);
-        if(bottomNeed>bottomAvail)shrink=Math.min(shrink,bottomAvail/bottomNeed);
-        if(shrink<.999){size*=shrink;t.style.fontSize=Math.max(18,size)+'px'}
+        const bb=t.getBBox();
+        alifRise=Math.max(1,(Number(t.getAttribute('y'))||g.base)-bb.y);
       }catch(_){}
+      let size=100*g.ascenderDist/Math.max(1,alifRise);
+
+      if(mode==='letters'){
+        t.setAttribute('x',String(w/2));
+        t.setAttribute('text-anchor','middle');
+      }else if(mode==='words'){
+        t.setAttribute('x',String(w/2));
+        t.setAttribute('text-anchor','middle');
+      }else{
+        t.setAttribute('x',String(w-sidePadding));
+        t.setAttribute('text-anchor','start');
+      }
+
+      t.textContent=actual;
+      t.style.fontSize=size+'px';
+      t.removeAttribute('textLength');
+      t.removeAttribute('lengthAdjust');
+
+      // Preserve vertical calligraphy scale. For an exceptionally long phrase,
+      // constrain only horizontal extent rather than shrinking it away from the
+      // writing lines.
+      const available=mode==='letters'?w*.72:mode==='words'?w*.88:Math.max(120,w-sidePadding*2);
+      let measured=0;
+      try{measured=t.getComputedTextLength()}catch(_){}
+      if(measured>available&&measured>0){
+        t.setAttribute('textLength',String(available));
+        t.setAttribute('lengthAdjust','spacingAndGlyphs');
+      }
     }
-    function syncGhostOverlayVisibility(show = document.getElementById('toggleGhostCheckbox')?.checked !== false) {
+    function syncGhostOverlayVisibility    function syncGhostOverlayVisibility(show = document.getElementById('toggleGhostCheckbox')?.checked !== false) {
       const ghostGroup = document.getElementById('svgGhostGroup');
       if (ghostGroup) ghostGroup.style.display = show ? '' : 'none';
     }
@@ -7951,6 +7990,6 @@
     </div>
   </div>
 
-  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2.1",label:"Student V0.2.1",build:"2026-10-02.03",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
+  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2.2",label:"Student V0.2.2",build:"2026-10-02.04",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
   </body>
 </html>
