@@ -12,7 +12,7 @@ header{position:sticky;top:0;z-index:5;background:rgba(255,253,248,.94);backdrop
 .wrap{max-width:1380px;margin:auto;padding:14px}.title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 h1{font-size:20px;margin:0;color:#55351f}.badge{font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
 p{line-height:1.7}.card{background:#fffdf9;border:1px solid #dec8a8;border-radius:18px;box-shadow:0 8px 24px rgba(66,43,22,.06);padding:14px}
-.grid{display:grid;gap:12px}.controls{grid-template-columns:repeat(7,minmax(0,1fr))}.engines{grid-template-columns:repeat(3,minmax(0,1fr))}
+.grid{display:grid;gap:12px}.controls{grid-template-columns:repeat(7,minmax(0,1fr))}.engines{grid-template-columns:repeat(4,minmax(0,1fr))}
 label{font-size:11px;font-weight:800;color:#5e4636}input[type=range]{width:100%}.v{float:left;font-family:ui-monospace,monospace;color:#6d28d9}
 button{border:1px solid #d8c2a4;background:#fff;border-radius:11px;padding:8px 11px;font-weight:800;color:#50351f;cursor:pointer}button:hover{background:#fff8ed}.primary{background:#5b3a25;color:#fff;border-color:#5b3a25}
 .video{background:#faf5ff;border-color:#d8b4fe;color:#6b21a8}
@@ -23,7 +23,7 @@ canvas{display:block;width:100%;height:240px;background:#fff;border:1px solid #e
 .fact{font-size:10px;padding:6px 8px;border-radius:10px;background:#faf5ff;border:1px solid #e9d5ff;color:#6b21a8;font-weight:750}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:#6b5d52}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:4px}
 footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
-@media(max-width:1040px){.controls{grid-template-columns:repeat(3,minmax(0,1fr))}.engines{grid-template-columns:1fr}}
+@media(max-width:1180px){.controls{grid-template-columns:repeat(3,minmax(0,1fr))}.engines{grid-template-columns:repeat(2,minmax(0,1fr))}} @media(max-width:760px){.engines{grid-template-columns:1fr}}
 @media(max-width:600px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
@@ -34,7 +34,7 @@ footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
       <h1>مخطوطة — Qalam Physics Lab</h1>
       <div style="font-size:11px;color:#746357;margin-top:3px">اختبار نموذج القصبة الرفيعة المستنتج من طريقة Procreate مقابل Stamping الحالي وSwept Qalam</div>
     </div>
-    <span class="badge">P0.2.1 — Video-Grounded Qalam Model</span>
+    <span class="badge">P0.2.2 — Capsule vs Ellipse Support</span>
   </div>
 </header>
 
@@ -91,24 +91,29 @@ footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
     <article class="card">
       <div class="engine-title"><span>A — Current Ellipse Stamp</span><span class="metric" id="stampMetric">—</span></div>
       <canvas id="stamp"></canvas>
-      <p class="hint">Ellipse بنفس Width وThickness. هذا هو خط الأساس الذي يقارب منطق رأس القصبة الحالي لدينا.</p>
+      <p class="hint">Ellipse stamps على النقاط المفلترة. خط أساس للمحرك القديم.</p>
     </article>
     <article class="card">
       <div class="engine-title"><span>B — Procreate Stamp Approximation</span><span class="metric" id="proMetric">—</span></div>
       <canvas id="procreate"></canvas>
-      <p class="hint">محاكاة Stamp مرجعية مبنية على فيديو Procreate: Shape رفيعة، 30°، Count 2، Randomized/Azimuth مغلقان. معادلة Spacing الداخلية في Procreate غير موثقة، لذلك هذه مقارنة تقريبية لا نسخة مطابقة.</p>
+      <p class="hint">Thin shape stamps مرجعية. تبقى تقريبية لأن معادلة Spacing الداخلية في Procreate غير معروفة.</p>
     </article>
     <article class="card">
-      <div class="engine-title"><span>C — Continuous Swept Qalam</span><span class="metric" id="sweptMetric">—</span></div>
+      <div class="engine-title"><span>C1 — Swept Capsule</span><span class="metric" id="sweptMetric">—</span></div>
       <canvas id="swept"></canvas>
-      <p class="hint">نفس رأس القصبة B، لكن كغلاف هندسي مستمر بدل سلسلة Dabs. هذه هي فرضية المحرك الجديد.</p>
+      <p class="hint">المحرك الحالي في المختبر: capsule support + swept segment union.</p>
+    </article>
+    <article class="card">
+      <div class="engine-title"><span>C2 — Swept Ellipse Support</span><span class="metric" id="ellipseMetric">—</span></div>
+      <canvas id="ellipseSwept"></canvas>
+      <p class="hint">تجربة الفكرة الرياضية في الملف المرفق: ellipse support vector + ribbon segment + ellipse cap.</p>
     </article>
   </section>
 
   <section class="card">
-    <div class="row" style="justify-content:space-between"><strong>3) Overlay: Procreate Stamp vs Swept</strong><span class="metric">B = أحمر • C = أخضر</span></div>
+    <div class="row" style="justify-content:space-between"><strong>3) Overlay: C1 Capsule vs C2 Ellipse Support</strong><span class="metric" id="overlayMetric">C1 = أحمر • C2 = أخضر</span></div>
     <canvas id="overlay"></canvas>
-    <p class="hint">إذا ظهر الأخضر فقط عند الانحناءات والزوايا فهذا يعني أن Swept يغلق فراغات الـStamping. الأحمر فقط يعني أن Stamping يضيف حبرًا خارج الغلاف المستمر.</p>
+    <p class="hint">اللون الداكن المشترك = اتفاق المحركين. الأحمر فقط = Capsule خارج Ellipse. الأخضر فقط = Ellipse خارج Capsule. IoU هنا مقياس اختلاف هندسي وليس حكم جودة.</p>
   </section>
 </main>
 
@@ -118,7 +123,7 @@ footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
 
 <script>
 const $=id=>document.getElementById(id);
-const capture=$('capture'),stamp=$('stamp'),procreate=$('procreate'),swept=$('swept'),overlay=$('overlay');
+const capture=$('capture'),stamp=$('stamp'),procreate=$('procreate'),swept=$('swept'),ellipseSwept=$('ellipseSwept'),overlay=$('overlay');
 let raw=[],drawing=false,activePointer=null,movingAverage=0,useResample=true;
 
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
@@ -269,18 +274,69 @@ function renderSwept(){
   const {x,w,h}=dprCanvas(swept);clearWhite(x,w,h);const g=geometry(),pts=centerline(w,h),t0=performance.now();
   const pieces=drawSweptUnion(x,pts,g);$('sweptMetric').textContent=pieces+' swept segments • '+(performance.now()-t0).toFixed(2)+'ms'
 }
-function renderOverlay(){
-  const {x,w,h}=dprCanvas(overlay);clearWhite(x,w,h);const g=geometry(),ppts=procreatePoints(w,h,g),spts=centerline(w,h);
-  x.globalAlpha=.50;x.fillStyle='#dc2626';for(const p of ppts)for(let k=0;k<g.count;k++)drawCapsuleDab(x,p,g);
-  x.globalAlpha=.50;drawSweptUnion(x,spts,g,'#059669');x.globalAlpha=1
+
+function ellipseSupportVector(nx,ny,a,b,theta){
+  const ca=Math.cos(theta),sa=Math.sin(theta);
+  const lx=nx*ca+ny*sa,ly=-nx*sa+ny*ca;
+  const a2=a*a,b2=b*b,den=Math.sqrt(a2*lx*lx+b2*ly*ly)||1e-6;
+  const px=a2*lx/den,py=b2*ly/den;
+  return{x:px*ca-py*sa,y:px*sa+py*ca}
 }
-function renderAll(){renderCapture();renderStamp();renderProcreate();renderSwept();renderOverlay()}
+function drawEllipseCap(ctx,p,g,scale=1){
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(g.theta);ctx.beginPath();
+  ctx.ellipse(0,0,g.width*scale/2,Math.max(.25,g.thickness*scale/2),0,0,Math.PI*2);ctx.fill();ctx.restore()
+}
+function drawEllipseSweptUnion(ctx,pts,g,fill='#201914'){
+  if(pts.length<2)return 0;
+  ctx.save();ctx.fillStyle=fill;let pieces=0;
+  drawEllipseCap(ctx,pts[0],g,pressureScale(pts[0].p));
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i],p1=pts[i+1],dx=p1.x-p0.x,dy=p1.y-p0.y,L=Math.hypot(dx,dy);if(L<1e-6)continue;
+    const nx=-dy/L,ny=dx/L,s0=pressureScale(p0.p),s1=pressureScale(p1.p);
+    const v0=ellipseSupportVector(nx,ny,g.width*s0/2,Math.max(.25,g.thickness*s0/2),g.theta);
+    const v1=ellipseSupportVector(nx,ny,g.width*s1/2,Math.max(.25,g.thickness*s1/2),g.theta);
+    ctx.beginPath();ctx.moveTo(p0.x+v0.x,p0.y+v0.y);ctx.lineTo(p1.x+v1.x,p1.y+v1.y);
+    ctx.lineTo(p1.x-v1.x,p1.y-v1.y);ctx.lineTo(p0.x-v0.x,p0.y-v0.y);ctx.closePath();ctx.fill();
+    drawEllipseCap(ctx,p1,g,s1);pieces++;
+  }
+  ctx.restore();return pieces
+}
+function renderEllipseSwept(){
+  const {x,w,h}=dprCanvas(ellipseSwept);clearWhite(x,w,h);const g=geometry(),pts=centerline(w,h),t0=performance.now();
+  const pieces=drawEllipseSweptUnion(x,pts,g);$('ellipseMetric').textContent=pieces+' ellipse segments • '+(performance.now()-t0).toFixed(2)+'ms'
+}
+function renderMaskOffscreen(w,h,renderer){
+  const d=Math.max(1,devicePixelRatio||1),c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*d));c.height=Math.max(1,Math.round(h*d));
+  const x=c.getContext('2d',{willReadFrequently:true});x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,h);x.fillStyle='#000';renderer(x);return{x,c,d}
+}
+function binaryMask(ctx,w,h,d){
+  const data=ctx.getImageData(0,0,Math.round(w*d),Math.round(h*d)).data,mask=new Uint8Array(data.length/4);
+  for(let i=0,j=3;i<mask.length;i++,j+=4)mask[i]=data[j]>16?1:0;
+  return mask
+}
+function compareMasks(a,b){
+  let inter=0,union=0,aa=0,bb=0;const n=Math.min(a.length,b.length);
+  for(let i=0;i<n;i++){if(a[i])aa++;if(b[i])bb++;if(a[i]||b[i])union++;if(a[i]&&b[i])inter++}
+  return{iou:union?inter/union:1,aOnly:aa?Math.max(0,aa-inter)/aa:0,bOnly:bb?Math.max(0,bb-inter)/bb:0}
+}
+function renderOverlay(){
+  const {x,w,h}=dprCanvas(overlay);clearWhite(x,w,h);const g=geometry(),pts=centerline(w,h);
+  x.globalAlpha=.48;drawSweptUnion(x,pts,g,'#dc2626');drawEllipseSweptUnion(x,pts,g,'#059669');x.globalAlpha=1;
+  const a=renderMaskOffscreen(w,h,ctx=>drawSweptUnion(ctx,pts,g,'#000'));
+  const b=renderMaskOffscreen(w,h,ctx=>drawEllipseSweptUnion(ctx,pts,g,'#000'));
+  const m=compareMasks(binaryMask(a.x,w,h,a.d),binaryMask(b.x,w,h,b.d));
+  $('overlayMetric').textContent='C1 أحمر • C2 أخضر • IoU '+Math.round(m.iou*100)+'% • C1-only '+Math.round(m.aOnly*100)+'% • C2-only '+Math.round(m.bOnly*100)+'%'
+}
+function renderAll(){renderCapture();renderStamp();renderProcreate();renderSwept();renderEllipseSwept();renderOverlay()}
 
 function selfTests(){
   const tests=[],near=(a,b,e=.01)=>Math.abs(a-b)<=e;
   let s=capsuleSupport(1,0,20,4,0);tests.push(['capsule-major-support',near(s.x,10,.001)&&near(s.y,0,.001)]);
   s=capsuleSupport(0,1,20,4,0);tests.push(['capsule-minor-support',near(s.y,2,.001)]);
   s=capsuleSupport(Math.SQRT1_2,Math.SQRT1_2,20,4,Math.PI/4);tests.push(['capsule-rotation-finite',Number.isFinite(s.x)&&Number.isFinite(s.y)]);
+  let e=ellipseSupportVector(1,0,10,2,0);tests.push(['ellipse-major-support',near(e.x,10,.001)&&near(e.y,0,.001)]);
+  e=ellipseSupportVector(0,1,10,2,0);tests.push(['ellipse-minor-support',near(e.y,2,.001)]);
+  e=ellipseSupportVector(Math.SQRT1_2,Math.SQRT1_2,10,2,Math.PI/4);tests.push(['ellipse-rotation-finite',Number.isFinite(e.x)&&Number.isFinite(e.y)]);
   const g={width:32,thickness:1.92,theta:-Math.PI/4},line=[{x:10,y:20,p:.5,t:0},{x:90,y:20,p:.5,t:10}],poly=sweptPolygon(line,g);
   tests.push(['swept-polygon-finite',poly.length===4&&poly.flat().every(Number.isFinite)]);
   const dense=Array.from({length:101},(_,i)=>({x:i,y:40,p:.5,t:i})),save=useResample;useResample=true;const rr=resample(dense,5,true);useResample=save;
