@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="student-0.2.2">
+<html lang="ar" dir="rtl" data-app-version="student-0.2.3">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -149,7 +149,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2.2</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2.3</span>
           </p>
         </div>
       </div>
@@ -227,7 +227,7 @@
           <div class="text-[9px] text-stone-500 leading-5">
             اكتب النص كما تريد ظهوره: بدون مسافات للحروف المتصلة مثل «بلا»، أو بمسافات للحروف المنفصلة مثل «ب ت ث». التشكيل يُحفظ كما كتبته.
           </div>
-          <span id="studentGuideStatus" class="student-chip">ميزان السطور مرتبط بالفرشاة</span>
+          <span class="student-chip">السطور: ضبط يدوي</span>
         </div>
         <div id="customTrainingChips" class="flex flex-wrap gap-1.5"></div>
         <div id="customTrainingEmpty" class="text-[10px] text-stone-500 border border-dashed border-violet-200 bg-white/60 rounded-xl px-3 py-2">
@@ -235,6 +235,35 @@
         </div>
       </div>
 
+
+      <section id="studentManualGuidePanel" class="bg-sky-50/80 rounded-2xl p-3 border border-sky-200 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <div>
+            <div class="text-xs font-black text-sky-950"><i class="fa-solid fa-ruler-horizontal ml-1"></i>ضبط سطور الكتابة يدويًا</div>
+            <div class="text-[9px] text-stone-500">حرك كل سطر إلى الموضع المناسب. تبقى القيم ثابتة حتى تغيّرها أنت.</div>
+          </div>
+          <button type="button" onclick="resetStudentManualGuides()" class="student-chip bg-white"><i class="fa-solid fa-rotate-left ml-1"></i>إعادة الضبط</button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <label class="text-[10px] font-bold text-red-800 bg-white rounded-xl border border-red-100 px-2 py-2">
+            القمة <span id="manualTopVal" class="float-left font-mono">20%</span>
+            <input id="manualTop" type="range" min="5" max="45" step="1" value="20" oninput="setStudentManualGuide('top',this.value)" class="w-full accent-red-500 mt-1">
+          </label>
+          <label class="text-[10px] font-bold text-sky-800 bg-white rounded-xl border border-sky-100 px-2 py-2">
+            الوسط <span id="manualMidVal" class="float-left font-mono">40%</span>
+            <input id="manualMid" type="range" min="10" max="60" step="1" value="40" oninput="setStudentManualGuide('mid',this.value)" class="w-full accent-sky-500 mt-1">
+          </label>
+          <label class="text-[10px] font-bold text-blue-900 bg-white rounded-xl border border-blue-100 px-2 py-2">
+            الأساس <span id="manualBaseVal" class="float-left font-mono">62%</span>
+            <input id="manualBase" type="range" min="35" max="80" step="1" value="62" oninput="setStudentManualGuide('base',this.value)" class="w-full accent-blue-700 mt-1">
+          </label>
+          <label class="text-[10px] font-bold text-emerald-800 bg-white rounded-xl border border-emerald-100 px-2 py-2">
+            الهبوط <span id="manualBottomVal" class="float-left font-mono">82%</span>
+            <input id="manualBottom" type="range" min="55" max="95" step="1" value="82" oninput="setStudentManualGuide('bottom',this.value)" class="w-full accent-emerald-500 mt-1">
+          </label>
+        </div>
+        <div id="studentGuideStatus" class="mt-2 text-[9px] font-bold text-sky-900">يدوي • القمة 20% • الوسط 40% • الأساس 62% • الهبوط 82%</div>
+      </section>
 
       <!-- Form Selector Tabs (منفصل، بداية، وسط، نهاية) -->
       <div id="formBar" class="bg-parchment-50 rounded-2xl p-2.5 border border-amber-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -1757,68 +1786,71 @@
     let currentQuizLetter = null;
     let currentQuizCorrectForm = '';
 
-    // Student writing-scale metrics. Point counts follow the uploaded reference studio;
-    // actual pixel spacing is normalized to this training surface and follows the active brush size/angle.
-    const STUDENT_SCRIPT_METRICS = Object.freeze({
-      naskh:   {name:'النسخ',    angleDeg:72, defaultSize:34, ascenderPts:5,   meanPts:2,   descenderPts:3},
-      ruqaa:   {name:'الرقعة',   angleDeg:48, defaultSize:38, ascenderPts:3,   meanPts:1.5, descenderPts:2},
-      diwani:  {name:'الديواني', angleDeg:80, defaultSize:30, ascenderPts:6,   meanPts:2,   descenderPts:3.5},
-      thuluth: {name:'الثلث',    angleDeg:55, defaultSize:28, ascenderPts:7.5, meanPts:2.5, descenderPts:4},
-      farsi:   {name:'الفارسي',  angleDeg:65, defaultSize:32, ascenderPts:4.5, meanPts:2,   descenderPts:3}
-    });
-    function studentScriptKey(){
-      const raw=String(activeBrushPresetKey||'naskh').replace(/^ali_/,'');
-      return STUDENT_SCRIPT_METRICS[raw]?raw:'naskh';
-    }
-    function studentScriptSpec(){return STUDENT_SCRIPT_METRICS[studentScriptKey()]||STUDENT_SCRIPT_METRICS.naskh}
-    function studentPresetReference(){
-      const key=activeBrushPresetKey||studentScriptKey();
-      const p=BRUSH_PRESETS?.[key]||BRUSH_PRESETS?.[studentScriptKey()]||null;
-      return{size:Number(p?.size)||Math.max(1,brushSize),angle:Number(p?.angle)||nibAngleDeg};
-    }
-    function studentGuideVirtualNibSize(){
-      // The uploaded studio uses canonical brush sizes (e.g. Naskh 34px).
-      // AliQaseef uses a different numerical size scale, so preserve the same
-      // calligraphy-line geometry by mapping Ali's current size proportionally
-      // onto the studio's canonical size for the script.
-      const spec=studentScriptSpec(),ref=studentPresetReference();
-      return spec.defaultSize*(brushSize/Math.max(1e-6,ref.size));
+    // Student V0.2.3 — manual writing-guide geometry.
+    const STUDENT_MANUAL_GUIDE_STORAGE='makhtuta-student-manual-guides-v1';
+    const STUDENT_MANUAL_GUIDE_DEFAULTS=Object.freeze({top:.20,mid:.40,base:.62,bottom:.82});
+    let studentManualGuide={...STUDENT_MANUAL_GUIDE_DEFAULTS};
+    try{
+      const saved=JSON.parse(localStorage.getItem(STUDENT_MANUAL_GUIDE_STORAGE)||'null');
+      if(saved&&typeof saved==='object'){
+        for(const k of ['top','mid','base','bottom']){
+          if(Number.isFinite(Number(saved[k])))studentManualGuide[k]=Number(saved[k]);
+        }
+      }
+    }catch(_){}
+
+    function normalizeStudentManualGuides(){
+      let top=clamp(Number(studentManualGuide.top)||.20,.05,.45);
+      let mid=clamp(Number(studentManualGuide.mid)||.40,top+.04,.60);
+      let base=clamp(Number(studentManualGuide.base)||.62,mid+.04,.80);
+      let bottom=clamp(Number(studentManualGuide.bottom)||.82,base+.04,.95);
+      // If upper limits force a collision, repair from bottom upward.
+      if(bottom>0.95)bottom=.95;
+      if(base>bottom-.04)base=bottom-.04;
+      if(mid>base-.04)mid=base-.04;
+      if(top>mid-.04)top=mid-.04;
+      studentManualGuide={top,mid,base,bottom};
+      try{localStorage.setItem(STUDENT_MANUAL_GUIDE_STORAGE,JSON.stringify(studentManualGuide))}catch(_){}
+      return studentManualGuide;
     }
     function studentGuideMetricsForHeight(h){
       h=Math.max(180,Number(h)||440);
-      const spec=studentScriptSpec();
-      const virtualSize=studentGuideVirtualNibSize();
-      const rad=clamp(nibAngleDeg,0,90)*Math.PI/180;
-      let pointUnit=Math.max(12,virtualSize*Math.sin(rad));
-      let ascenderDist=spec.ascenderPts*pointUnit;
-      let meanDist=spec.meanPts*pointUnit;
-      let descenderDist=spec.descenderPts*pointUnit;
-
-      // Same first-row placement used by the uploaded studio.
-      let base=Math.max(160,ascenderDist+50);
-
-      // The source canvas is 1200px tall and can repeat rows. Student mode shows
-      // one training row, so only when that exact row would be clipped on a short
-      // mobile surface do we uniformly reduce the point unit.
-      const maxBottom=Math.max(180,h-25);
-      if(base+descenderDist>maxBottom){
-        const denom=spec.ascenderPts+spec.descenderPts;
-        const fit=(h-75)/Math.max(1,denom);
-        pointUnit=Math.max(12,Math.min(pointUnit,fit));
-        ascenderDist=spec.ascenderPts*pointUnit;
-        meanDist=spec.meanPts*pointUnit;
-        descenderDist=spec.descenderPts*pointUnit;
-        base=Math.max(160,ascenderDist+50);
-        if(base+descenderDist>h-25) base=Math.max(ascenderDist+25,h-descenderDist-25);
-      }
-
+      const g=normalizeStudentManualGuides();
+      const top=g.top*h,mid=g.mid*h,base=g.base*h,bottom=g.bottom*h;
       return{
-        ...spec,virtualSize,pointUnit,base,
-        top:base-ascenderDist,
-        mid:base-meanDist,
-        bottom:base+descenderDist,
-        ascenderDist,meanDist,descenderDist
+        top,mid,base,bottom,
+        ascenderDist:Math.max(1,base-top),
+        meanDist:Math.max(1,base-mid),
+        descenderDist:Math.max(1,bottom-base)
       };
+    }
+    function syncStudentManualGuideUI(){
+      const g=normalizeStudentManualGuides();
+      const map=[['top','manualTop','manualTopVal'],['mid','manualMid','manualMidVal'],['base','manualBase','manualBaseVal'],['bottom','manualBottom','manualBottomVal']];
+      for(const [k,id,valId] of map){
+        const input=document.getElementById(id),val=document.getElementById(valId),pct=Math.round(g[k]*100);
+        if(input&&Number(input.value)!==pct)input.value=pct;
+        if(val)val.textContent=pct+'%';
+      }
+      const st=document.getElementById('studentGuideStatus');
+      if(st)st.textContent=`يدوي • القمة ${Math.round(g.top*100)}% • الوسط ${Math.round(g.mid*100)}% • الأساس ${Math.round(g.base*100)}% • الهبوط ${Math.round(g.bottom*100)}%`;
+    }
+    function setStudentManualGuide(key,value){
+      if(!['top','mid','base','bottom'].includes(key))return;
+      studentManualGuide[key]=clamp((Number(value)||0)/100,.05,.95);
+      normalizeStudentManualGuides();
+      syncStudentManualGuideUI();
+      updateGuideSvgGeometry();
+      updateLetterView();
+      syncStudentModelGuideGeometry();
+    }
+    function resetStudentManualGuides(){
+      studentManualGuide={...STUDENT_MANUAL_GUIDE_DEFAULTS};
+      normalizeStudentManualGuides();
+      syncStudentManualGuideUI();
+      updateGuideSvgGeometry();
+      updateLetterView();
+      syncStudentModelGuideGeometry();
     }
     function syncStudentModelGuideGeometry(){
       const container=document.getElementById('studentModelContainer');
@@ -4457,13 +4489,11 @@
     function updateBrushSize(val) {
       brushSize = clamp(parseFloat(val) || 15, 4, 48);
       document.getElementById('brushSizeVal').textContent = Number(brushSize.toFixed(1));
-      requestAnimationFrame(()=>{updateGuideSvgGeometry();updateLetterView();syncStudentModelGuideGeometry()});
     }
 
     function updateNibAngle(val) {
       nibAngleDeg = clamp(parseFloat(val) || 42, 0, 90);
       document.getElementById('nibAngleVal').textContent = `${Math.round(nibAngleDeg)}°`;
-      requestAnimationFrame(()=>{updateGuideSvgGeometry();updateLetterView();syncStudentModelGuideGeometry()});
     }
 
     function setPressureEnabled(on) {
@@ -4833,7 +4863,6 @@
       const ps=document.getElementById('pressureSensitivity'); if(ps) ps.value=Math.round(pressureSensitivity*100);
       setPressureEnabled(pressureEnabled); syncBrushSettingsUI();
       renderAliCalibrationPanel();
-      requestAnimationFrame(()=>{updateGuideSvgGeometry();updateLetterView();syncStudentModelGuideGeometry()});
     }
 
     function currentBrushPresetData() {
@@ -6028,10 +6057,10 @@
       });
 
       const labels=[
-        ['svgTopBadge',246,30,g.top,`خط القمة (${g.ascenderPts} نقاط)`],
-        ['svgMidBadge',260,30,g.mid,`خط الوسط (${g.meanPts} نقطة)`],
+        ['svgTopBadge',246,30,g.top,'خط القمة'],
+        ['svgMidBadge',260,30,g.mid,'خط الوسط'],
         ['svgBaseBadge',278,32,g.base,'خط الأساس'],
-        ['svgBottomBadge',264,30,g.bottom,`خط الهبوط (${g.descenderPts} نقاط)`]
+        ['svgBottomBadge',264,30,g.bottom,'خط الهبوط']
       ];
       labels.forEach(([id,bw,bh,y,label])=>{
         const badge=document.getElementById(id);if(!badge)return;
@@ -6039,8 +6068,7 @@
         badge.setAttribute('transform',`translate(${x} ${gy})`);
         const tx=badge.querySelector('text');if(tx)tx.textContent=label;
       });
-      const st=document.getElementById('studentGuideStatus');
-      if(st)st.textContent=`${g.name} • النقطة ${g.pointUnit.toFixed(1)}px • ميزان ${g.virtualSize.toFixed(1)}px • فرشاة ${Number(brushSize.toFixed(1))} / ${Math.round(nibAngleDeg)}°`;
+      syncStudentManualGuideUI();
       syncStudentModelGuideGeometry();
     }
     function fitGhost(text) {
@@ -7954,6 +7982,7 @@
       document.getElementById('catSelect').innerHTML = ['الكل', ...Object.keys(WORD_DATA)].map(c => `<option>${c}</option>`).join('');
       window.addEventListener('resize', () => updateLetterView());
       renderCustomTrainingItems();
+      syncStudentManualGuideUI();
       setMode('letters');
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(() => updateLetterView()).catch(() => {});
@@ -7990,6 +8019,6 @@
     </div>
   </div>
 
-  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2.2",label:"Student V0.2.2",build:"2026-10-02.04",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
+  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2.3",label:"Student V0.2.3",build:"2026-10-02.05",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
   </body>
 </html>
