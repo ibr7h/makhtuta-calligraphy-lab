@@ -3,376 +3,277 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Qalam Physics Lab P0.2 — مخطوطة</title>
+<title>Qalam Brush Studio Core P0.3 — مخطوطة</title>
 <meta name="theme-color" content="#3f2d20">
 <style>
 :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#2e261f;background:#f6f0e5}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15px 15px,#eadfce 1px,transparent 1.2px) 0 0/28px 28px,#f7f1e7}
-header{position:sticky;top:0;z-index:5;background:rgba(255,253,248,.94);backdrop-filter:blur(12px);border-bottom:1px solid #dec8a8}
+header{position:sticky;top:0;z-index:8;background:rgba(255,253,248,.95);backdrop-filter:blur(12px);border-bottom:1px solid #dec8a8}
 .wrap{max-width:1380px;margin:auto;padding:14px}.title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-h1{font-size:20px;margin:0;color:#55351f}.badge{font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
-p{line-height:1.7}.card{background:#fffdf9;border:1px solid #dec8a8;border-radius:18px;box-shadow:0 8px 24px rgba(66,43,22,.06);padding:14px}
-.grid{display:grid;gap:12px}.controls{grid-template-columns:repeat(7,minmax(0,1fr))}.engines{grid-template-columns:repeat(4,minmax(0,1fr))}
-label{font-size:11px;font-weight:800;color:#5e4636}input[type=range]{width:100%}.v{float:left;font-family:ui-monospace,monospace;color:#6d28d9}
-button{border:1px solid #d8c2a4;background:#fff;border-radius:11px;padding:8px 11px;font-weight:800;color:#50351f;cursor:pointer}button:hover{background:#fff8ed}.primary{background:#5b3a25;color:#fff;border-color:#5b3a25}
-.video{background:#faf5ff;border-color:#d8b4fe;color:#6b21a8}
-canvas{display:block;width:100%;height:240px;background:#fff;border:1px solid #e2d5c4;border-radius:14px;touch-action:none}
+h1{font-size:20px;margin:0;color:#55351f}.badge{font-size:11px;font-weight:900;padding:5px 9px;border-radius:999px;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd}
+.card{background:#fffdf9;border:1px solid #dec8a8;border-radius:18px;box-shadow:0 8px 24px rgba(66,43,22,.06);padding:14px}
+.grid{display:grid;gap:12px}.studio{grid-template-columns:repeat(4,minmax(0,1fr))}.engines{grid-template-columns:repeat(2,minmax(0,1fr))}
+.section{border:1px solid #eadcc9;border-radius:14px;padding:10px;background:#fff}.section h3{font-size:12px;margin:0 0 9px;color:#5a3823}.section small{font-size:9px;color:#867264}
+label{display:block;font-size:10px;font-weight:800;color:#5e4636;margin-top:7px}input[type=range]{width:100%}.v{float:left;font-family:ui-monospace,monospace;color:#6d28d9}
+button{border:1px solid #d8c2a4;background:#fff;border-radius:11px;padding:8px 11px;font-weight:800;color:#50351f;cursor:pointer}button:hover{background:#fff8ed}.primary{background:#5b3a25;color:#fff;border-color:#5b3a25}.phaseBtn{background:#ede9fe;color:#5b21b6;border-color:#c4b5fd}
+canvas{display:block;width:100%;height:260px;background:#fff;border:1px solid #e2d5c4;border-radius:14px;touch-action:none}
 #capture{height:285px;cursor:crosshair}.engine-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:12px;font-weight:900}.metric{font-size:10px;color:#76675c}
-.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.hint{font-size:11px;color:#76675c;margin:7px 0 0}.status{padding:9px 11px;border-radius:12px;background:#f8f4ee;border:1px solid #e8ded0;font-size:11px;font-weight:700}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.hint{font-size:10px;color:#76675c;margin:7px 0 0;line-height:1.6}.status{padding:9px 11px;border-radius:12px;background:#f8f4ee;border:1px solid #e8ded0;font-size:10px;font-weight:700}
 .good{background:#ecfdf5;border-color:#a7f3d0;color:#166534}.warn{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
-.fact{font-size:10px;padding:6px 8px;border-radius:10px;background:#faf5ff;border:1px solid #e9d5ff;color:#6b21a8;font-weight:750}
+.fact{font-size:9px;padding:5px 7px;border-radius:9px;background:#faf5ff;border:1px solid #e9d5ff;color:#6b21a8;font-weight:800}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:#6b5d52}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:4px}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:8px}.switch input{accent-color:#6d28d9}
 footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
-@media(max-width:1180px){.controls{grid-template-columns:repeat(3,minmax(0,1fr))}.engines{grid-template-columns:repeat(2,minmax(0,1fr))}} @media(max-width:760px){.engines{grid-template-columns:1fr}}
-@media(max-width:600px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1080px){.studio{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.studio,.engines{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header>
-  <div class="wrap title">
-    <div>
-      <h1>مخطوطة — Qalam Physics Lab</h1>
-      <div style="font-size:11px;color:#746357;margin-top:3px">اختبار نموذج القصبة الرفيعة المستنتج من طريقة Procreate مقابل Stamping الحالي وSwept Qalam</div>
-    </div>
-    <span class="badge">P0.2.2 — Capsule vs Ellipse Support</span>
-  </div>
-</header>
+<header><div class="wrap title"><div><h1>مخطوطة — Qalam Brush Studio Core</h1><div style="font-size:11px;color:#746357;margin-top:3px">Stroke Path → Shape → Stroke Phase → Input/Dynamics → Rendering</div></div><span class="badge">P0.3 — Stroke Phase & Terminal Model</span></div></header>
 
 <main class="wrap grid" style="gap:14px">
-  <section class="card">
-    <div class="row" style="justify-content:space-between">
-      <strong>1) نفس Stroke لجميع المحركات</strong>
-      <div class="row">
-        <button data-shape="line">خط</button>
-        <button data-shape="curve">قوس</button>
-        <button data-shape="s">S</button>
-        <button data-shape="hook">Hook</button>
-        <button id="clearBtn">مسح</button>
-      </div>
-    </div>
-    <p class="hint">نسجل x/y/pressure/time مرة واحدة، ثم نعيد تشغيل المسار نفسه على المحركات الثلاثة. هذا يفصل هندسة الفرشاة عن اختلاف حركة اليد.</p>
-    <canvas id="capture"></canvas>
-    <div class="legend" style="margin-top:7px">
-      <span><i class="dot" style="background:#9ca3af"></i>Raw points</span>
-      <span><i class="dot" style="background:#7c3aed"></i>Shared centerline</span>
-      <span id="inputMeta">0 points</span>
-    </div>
-  </section>
+<section class="card">
+  <div class="row" style="justify-content:space-between"><strong>1) Stroke مشترك للمحركين</strong><div class="row">
+    <button data-shape="line">خط</button><button data-shape="curve">قوس</button><button data-shape="s">S</button><button data-shape="hook">Hook</button><button data-shape="terminal">نهاية حادة</button><button id="clearBtn">مسح</button>
+  </div></div>
+  <p class="hint">يُسجل x/y/pressure/time مرة واحدة. المحركان يستعملان نفس Stroke Path؛ الفرق الوحيد هو Stroke Phase/Turn Model.</p>
+  <canvas id="capture"></canvas>
+  <div class="legend" style="margin-top:7px"><span><i class="dot" style="background:#9ca3af"></i>Raw</span><span><i class="dot" style="background:#7c3aed"></i>Processed centerline</span><span id="inputMeta">0 points</span></div>
+</section>
 
-  <section class="card">
-    <div class="row" style="justify-content:space-between">
-      <strong>2) نموذج القصبة</strong>
-      <div class="row">
-        <span class="fact">من الفيديو: Spacing 17%</span>
-        <span class="fact">Count 2</span>
-        <span class="fact">Pressure → Size 0%</span><span class="fact">Shape angle 30°</span>
-      </div>
+<section class="card">
+  <div class="row" style="justify-content:space-between"><strong>2) Qalam Brush Studio Core</strong><div class="row"><span class="fact">Pressure→Size 0%</span><span class="fact">Velocity OFF</span><span class="fact">Ellipse Support Renderer</span></div></div>
+  <div class="grid studio" style="margin-top:10px">
+    <div class="section">
+      <h3>Stroke Path</h3>
+      <label>StreamLine <span id="streamV" class="v">0%</span><input id="stream" type="range" min="0" max="95" step="1" value="0"></label>
+      <label>Resample <span id="resampleV" class="v">2.0px</span><input id="resamplePx" type="range" min=".75" max="8" step=".25" value="2"></label>
+      <label>Sub-step <span id="substepV" class="v">2.0px</span><input id="substepPx" type="range" min=".5" max="5" step=".25" value="2"></label>
+      <small>Sub-step مستوحى من الملف المرفق: تقسيم المقاطع لمنع الفراغات قبل التصيير.</small>
     </div>
-    <div class="grid controls" style="margin-top:10px">
-      <label>Nib Width <span class="v" id="widthV">32px</span><input id="width" type="range" min="8" max="80" step=".5" value="32"></label>
-      <label>Nib Thickness <span class="v" id="thicknessV">4%</span><input id="thickness" type="range" min="2" max="30" step=".5" value="4"></label>
-      <label>Nib Angle <span class="v" id="angleV">30°</span><input id="angle" type="range" min="0" max="90" step="1" value="30"></label>
-      <label>Procreate Spacing <span class="v" id="pSpacingV">17%</span><input id="pSpacing" type="range" min="1" max="40" step="1" value="17"></label>
-      <label>Count <span class="v" id="countV">2</span><input id="count" type="range" min="1" max="5" step="1" value="2"></label>
-      <label>Pressure→Size <span class="v" id="pressureV">0%</span><input id="pressure" type="range" min="0" max="100" step="1" value="0"></label>
-      <label>Centerline smoothing <span class="v" id="smoothV">0%</span><input id="smooth" type="range" min="0" max="95" step="1" value="0"></label>
+    <div class="section">
+      <h3>Shape</h3>
+      <label>Nib Width <span id="widthV" class="v">32px</span><input id="width" type="range" min="8" max="80" step=".5" value="32"></label>
+      <label>Thickness <span id="thicknessV" class="v">4%</span><input id="thickness" type="range" min="2" max="30" step=".5" value="4"></label>
+      <label>Angle <span id="angleV" class="v">30°</span><input id="angle" type="range" min="0" max="90" step="1" value="30"></label>
+      <small>Ellipse Support هو المرجع الهندسي الحالي، وليس Reconstruction-derived.</small>
     </div>
-    <div class="row" style="margin-top:10px">
-      <button class="video" id="videoBaselineBtn">Video baseline</button>
-      <button id="aliMotionBtn">Ali-like motion 80% / MA 30%</button>
-      <button id="neutralMotionBtn">Neutral motion</button>
-      <button id="runTestsBtn">تشغيل Self-tests</button>
-      <span id="testStatus" class="status">لم تُشغّل الاختبارات بعد.</span>
+    <div class="section">
+      <h3>Stroke Phase</h3>
+      <label class="switch"><span>تفعيل Phase Model</span><input id="phaseEnabled" type="checkbox" checked></label>
+      <label>Entry Length <span id="entryLenV" class="v">9%</span><input id="entryLen" type="range" min="0" max="30" step="1" value="9"></label>
+      <label>Entry shaping <span id="entryV" class="v">72%</span><input id="entryStrength" type="range" min="0" max="95" step="1" value="72"></label>
+      <label>Exit Length <span id="exitLenV" class="v">13%</span><input id="exitLen" type="range" min="0" max="35" step="1" value="13"></label>
+      <label>Exit shaping <span id="exitV" class="v">82%</span><input id="exitStrength" type="range" min="0" max="95" step="1" value="82"></label>
     </div>
-    <p class="hint">ملاحظة منهجية: زاوية الـShape في الفيديو تُضبط بصريًا؛ لذلك لا نفرض قيمة رقمية من الفيديو. القيمة الافتراضية 30° مأخوذة من شاشة Shape في الفيديو؛ يمكن تغييرها للاختبار.</p>
-  </section>
+    <div class="section">
+      <h3>Turn / Input</h3>
+      <label>Turn correction <span id="turnV" class="v">35%</span><input id="turnStrength" type="range" min="0" max="100" step="1" value="35"></label>
+      <label>Turn threshold <span id="turnThresholdV" class="v">22°</span><input id="turnThreshold" type="range" min="0" max="90" step="1" value="22"></label>
+      <label>Pressure→Size <span id="pressureV" class="v">0%</span><input id="pressure" type="range" min="0" max="100" step="1" value="0"></label>
+      <small>Pressure وVelocity ليسا جزءًا من اختبار P0.3؛ Pressure هنا فقط للتحقق التجريبي ويبقى 0 افتراضيًا.</small>
+    </div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <button class="primary" id="basePresetBtn">Base Qalam</button>
+    <button class="phaseBtn" id="phasePresetBtn">Phase Test</button>
+    <button id="runTestsBtn">تشغيل Self-tests</button>
+    <span id="testStatus" class="status">لم تُشغّل الاختبارات بعد.</span>
+  </div>
+</section>
 
-  <section class="grid engines">
-    <article class="card">
-      <div class="engine-title"><span>A — Current Ellipse Stamp</span><span class="metric" id="stampMetric">—</span></div>
-      <canvas id="stamp"></canvas>
-      <p class="hint">Ellipse stamps على النقاط المفلترة. خط أساس للمحرك القديم.</p>
-    </article>
-    <article class="card">
-      <div class="engine-title"><span>B — Procreate Stamp Approximation</span><span class="metric" id="proMetric">—</span></div>
-      <canvas id="procreate"></canvas>
-      <p class="hint">Thin shape stamps مرجعية. تبقى تقريبية لأن معادلة Spacing الداخلية في Procreate غير معروفة.</p>
-    </article>
-    <article class="card">
-      <div class="engine-title"><span>C1 — Swept Capsule</span><span class="metric" id="sweptMetric">—</span></div>
-      <canvas id="swept"></canvas>
-      <p class="hint">المحرك الحالي في المختبر: capsule support + swept segment union.</p>
-    </article>
-    <article class="card">
-      <div class="engine-title"><span>C2 — Swept Ellipse Support</span><span class="metric" id="ellipseMetric">—</span></div>
-      <canvas id="ellipseSwept"></canvas>
-      <p class="hint">تجربة الفكرة الرياضية في الملف المرفق: ellipse support vector + ribbon segment + ellipse cap.</p>
-    </article>
-  </section>
+<section class="grid engines">
+  <article class="card">
+    <div class="engine-title"><span>C2 Base — Swept Ellipse</span><span class="metric" id="baseMetric">—</span></div>
+    <canvas id="baseCanvas"></canvas>
+    <p class="hint">Ellipse support + segment ribbon + endpoint caps. لا Entry/Exit ولا Turn correction. هذا هو المرجع الهندسي.</p>
+  </article>
+  <article class="card">
+    <div class="engine-title"><span>D — Qalam Phase Model</span><span class="metric" id="phaseMetric">—</span></div>
+    <canvas id="phaseCanvas"></canvas>
+    <p class="hint">نفس Shape ونفس centerline، لكن مع Entry/Exit spatial phase وcentered tangent وTurn correction. لا Velocity dynamics.</p>
+  </article>
+</section>
 
-  <section class="card">
-    <div class="row" style="justify-content:space-between"><strong>3) Overlay: C1 Capsule vs C2 Ellipse Support</strong><span class="metric" id="overlayMetric">C1 = أحمر • C2 = أخضر</span></div>
-    <canvas id="overlay"></canvas>
-    <p class="hint">اللون الداكن المشترك = اتفاق المحركين. الأحمر فقط = Capsule خارج Ellipse. الأخضر فقط = Ellipse خارج Capsule. IoU هنا مقياس اختلاف هندسي وليس حكم جودة.</p>
-  </section>
+<section class="card">
+  <div class="row" style="justify-content:space-between"><strong>3) Overlay: Base vs Phase</strong><span class="metric" id="overlayMetric">Base أحمر • Phase أخضر</span></div>
+  <canvas id="overlay"></canvas>
+  <p class="hint">IoU يقيس مقدار التغيير فقط، وليس الجودة. راقب بصريًا البداية والنهاية والـHook والزوايا: المطلوب تحسين الطرف دون تغيير جسم الضربة غير الضروري.</p>
+</section>
 </main>
 
-<footer class="wrap">
-  مختبر مستقل — لا يغيّر Brush Engine الحالي. P0.1 محفوظ في branch: reference-qalam-physics-p0.1.
-</footer>
+<footer class="wrap">P0.2.2 محفوظ في branch: reference-qalam-physics-p0.2.2. هذا المختبر مستقل عن Brush Engine المستقر.</footer>
 
 <script>
 const $=id=>document.getElementById(id);
-const capture=$('capture'),stamp=$('stamp'),procreate=$('procreate'),swept=$('swept'),ellipseSwept=$('ellipseSwept'),overlay=$('overlay');
-let raw=[],drawing=false,activePointer=null,movingAverage=0,useResample=true;
+const capture=$('capture'),baseCanvas=$('baseCanvas'),phaseCanvas=$('phaseCanvas'),overlay=$('overlay');
+let raw=[],drawing=false,activePointer=null;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const smooth01=v=>{const x=clamp(v,0,1);return x*x*(3-2*x)};
 
-function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function dprCanvas(c){
-  const r=c.getBoundingClientRect(),d=Math.max(1,devicePixelRatio||1);
-  const W=Math.max(1,Math.round(r.width*d)),H=Math.max(1,Math.round(r.height*d));
+  const r=c.getBoundingClientRect(),d=Math.max(1,devicePixelRatio||1),W=Math.max(1,Math.round(r.width*d)),H=Math.max(1,Math.round(r.height*d));
   if(c.width!==W||c.height!==H){c.width=W;c.height=H}
-  const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,r.width,r.height);
-  return{x,w:r.width,h:r.height}
+  const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,r.width,r.height);return{x,w:r.width,h:r.height,d}
 }
+function clearWhite(x,w,h){x.fillStyle='#fff';x.fillRect(0,0,w,h)}
 function normPoint(e){
-  const r=capture.getBoundingClientRect();
-  return{nx:clamp((e.clientX-r.left)/r.width,0,1),ny:clamp((e.clientY-r.top)/r.height,0,1),
-    p:e.pointerType==='pen'&&Number.isFinite(e.pressure)&&e.pressure>0?e.pressure:.5,t:performance.now()}
+  const r=capture.getBoundingClientRect();return{nx:clamp((e.clientX-r.left)/r.width,0,1),ny:clamp((e.clientY-r.top)/r.height,0,1),
+  p:e.pointerType==='pen'&&Number.isFinite(e.pressure)&&e.pressure>0?e.pressure:.5,t:Number.isFinite(e.timeStamp)?e.timeStamp:performance.now()}
 }
 function synthetic(kind){
   const pts=[],N=96;
   for(let i=0;i<N;i++){
     const u=i/(N-1);let x=.12+.76*u,y=.5,p=.5;
-    if(kind==='line'){y=.68-.36*u;p=.34+.42*Math.sin(Math.PI*u)}
-    if(kind==='curve'){const a=Math.PI*(.05+.9*u);x=.18+.64*u;y=.72-.42*Math.sin(a);p=.36+.38*Math.sin(Math.PI*u)}
-    if(kind==='s'){x=.14+.72*u;y=.5+.23*Math.sin(u*Math.PI*2);p=.36+.36*Math.sin(Math.PI*u)}
-    if(kind==='hook'){x=.14+.72*u;y=.30+.43*u;if(u>.60){const q=(u-.60)/.40;x=.572+.27*Math.sin(q*Math.PI*.9);y=.558+.19*Math.sin(q*Math.PI*1.05)}p=.38+.36*Math.sin(Math.PI*u)}
-    pts.push({nx:x,ny:y,p,t:i*8});
+    if(kind==='line'){y=.68-.36*u}
+    if(kind==='curve'){const a=Math.PI*(.05+.9*u);x=.18+.64*u;y=.72-.42*Math.sin(a)}
+    if(kind==='s'){x=.14+.72*u;y=.5+.23*Math.sin(u*Math.PI*2)}
+    if(kind==='hook'){x=.14+.72*u;y=.30+.43*u;if(u>.60){const q=(u-.60)/.40;x=.572+.27*Math.sin(q*Math.PI*.9);y=.558+.19*Math.sin(q*Math.PI*1.05)}}
+    if(kind==='terminal'){x=.13+.72*u;y=.68-.32*u;if(u>.78){const q=(u-.78)/.22;x=.691+.15*q;y=.43-.18*q*q}}
+    pts.push({nx:x,ny:y,p,t:i*8})
   }
   raw=pts;renderAll()
 }
 function toPx(points,w,h){return points.map(q=>({x:q.nx*w,y:q.ny*h,p:q.p,t:q.t}))}
-function ema(points,s){
+function ema(points,strength){
+  if(points.length<2||strength<=0)return points.slice();
+  const alpha=clamp(1-strength,0.04,1),out=[{...points[0]}];
+  for(let i=1;i<points.length;i++){const a=out[out.length-1],b=points[i];out.push({...b,x:a.x+(b.x-a.x)*alpha,y:a.y+(b.y-a.y)*alpha,p:a.p+(b.p-a.p)*alpha})}
+  return out
+}
+function resample(points,spacing){
   if(points.length<2)return points.slice();
-  const keep=clamp(1-s,0.04,1),out=[{...points[0]}];
-  for(let i=1;i<points.length;i++){
-    const a=out[out.length-1],b=points[i];
-    out.push({...b,x:a.x+(b.x-a.x)*keep,y:a.y+(b.y-a.y)*keep,p:a.p+(b.p-a.p)*Math.min(1,keep*1.35)})
-  }
-  return out
-}
-function ma(points,strength){
-  if(strength<=0||points.length<3)return points.slice();
-  const radius=Math.max(1,Math.round(1+strength*5)),out=[];
-  for(let i=0;i<points.length;i++){
-    let sx=0,sy=0,sp=0,sw=0;
-    for(let j=Math.max(0,i-radius);j<=Math.min(points.length-1,i+radius);j++){
-      const wt=1/(1+Math.abs(i-j));sx+=points[j].x*wt;sy+=points[j].y*wt;sp+=points[j].p*wt;sw+=wt
-    }
-    out.push({...points[i],x:sx/sw,y:sy/sw,p:sp/sw})
-  }
-  return out
-}
-function resample(points,spacing,force=false){
-  if(points.length<2||(!useResample&&!force))return points.slice();
   const out=[{...points[0]}];let carry=0,a={...points[0]};
   for(let i=1;i<points.length;i++){
     const b=points[i];let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy);
-    while(dist+carry>=spacing&&dist>1e-6){
+    while(dist+carry>=spacing&&dist>1e-8){
       const need=spacing-carry,t=need/dist;
       a={x:a.x+dx*t,y:a.y+dy*t,p:a.p+(b.p-a.p)*t,t:a.t+(b.t-a.t)*t};
       out.push({...a});dx=b.x-a.x;dy=b.y-a.y;dist=Math.hypot(dx,dy);carry=0
     }
     carry+=dist;a={...b}
   }
-  const last=points[points.length-1],o=out[out.length-1];
-  if(Math.hypot(o.x-last.x,o.y-last.y)>.5)out.push({...last});
+  const last=points[points.length-1],o=out[out.length-1];if(Math.hypot(o.x-last.x,o.y-last.y)>.35)out.push({...last});
   return out
 }
-function centerline(w,h){
-  const pts=toPx(raw,w,h),s=Number($('smooth').value)/100;
-  return ma(ema(pts,s),movingAverage)
-}
-function geometry(){
-  const width=Number($('width').value),thicknessPct=Number($('thickness').value),thickness=width*thicknessPct/100;
-  return{width,thicknessPct,thickness,angle:Number($('angle').value),theta:-Number($('angle').value)*Math.PI/180,
-    spacingPct:Number($('pSpacing').value),count:Math.round(Number($('count').value)),pressure:Number($('pressure').value)/100}
-}
-function pressureScale(p){
-  const k=Number($('pressure').value)/100;
-  return clamp(1+(p-.5)*1.25*k,.38,1.62)
-}
-function clearWhite(ctx,w,h){ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h)}
-function drawCenterline(ctx,pts){
-  if(pts.length<2)return;ctx.save();ctx.strokeStyle='rgba(124,58,237,.55)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();ctx.restore()
-}
-function renderCapture(){
-  const {x,w,h}=dprCanvas(capture);clearWhite(x,w,h);const rp=toPx(raw,w,h);
-  x.fillStyle='#9ca3af';for(const p of rp){x.beginPath();x.arc(p.x,p.y,2,0,Math.PI*2);x.fill()}
-  const cp=centerline(w,h);drawCenterline(x,cp);$('inputMeta').textContent=raw.length+' raw • '+cp.length+' filtered'
-}
-function drawEllipseDab(ctx,p,g){
-  const s=pressureScale(p.p);ctx.save();ctx.translate(p.x,p.y);ctx.rotate(g.theta);ctx.beginPath();ctx.ellipse(0,0,g.width*s/2,g.thickness*s/2,0,0,Math.PI*2);ctx.fill();ctx.restore()
-}
-function drawCapsuleDab(ctx,p,g){
-  const s=pressureScale(p.p),w=g.width*s,t=Math.max(.5,g.thickness*s),seg=Math.max(0,w-t),ca=Math.cos(g.theta),sa=Math.sin(g.theta);
-  const hx=ca*seg/2,hy=sa*seg/2;ctx.save();ctx.strokeStyle=ctx.fillStyle;ctx.lineCap='round';ctx.lineWidth=t;ctx.beginPath();ctx.moveTo(p.x-hx,p.y-hy);ctx.lineTo(p.x+hx,p.y+hy);ctx.stroke();ctx.restore()
-}
-function renderStamp(){
-  const {x,w,h}=dprCanvas(stamp);clearWhite(x,w,h);const pts=centerline(w,h),g=geometry(),t0=performance.now();x.fillStyle='#201914';
-  for(const p of pts)drawEllipseDab(x,p,g);
-  $('stampMetric').textContent=pts.length+' ellipse dabs • '+(performance.now()-t0).toFixed(2)+'ms'
-}
-function procreatePoints(w,h,g){
-  const base=centerline(w,h),spacingPx=Math.max(.6,g.width*g.spacingPct/100);
-  return resample(base,spacingPx,true)
-}
-function renderProcreate(){
-  const {x,w,h}=dprCanvas(procreate);clearWhite(x,w,h);const g=geometry(),pts=procreatePoints(w,h,g),t0=performance.now();x.fillStyle='#201914';
-  for(const p of pts)for(let k=0;k<g.count;k++)drawCapsuleDab(x,p,g);
-  $('proMetric').textContent=pts.length+' positions × '+g.count+' • '+(g.width*g.spacingPct/100).toFixed(1)+'px • '+(performance.now()-t0).toFixed(2)+'ms'
-}
-function capsuleSupport(nx,ny,width,thickness,theta){
-  const ux=Math.cos(theta),uy=Math.sin(theta),dot=nx*ux+ny*uy,sgn=dot>=0?1:-1;
-  const r=Math.max(.25,thickness/2),halfSegment=Math.max(0,(width-thickness)/2);
-  return{x:sgn*halfSegment*ux+r*nx,y:sgn*halfSegment*uy+r*ny}
-}
-function sweptPolygon(pts,g){
-  if(pts.length<2)return[];
-  const left=[],right=[];
-  for(let i=0;i<pts.length;i++){
-    const prev=pts[Math.max(0,i-1)],next=pts[Math.min(pts.length-1,i+1)];
-    let tx=next.x-prev.x,ty=next.y-prev.y,L=Math.hypot(tx,ty)||1;tx/=L;ty/=L;
-    const nx=-ty,ny=tx,s=pressureScale(pts[i].p),sup=capsuleSupport(nx,ny,g.width*s,g.thickness*s,g.theta);
-    left.push([pts[i].x+sup.x,pts[i].y+sup.y]);right.push([pts[i].x-sup.x,pts[i].y-sup.y])
+function subdivide(points,maxStep){
+  if(points.length<2)return points.slice();const out=[{...points[0]}];
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i],d=Math.hypot(b.x-a.x,b.y-a.y),n=Math.max(1,Math.ceil(d/Math.max(.25,maxStep)));
+    for(let k=1;k<=n;k++){const t=k/n;out.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,p:a.p+(b.p-a.p)*t,t:a.t+(b.t-a.t)*t})}
   }
-  return left.concat(right.reverse())
+  return out
 }
-function drawPolygon(ctx,poly,fill='#201914'){
-  if(poly.length<3)return;ctx.fillStyle=fill;ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);ctx.closePath();ctx.fill()
+function pathFor(w,h){
+  const px=toPx(raw,w,h),stream=Number($('stream').value)/100;
+  return subdivide(resample(ema(px,stream),Number($('resamplePx').value)),Number($('substepPx').value))
 }
-function drawSweptUnion(ctx,pts,g,fill='#201914'){
-  if(pts.length<2)return 0;
-  ctx.save();ctx.fillStyle=fill;ctx.strokeStyle=fill;
-  let pieces=0;
-  for(let i=0;i<pts.length-1;i++){
-    const a=pts[i],b=pts[i+1],sa=pressureScale(a.p),sb=pressureScale(b.p);
-    const ga={...g,width:g.width*sa,thickness:g.thickness*sa};
-    const gb={...g,width:g.width*sb,thickness:g.thickness*sb};
-    let tx=b.x-a.x,ty=b.y-a.y,L=Math.hypot(tx,ty);if(L<1e-6)continue;tx/=L;ty/=L;
-    const nx=-ty,ny=tx,ha=capsuleSupport(nx,ny,ga.width,ga.thickness,g.theta),hb=capsuleSupport(nx,ny,gb.width,gb.thickness,g.theta);
-    ctx.beginPath();
-    ctx.moveTo(a.x+ha.x,a.y+ha.y);ctx.lineTo(b.x+hb.x,b.y+hb.y);
-    ctx.lineTo(b.x-hb.x,b.y-hb.y);ctx.lineTo(a.x-ha.x,a.y-ha.y);ctx.closePath();ctx.fill();
-    drawCapsuleDab(ctx,a,{...g,width:ga.width,thickness:ga.thickness});
-    if(i===pts.length-2)drawCapsuleDab(ctx,b,{...g,width:gb.width,thickness:gb.thickness});
-    pieces++;
+function annotatePath(pts){
+  const n=pts.length;if(!n)return[];let total=0;const out=pts.map(p=>({...p,s:0,turn:0,tx:1,ty:0}));
+  for(let i=1;i<n;i++){total+=Math.hypot(out[i].x-out[i-1].x,out[i].y-out[i-1].y);out[i].s=total}
+  for(let i=0;i<n;i++){
+    const a=out[Math.max(0,i-1)],b=out[Math.min(n-1,i+1)];let tx=b.x-a.x,ty=b.y-a.y,L=Math.hypot(tx,ty)||1;tx/=L;ty/=L;out[i].tx=tx;out[i].ty=ty;
+    if(i>0&&i<n-1){
+      let ax=out[i].x-out[i-1].x,ay=out[i].y-out[i-1].y,bx=out[i+1].x-out[i].x,by=out[i+1].y-out[i].y;
+      const la=Math.hypot(ax,ay)||1,lb=Math.hypot(bx,by)||1;ax/=la;ay/=la;bx/=lb;by/=lb;
+      out[i].turn=Math.acos(clamp(ax*bx+ay*by,-1,1))*180/Math.PI
+    }
+    out[i].total=total
   }
-  ctx.restore();return pieces
+  return out
 }
-function renderSwept(){
-  const {x,w,h}=dprCanvas(swept);clearWhite(x,w,h);const g=geometry(),pts=centerline(w,h),t0=performance.now();
-  const pieces=drawSweptUnion(x,pts,g);$('sweptMetric').textContent=pieces+' swept segments • '+(performance.now()-t0).toFixed(2)+'ms'
+function geom(){const width=Number($('width').value),pct=Number($('thickness').value);return{width,thickness:width*pct/100,theta:-Number($('angle').value)*Math.PI/180}}
+function pressureScale(p){const k=Number($('pressure').value)/100;return clamp(1+(p-.5)*1.2*k,.4,1.6)}
+function ellipseSupport(nx,ny,a,b,theta){
+  const ca=Math.cos(theta),sa=Math.sin(theta),lx=nx*ca+ny*sa,ly=-nx*sa+ny*ca,a2=a*a,b2=b*b,den=Math.sqrt(a2*lx*lx+b2*ly*ly)||1e-8;
+  const px=a2*lx/den,py=b2*ly/den;return{x:px*ca-py*sa,y:px*sa+py*ca}
 }
-
-function ellipseSupportVector(nx,ny,a,b,theta){
-  const ca=Math.cos(theta),sa=Math.sin(theta);
-  const lx=nx*ca+ny*sa,ly=-nx*sa+ny*ca;
-  const a2=a*a,b2=b*b,den=Math.sqrt(a2*lx*lx+b2*ly*ly)||1e-6;
-  const px=a2*lx/den,py=b2*ly/den;
-  return{x:px*ca-py*sa,y:px*sa+py*ca}
-}
-function drawEllipseCap(ctx,p,g,scale=1){
-  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(g.theta);ctx.beginPath();
-  ctx.ellipse(0,0,g.width*scale/2,Math.max(.25,g.thickness*scale/2),0,0,Math.PI*2);ctx.fill();ctx.restore()
-}
-function drawEllipseSweptUnion(ctx,pts,g,fill='#201914'){
-  if(pts.length<2)return 0;
-  ctx.save();ctx.fillStyle=fill;let pieces=0;
-  drawEllipseCap(ctx,pts[0],g,pressureScale(pts[0].p));
+function drawEllipse(ctx,p,g,scale=1){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(g.theta);ctx.beginPath();ctx.ellipse(0,0,g.width*scale/2,Math.max(.2,g.thickness*scale/2),0,0,Math.PI*2);ctx.fill();ctx.restore()}
+function drawBase(ctx,pts,g,fill='#201914'){
+  if(pts.length<2)return 0;ctx.save();ctx.fillStyle=fill;drawEllipse(ctx,pts[0],g,pressureScale(pts[0].p));let segs=0;
   for(let i=0;i<pts.length-1;i++){
-    const p0=pts[i],p1=pts[i+1],dx=p1.x-p0.x,dy=p1.y-p0.y,L=Math.hypot(dx,dy);if(L<1e-6)continue;
+    const p0=pts[i],p1=pts[i+1],dx=p1.x-p0.x,dy=p1.y-p0.y,L=Math.hypot(dx,dy);if(L<1e-8)continue;
     const nx=-dy/L,ny=dx/L,s0=pressureScale(p0.p),s1=pressureScale(p1.p);
-    const v0=ellipseSupportVector(nx,ny,g.width*s0/2,Math.max(.25,g.thickness*s0/2),g.theta);
-    const v1=ellipseSupportVector(nx,ny,g.width*s1/2,Math.max(.25,g.thickness*s1/2),g.theta);
-    ctx.beginPath();ctx.moveTo(p0.x+v0.x,p0.y+v0.y);ctx.lineTo(p1.x+v1.x,p1.y+v1.y);
-    ctx.lineTo(p1.x-v1.x,p1.y-v1.y);ctx.lineTo(p0.x-v0.x,p0.y-v0.y);ctx.closePath();ctx.fill();
-    drawEllipseCap(ctx,p1,g,s1);pieces++;
+    const v0=ellipseSupport(nx,ny,g.width*s0/2,Math.max(.2,g.thickness*s0/2),g.theta),v1=ellipseSupport(nx,ny,g.width*s1/2,Math.max(.2,g.thickness*s1/2),g.theta);
+    ctx.beginPath();ctx.moveTo(p0.x+v0.x,p0.y+v0.y);ctx.lineTo(p1.x+v1.x,p1.y+v1.y);ctx.lineTo(p1.x-v1.x,p1.y-v1.y);ctx.lineTo(p0.x-v0.x,p0.y-v0.y);ctx.closePath();ctx.fill();
+    drawEllipse(ctx,p1,g,s1);segs++
   }
-  ctx.restore();return pieces
+  ctx.restore();return segs
 }
-function renderEllipseSwept(){
-  const {x,w,h}=dprCanvas(ellipseSwept);clearWhite(x,w,h);const g=geometry(),pts=centerline(w,h),t0=performance.now();
-  const pieces=drawEllipseSweptUnion(x,pts,g);$('ellipseMetric').textContent=pieces+' ellipse segments • '+(performance.now()-t0).toFixed(2)+'ms'
+function phaseScale(pt){
+  if(!$('phaseEnabled').checked)return pressureScale(pt.p);
+  const total=Math.max(1e-6,pt.total||0),u=pt.s/total,entryFrac=Number($('entryLen').value)/100,exitFrac=Number($('exitLen').value)/100;
+  const entryStrength=Number($('entryStrength').value)/100,exitStrength=Number($('exitStrength').value)/100;
+  let s=1;
+  if(entryFrac>0&&u<entryFrac){const q=smooth01(u/entryFrac);s*=1-entryStrength*(1-q)}
+  if(exitFrac>0&&u>1-exitFrac){const q=smooth01((1-u)/exitFrac);s*=1-exitStrength*(1-q)}
+  const threshold=Number($('turnThreshold').value),turnStrength=Number($('turnStrength').value)/100;
+  if(turnStrength>0&&pt.turn>threshold){const q=clamp((pt.turn-threshold)/Math.max(1,120-threshold),0,1);s*=1-.42*turnStrength*smooth01(q)}
+  return clamp(s*pressureScale(pt.p),.05,1.6)
 }
-function renderMaskOffscreen(w,h,renderer){
-  const d=Math.max(1,devicePixelRatio||1),c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*d));c.height=Math.max(1,Math.round(h*d));
-  const x=c.getContext('2d',{willReadFrequently:true});x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,h);x.fillStyle='#000';renderer(x);return{x,c,d}
+function phaseBoundaries(ann,g){
+  const left=[],right=[];
+  for(const p of ann){
+    const nx=-p.ty,ny=p.tx,s=phaseScale(p),v=ellipseSupport(nx,ny,g.width*s/2,Math.max(.2,g.thickness*s/2),g.theta);
+    left.push([p.x+v.x,p.y+v.y]);right.push([p.x-v.x,p.y-v.y])
+  }
+  return{left,right}
 }
-function binaryMask(ctx,w,h,d){
-  const data=ctx.getImageData(0,0,Math.round(w*d),Math.round(h*d)).data,mask=new Uint8Array(data.length/4);
-  for(let i=0,j=3;i<mask.length;i++,j+=4)mask[i]=data[j]>16?1:0;
-  return mask
+function drawPhase(ctx,pts,g,fill='#201914'){
+  if(pts.length<2)return 0;const ann=annotatePath(pts),b=phaseBoundaries(ann,g);ctx.save();ctx.fillStyle=fill;ctx.beginPath();
+  ctx.moveTo(b.left[0][0],b.left[0][1]);for(let i=1;i<b.left.length;i++)ctx.lineTo(b.left[i][0],b.left[i][1]);
+  for(let i=b.right.length-1;i>=0;i--)ctx.lineTo(b.right[i][0],b.right[i][1]);ctx.closePath();ctx.fill();ctx.restore();return ann.length-1
 }
-function compareMasks(a,b){
-  let inter=0,union=0,aa=0,bb=0;const n=Math.min(a.length,b.length);
-  for(let i=0;i<n;i++){if(a[i])aa++;if(b[i])bb++;if(a[i]||b[i])union++;if(a[i]&&b[i])inter++}
-  return{iou:union?inter/union:1,aOnly:aa?Math.max(0,aa-inter)/aa:0,bOnly:bb?Math.max(0,bb-inter)/bb:0}
-}
+function drawCenterline(ctx,pts){if(pts.length<2)return;ctx.save();ctx.strokeStyle='rgba(124,58,237,.55)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();ctx.restore()}
+function renderCapture(){const {x,w,h}=dprCanvas(capture);clearWhite(x,w,h);const rp=toPx(raw,w,h);x.fillStyle='#9ca3af';for(const p of rp){x.beginPath();x.arc(p.x,p.y,2,0,Math.PI*2);x.fill()}const pts=pathFor(w,h);drawCenterline(x,pts);$('inputMeta').textContent=raw.length+' raw • '+pts.length+' processed'}
+function renderBase(){const {x,w,h}=dprCanvas(baseCanvas);clearWhite(x,w,h);const pts=pathFor(w,h),g=geom(),t0=performance.now(),n=drawBase(x,pts,g);$('baseMetric').textContent=n+' segments • '+(performance.now()-t0).toFixed(2)+'ms'}
+function renderPhase(){const {x,w,h}=dprCanvas(phaseCanvas);clearWhite(x,w,h);const pts=pathFor(w,h),g=geom(),t0=performance.now(),ann=annotatePath(pts),maxTurn=ann.reduce((m,p)=>Math.max(m,p.turn||0),0),n=drawPhase(x,pts,g);$('phaseMetric').textContent=n+' segments • max turn '+Math.round(maxTurn)+'° • '+(performance.now()-t0).toFixed(2)+'ms'}
+function maskCanvas(w,h,fn){const d=Math.max(1,devicePixelRatio||1),c=document.createElement('canvas');c.width=Math.round(w*d);c.height=Math.round(h*d);const x=c.getContext('2d',{willReadFrequently:true});x.setTransform(d,0,0,d,0,0);fn(x);return{x,d}}
+function mask(ctx,w,h,d){const a=ctx.getImageData(0,0,Math.round(w*d),Math.round(h*d)).data,m=new Uint8Array(a.length/4);for(let i=0,j=3;i<m.length;i++,j+=4)m[i]=a[j]>16?1:0;return m}
+function compare(a,b){let inter=0,union=0,aa=0,bb=0;for(let i=0;i<Math.min(a.length,b.length);i++){if(a[i])aa++;if(b[i])bb++;if(a[i]||b[i])union++;if(a[i]&&b[i])inter++}return{iou:union?inter/union:1,aOnly:aa?(aa-inter)/aa:0,bOnly:bb?(bb-inter)/bb:0}}
 function renderOverlay(){
-  const {x,w,h}=dprCanvas(overlay);clearWhite(x,w,h);const g=geometry(),pts=centerline(w,h);
-  x.globalAlpha=.48;drawSweptUnion(x,pts,g,'#dc2626');drawEllipseSweptUnion(x,pts,g,'#059669');x.globalAlpha=1;
-  const a=renderMaskOffscreen(w,h,ctx=>drawSweptUnion(ctx,pts,g,'#000'));
-  const b=renderMaskOffscreen(w,h,ctx=>drawEllipseSweptUnion(ctx,pts,g,'#000'));
-  const m=compareMasks(binaryMask(a.x,w,h,a.d),binaryMask(b.x,w,h,b.d));
-  $('overlayMetric').textContent='C1 أحمر • C2 أخضر • IoU '+Math.round(m.iou*100)+'% • C1-only '+Math.round(m.aOnly*100)+'% • C2-only '+Math.round(m.bOnly*100)+'%'
+  const {x,w,h}=dprCanvas(overlay);clearWhite(x,w,h);const pts=pathFor(w,h),g=geom();x.globalAlpha=.48;drawBase(x,pts,g,'#dc2626');drawPhase(x,pts,g,'#059669');x.globalAlpha=1;
+  const a=maskCanvas(w,h,q=>drawBase(q,pts,g,'#000')),b=maskCanvas(w,h,q=>drawPhase(q,pts,g,'#000')),m=compare(mask(a.x,w,h,a.d),mask(b.x,w,h,b.d));
+  $('overlayMetric').textContent='Base أحمر • Phase أخضر • IoU '+Math.round(m.iou*100)+'% • Base-only '+Math.round(m.aOnly*100)+'% • Phase-only '+Math.round(m.bOnly*100)+'%'
 }
-function renderAll(){renderCapture();renderStamp();renderProcreate();renderSwept();renderEllipseSwept();renderOverlay()}
+function renderAll(){renderCapture();renderBase();renderPhase();renderOverlay()}
 
 function selfTests(){
   const tests=[],near=(a,b,e=.01)=>Math.abs(a-b)<=e;
-  let s=capsuleSupport(1,0,20,4,0);tests.push(['capsule-major-support',near(s.x,10,.001)&&near(s.y,0,.001)]);
-  s=capsuleSupport(0,1,20,4,0);tests.push(['capsule-minor-support',near(s.y,2,.001)]);
-  s=capsuleSupport(Math.SQRT1_2,Math.SQRT1_2,20,4,Math.PI/4);tests.push(['capsule-rotation-finite',Number.isFinite(s.x)&&Number.isFinite(s.y)]);
-  let e=ellipseSupportVector(1,0,10,2,0);tests.push(['ellipse-major-support',near(e.x,10,.001)&&near(e.y,0,.001)]);
-  e=ellipseSupportVector(0,1,10,2,0);tests.push(['ellipse-minor-support',near(e.y,2,.001)]);
-  e=ellipseSupportVector(Math.SQRT1_2,Math.SQRT1_2,10,2,Math.PI/4);tests.push(['ellipse-rotation-finite',Number.isFinite(e.x)&&Number.isFinite(e.y)]);
-  const g={width:32,thickness:1.92,theta:-Math.PI/4},line=[{x:10,y:20,p:.5,t:0},{x:90,y:20,p:.5,t:10}],poly=sweptPolygon(line,g);
-  tests.push(['swept-polygon-finite',poly.length===4&&poly.flat().every(Number.isFinite)]);
-  const dense=Array.from({length:101},(_,i)=>({x:i,y:40,p:.5,t:i})),save=useResample;useResample=true;const rr=resample(dense,5,true);useResample=save;
-  tests.push(['uniform-resample-count',rr.length>=20&&rr.length<=22]);
-  tests.push(['video-spacing-17pct',near(32*.17,5.44,.001)]);
-  tests.push(['video-angle-30deg',Number($('angle').min)===0&&Number($('angle').max)===90]);
-  const oldP=$('pressure').value;$('pressure').value='0';tests.push(['pressure-neutral',near(pressureScale(.1),1,.001)&&near(pressureScale(.9),1,.001)]);$('pressure').value=oldP;
-  const sm=ema([{x:0,y:0,p:.5},{x:10,y:10,p:.5},{x:20,y:0,p:.5}],.8);tests.push(['smoothing-reduces-mid-excursion',sm[1].y<10]);
-  const ok=tests.every(t=>t[1]);return{ok,tests}
+  let e=ellipseSupport(1,0,10,2,0);tests.push(['ellipse-major',near(e.x,10,.001)]);
+  e=ellipseSupport(0,1,10,2,0);tests.push(['ellipse-minor',near(e.y,2,.001)]);
+  const dense=Array.from({length:101},(_,i)=>({x:i,y:0,p:.5,t:i})),rr=resample(dense,5);tests.push(['resample',rr.length>=20&&rr.length<=22]);
+  const ss=subdivide([{x:0,y:0,p:.5,t:0},{x:10,y:0,p:.5,t:10}],2);tests.push(['substep-max-gap',ss.length===6]);
+  const ann=annotatePath([{x:0,y:0,p:.5},{x:5,y:0,p:.5},{x:10,y:0,p:.5}]);tests.push(['straight-turn-zero',ann[1].turn<.001]);
+  const turn=annotatePath([{x:0,y:0,p:.5},{x:5,y:0,p:.5},{x:5,y:5,p:.5}]);tests.push(['right-angle-turn',Math.abs(turn[1].turn-90)<.01]);
+  const oldPhase=$('phaseEnabled').checked,oldEntry=$('entryStrength').value,oldExit=$('exitStrength').value,oldTurn=$('turnStrength').value;
+  $('phaseEnabled').checked=true;$('entryStrength').value=72;$('exitStrength').value=82;$('turnStrength').value=35;
+  const pa=annotatePath([{x:0,y:0,p:.5},{x:50,y:0,p:.5},{x:100,y:0,p:.5}]);tests.push(['entry-shapes',phaseScale(pa[0])<phaseScale(pa[1])]);
+  tests.push(['exit-shapes',phaseScale(pa[2])<phaseScale(pa[1])]);
+  $('phaseEnabled').checked=false;tests.push(['phase-off-neutral',near(phaseScale(pa[1]),1,.001)]);
+  $('phaseEnabled').checked=oldPhase;$('entryStrength').value=oldEntry;$('exitStrength').value=oldExit;$('turnStrength').value=oldTurn;
+  const b=phaseBoundaries(annotatePath([{x:0,y:0,p:.5},{x:10,y:5,p:.5},{x:20,y:0,p:.5}]),{width:20,thickness:2,theta:-Math.PI/6});tests.push(['boundaries-finite',b.left.flat().every(Number.isFinite)&&b.right.flat().every(Number.isFinite)]);
+  return{tests,ok:tests.every(t=>t[1])}
 }
-function runTests(){
-  const r=selfTests(),el=$('testStatus');el.textContent=(r.ok?'PASS ':'FAIL ')+r.tests.filter(x=>x[1]).length+'/'+r.tests.length+' — '+r.tests.map(x=>(x[1]?'✓ ':'✗ ')+x[0]).join(' • ');
-  el.className='status '+(r.ok?'good':'warn')
-}
+function runTests(){const r=selfTests(),el=$('testStatus'),pass=r.tests.filter(t=>t[1]).length;el.textContent=(r.ok?'PASS ':'FAIL ')+pass+'/'+r.tests.length+' — '+r.tests.map(t=>(t[1]?'✓ ':'✗ ')+t[0]).join(' • ');el.className='status '+(r.ok?'good':'warn')}
 function syncLabels(){
-  $('widthV').textContent=Number($('width').value).toFixed(1)+'px';$('thicknessV').textContent=Number($('thickness').value).toFixed(1)+'%';
-  $('angleV').textContent=$('angle').value+'°';$('pSpacingV').textContent=$('pSpacing').value+'%';$('countV').textContent=$('count').value;
-  $('pressureV').textContent=$('pressure').value+'%';$('smoothV').textContent=$('smooth').value+'%'
+  $('streamV').textContent=$('stream').value+'%';$('resampleV').textContent=Number($('resamplePx').value).toFixed(2)+'px';$('substepV').textContent=Number($('substepPx').value).toFixed(2)+'px';
+  $('widthV').textContent=Number($('width').value).toFixed(1)+'px';$('thicknessV').textContent=Number($('thickness').value).toFixed(1)+'%';$('angleV').textContent=$('angle').value+'°';
+  $('entryLenV').textContent=$('entryLen').value+'%';$('entryV').textContent=$('entryStrength').value+'%';$('exitLenV').textContent=$('exitLen').value+'%';$('exitV').textContent=$('exitStrength').value+'%';
+  $('turnV').textContent=$('turnStrength').value+'%';$('turnThresholdV').textContent=$('turnThreshold').value+'°';$('pressureV').textContent=$('pressure').value+'%'
 }
-function setVideoBaseline(){
-  $('pSpacing').value=17;$('count').value=2;$('pressure').value=0;$('smooth').value=0;$('angle').value=30;$('thickness').value=4;
-  movingAverage=0;useResample=true;syncLabels();renderAll()
-}
+function setBase(){ $('stream').value=0;$('resamplePx').value=2;$('substepPx').value=2;$('width').value=32;$('thickness').value=4;$('angle').value=30;$('pressure').value=0;$('phaseEnabled').checked=false;syncLabels();renderAll()}
+function setPhase(){ $('stream').value=0;$('resamplePx').value=2;$('substepPx').value=2;$('width').value=32;$('thickness').value=4;$('angle').value=30;$('pressure').value=0;$('phaseEnabled').checked=true;$('entryLen').value=9;$('entryStrength').value=72;$('exitLen').value=13;$('exitStrength').value=82;$('turnStrength').value=35;$('turnThreshold').value=22;syncLabels();renderAll()}
+
 capture.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();drawing=true;activePointer=e.pointerId;raw=[normPoint(e)];capture.setPointerCapture?.(e.pointerId);renderAll()},{passive:false});
-capture.addEventListener('pointermove',e=>{if(!drawing||e.pointerId!==activePointer)return;e.preventDefault();const events=e.getCoalescedEvents?.()||[];(events.length?events:[e]).forEach(ev=>raw.push(normPoint(ev)));renderAll()},{passive:false});
+capture.addEventListener('pointermove',e=>{if(!drawing||e.pointerId!==activePointer)return;e.preventDefault();const es=e.getCoalescedEvents?.()||[];(es.length?es:[e]).forEach(ev=>raw.push(normPoint(ev)));renderAll()},{passive:false});
 function end(e){if(!drawing||e.pointerId!==activePointer)return;drawing=false;activePointer=null;renderAll()}
 capture.addEventListener('pointerup',end);capture.addEventListener('pointercancel',end);
 document.querySelectorAll('[data-shape]').forEach(b=>b.addEventListener('click',()=>synthetic(b.dataset.shape)));
 $('clearBtn').addEventListener('click',()=>{raw=[];renderAll()});
-for(const id of ['width','thickness','angle','pSpacing','count','pressure','smooth'])$(id).addEventListener('input',()=>{syncLabels();renderAll()});
-$('videoBaselineBtn').addEventListener('click',setVideoBaseline);
-$('aliMotionBtn').addEventListener('click',()=>{$('smooth').value=80;movingAverage=.30;useResample=true;syncLabels();renderAll()});
-$('neutralMotionBtn').addEventListener('click',()=>{$('smooth').value=0;movingAverage=0;useResample=false;syncLabels();renderAll()});
-$('runTestsBtn').addEventListener('click',runTests);
-addEventListener('resize',renderAll);
-syncLabels();synthetic('hook');runTests();
+for(const id of ['stream','resamplePx','substepPx','width','thickness','angle','entryLen','entryStrength','exitLen','exitStrength','turnStrength','turnThreshold','pressure'])$(id).addEventListener('input',()=>{syncLabels();renderAll()});
+$('phaseEnabled').addEventListener('change',renderAll);$('basePresetBtn').addEventListener('click',setBase);$('phasePresetBtn').addEventListener('click',setPhase);$('runTestsBtn').addEventListener('click',runTests);
+addEventListener('resize',renderAll);syncLabels();synthetic('hook');runTests();
 </script>
 </body>
 </html>
