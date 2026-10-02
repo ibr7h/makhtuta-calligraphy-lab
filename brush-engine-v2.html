@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="6.35.6-beta">
+<html lang="ar" dir="rtl" data-app-version="6.35.6.1-beta">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -123,7 +123,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.6 β</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">V6.35.6.1 β</span>
           </p>
         </div>
       </div>
@@ -1039,6 +1039,26 @@
                 </div>
                 <label class="block text-[11px] font-bold mt-2">طول التدرّج <span id="bsTaperLengthVal" class="float-left font-mono">36px</span><input id="bsTaperLength" type="range" min="8" max="120" value="36" oninput="updateBrushSetting('taperLength',this.value)" class="w-full accent-violet-700"></label>
                 <p class="text-[9px] text-violet-700 mt-1 leading-4">محايد افتراضيًا. السرعة تقلّل عرض الضربة عند الحركة السريعة، وTaper ينحّت البداية والنهاية تدريجيًا.</p>
+
+                <div id="brushDynamicsValidationPanel" class="mt-3 rounded-xl border border-violet-200 bg-white/80 p-2.5">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div class="text-[10px] font-black text-violet-950">V6.35.6.1 — Dynamics Validation</div>
+                      <div class="text-[8px] text-stone-500">اختبار مستقل لـ Velocity وTaper قبل إدخالهما في Reconstruction.</div>
+                    </div>
+                    <button type="button" onclick="runBrushDynamicsValidationUI()" class="px-2.5 py-1.5 rounded-lg bg-violet-700 text-white text-[8px] font-bold">تشغيل الاختبارات</button>
+                  </div>
+                  <div id="brushDynamicsValidationSummary" class="mt-2 rounded-lg bg-stone-50 border border-stone-200 px-2 py-1.5 text-[8px] text-stone-600">بانتظار الاختبار…</div>
+                  <div id="brushDynamicsValidationGrid" class="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-1"></div>
+                  <div class="mt-2 text-[8px] font-bold text-violet-900">A/B على الفرشاة الحالية — لا يتم الحفظ تلقائيًا:</div>
+                  <div class="mt-1 flex flex-wrap gap-1">
+                    <button type="button" onclick="applyDynamicsExperimentProfile('neutral')" class="px-2 py-1 rounded-lg border border-stone-200 bg-white text-[8px] font-bold">0 — محايد</button>
+                    <button type="button" onclick="applyDynamicsExperimentProfile('velocity')" class="px-2 py-1 rounded-lg border border-sky-200 bg-sky-50 text-sky-800 text-[8px] font-bold">A — Velocity فقط</button>
+                    <button type="button" onclick="applyDynamicsExperimentProfile('taper')" class="px-2 py-1 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-[8px] font-bold">B — Taper فقط</button>
+                    <button type="button" onclick="applyDynamicsExperimentProfile('combined')" class="px-2 py-1 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-800 text-[8px] font-bold">C — Velocity + Taper</button>
+                  </div>
+                  <div id="brushDynamicsExperimentState" class="mt-1 text-[8px] text-stone-500">الحالة: الإعدادات الحالية.</div>
+                </div>
               </div>
 
               <div class="mt-3 pt-3 border-t border-amber-100">
@@ -1654,6 +1674,7 @@
       initExtras();
       restoreAppSettings(true);
       syncBrushSettingsUI();
+      setTimeout(()=>{try{runBrushDynamicsValidationUI()}catch(_){}},50);
       renderNamedBrushPresets();
       window.addEventListener('resize', debounceResizeCanvas);
     });
@@ -1963,6 +1984,79 @@
         factor *= (1 - endStrength) + endStrength * u;
       }
       return clamp(factor, 0.06, 1.25);
+    }
+
+    const DYNAMICS_EXPERIMENT_PROFILES = Object.freeze({
+      neutral:{label:'محايد',velocityDynamicsEnabled:false,velocityDynamicsStrength:0,startTaperStrength:0,endTaperStrength:0,taperLengthPx:36},
+      velocity:{label:'Velocity فقط',velocityDynamicsEnabled:true,velocityDynamicsStrength:.25,startTaperStrength:0,endTaperStrength:0,taperLengthPx:36},
+      taper:{label:'Taper فقط',velocityDynamicsEnabled:false,velocityDynamicsStrength:0,startTaperStrength:.12,endTaperStrength:.22,taperLengthPx:36},
+      combined:{label:'Velocity + Taper',velocityDynamicsEnabled:true,velocityDynamicsStrength:.25,startTaperStrength:.12,endTaperStrength:.22,taperLengthPx:36}
+    });
+
+    function dynamicsSyntheticMetrics(profile){
+      const total=96,rows=[];
+      const speeds=[.05,.12,.28,.52,.82,1.12,1.36,.88,.42,.18,.08];
+      for(let i=0;i<speeds.length;i++){
+        const path=total*i/Math.max(1,speeds.length-1);
+        rows.push(strokeDynamicsFactor({
+          velocityDynamicsEnabled:!!profile.velocityDynamicsEnabled,
+          velocityDynamicsStrength:Number(profile.velocityDynamicsStrength)||0,
+          startTaperStrength:Number(profile.startTaperStrength)||0,
+          endTaperStrength:Number(profile.endTaperStrength)||0,
+          taperLengthPx:Number(profile.taperLengthPx)||36,
+          _totalPathPx:total
+        },{_velocityPxMs:speeds[i],_pathPx:path}));
+      }
+      const min=Math.min(...rows),max=Math.max(...rows),mean=brushMean(rows);
+      return{min,max,mean,range:max-min,start:rows[0],end:rows[rows.length-1],rows};
+    }
+
+    function runBrushDynamicsValidationSelfTests(){
+      const eps=1e-9;
+      const factor=(profile,point)=>strokeDynamicsFactor(profile,point);
+      const neutral={velocityDynamicsEnabled:false,velocityDynamicsStrength:0,startTaperStrength:0,endTaperStrength:0,taperLengthPx:36,_totalPathPx:100};
+      const velocity={...neutral,velocityDynamicsEnabled:true,velocityDynamicsStrength:.25};
+      const start={...neutral,startTaperStrength:.5};
+      const end={...neutral,endTaperStrength:.5};
+      const combined={...neutral,velocityDynamicsEnabled:true,velocityDynamicsStrength:.25,startTaperStrength:.12,endTaperStrength:.22};
+      const tests=[
+        {name:'neutral-is-1',ok:Math.abs(factor(neutral,{_velocityPxMs:1.3,_pathPx:50})-1)<eps},
+        {name:'velocity-off-ignores-strength',ok:Math.abs(factor({...neutral,velocityDynamicsStrength:1},{_velocityPxMs:1.3,_pathPx:50})-1)<eps},
+        {name:'velocity-reduces-fast-stroke',ok:factor(velocity,{_velocityPxMs:1.3,_pathPx:50})<factor(velocity,{_velocityPxMs:.08,_pathPx:50})},
+        {name:'velocity-max-reduction',ok:Math.abs(factor({...velocity,velocityDynamicsStrength:1},{_velocityPxMs:1.3,_pathPx:50})-.55)<.002},
+        {name:'start-taper-recovers',ok:factor(start,{_velocityPxMs:.1,_pathPx:0})<factor(start,{_velocityPxMs:.1,_pathPx:36})},
+        {name:'end-taper-symmetric',ok:Math.abs(factor(start,{_velocityPxMs:.1,_pathPx:0})-factor(end,{_velocityPxMs:.1,_pathPx:100}))<eps},
+        {name:'longer-taper-persists-longer',ok:factor({...start,taperLengthPx:72},{_velocityPxMs:.1,_pathPx:18})<factor({...start,taperLengthPx:36},{_velocityPxMs:.1,_pathPx:18})},
+        {name:'combined-effects-compose',ok:factor(combined,{_velocityPxMs:1.3,_pathPx:0})<factor(velocity,{_velocityPxMs:1.3,_pathPx:0})}
+      ];
+      const profiles=Object.fromEntries(Object.entries(DYNAMICS_EXPERIMENT_PROFILES).map(([k,p])=>[k,dynamicsSyntheticMetrics(p)]));
+      return{ok:tests.every(t=>t.ok),tests,profiles};
+    }
+
+    function runBrushDynamicsValidationUI(){
+      const r=runBrushDynamicsValidationSelfTests(),summary=document.getElementById('brushDynamicsValidationSummary'),grid=document.getElementById('brushDynamicsValidationGrid');
+      const passed=r.tests.filter(t=>t.ok).length;
+      if(summary){
+        summary.className='mt-2 rounded-lg border px-2 py-1.5 text-[8px] '+(r.ok?'bg-emerald-50 border-emerald-200 text-emerald-800':'bg-rose-50 border-rose-200 text-rose-800');
+        summary.innerHTML='<b>'+(r.ok?'PASS':'FAIL')+'</b> • '+passed+'/'+r.tests.length+' اختبارات • هذه الاختبارات تتحقق من Dynamics نفسها ولا تغيّر نتيجة Reconstruction.';
+      }
+      if(grid)grid.innerHTML=Object.entries(r.profiles).map(([key,m])=>{
+        const p=DYNAMICS_EXPERIMENT_PROFILES[key];
+        return '<div class="rounded-lg border border-violet-100 bg-white p-1.5"><div class="font-black text-[8px] text-violet-950">'+p.label+'</div><div class="text-[7px] text-stone-600">min '+Math.round(m.min*100)+'% • avg '+Math.round(m.mean*100)+'%</div><div class="text-[7px] text-stone-400">مدى '+Math.round(m.range*100)+' نقطة</div></div>';
+      }).join('');
+      return r;
+    }
+
+    function applyDynamicsExperimentProfile(key){
+      const p=DYNAMICS_EXPERIMENT_PROFILES[key];if(!p)return;
+      velocityDynamicsEnabled=!!p.velocityDynamicsEnabled;
+      velocityDynamicsStrength=Number(p.velocityDynamicsStrength)||0;
+      startTaperStrength=Number(p.startTaperStrength)||0;
+      endTaperStrength=Number(p.endTaperStrength)||0;
+      taperLengthPx=Number(p.taperLengthPx)||36;
+      syncBrushSettingsUI();
+      const state=document.getElementById('brushDynamicsExperimentState');
+      if(state)state.textContent='الحالة: '+p.label+' • Velocity '+Math.round(velocityDynamicsStrength*100)+'% • Start '+Math.round(startTaperStrength*100)+'% • End '+Math.round(endTaperStrength*100)+'% • '+Math.round(taperLengthPx)+'px.';
     }
 
     function prepareStrokeDynamics(stroke) {
