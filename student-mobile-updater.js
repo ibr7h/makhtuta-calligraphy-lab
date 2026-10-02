@@ -5,7 +5,7 @@
   const SW_URL='./student-mobile-service-worker.js';
   const SW_SCOPE='./student-mobile.html';
   const CHECK_INTERVAL=15*60*1000;
-  let registration=null,waitingWorker=null,refreshing=false,timer=null,deferredInstallPrompt=null;
+  let registration=null,waitingWorker=null,refreshing=false,timer=null,deferredInstallPrompt=null,latestMeta=null;
 
   const $=id=>document.getElementById(id);
   const bar=$('pwaUpdateBar'),text=$('pwaUpdateText'),button=$('pwaUpdateBtn');
@@ -54,6 +54,7 @@
     try{
       if(manual)setStatus('جاري فحص التحديث…');
       const meta=await latest();
+      latestMeta=meta;
       if(registration)await registration.update();
       if(registration?.waiting){showUpdate(registration.waiting,meta);if(manual)setStatus('التحديث جاهز.');return true}
       if(meta.version&&compare(meta.version,CURRENT_VERSION)>0){showUpdate(null,meta);if(manual)setStatus('تم العثور على تحديث جديد.');return true}
@@ -65,11 +66,22 @@
       return false;
     }
   }
-  function activate(){
+  async function activate(){
     showOverlay('جاري تنزيل وتفعيل الإصدار الجديد…');
-    const worker=waitingWorker||registration?.waiting;
+    let worker=waitingWorker||registration?.waiting;
     if(worker){worker.postMessage({type:'SKIP_WAITING'});return}
-    registration?.update().catch(()=>{});
+    try{
+      if(registration)await registration.update();
+      worker=registration?.waiting||waitingWorker;
+      if(worker){worker.postMessage({type:'SKIP_WAITING'});return}
+    }catch(_){}
+    // The page itself is navigation-network-first. If the worker script bytes did
+    // not change in this release, force a cache-busted navigation so the new HTML
+    // still opens immediately instead of leaving the update overlay waiting forever.
+    const target=latestMeta?.version||CURRENT_VERSION;
+    if(detail)detail.textContent='جاري فتح الإصدار الجديد…';
+    setProgress(1,1);
+    setTimeout(()=>location.replace('./student-mobile.html?v='+encodeURIComponent(target)+'&t='+Date.now()),220);
   }
   function wire(reg){
     registration=reg;
