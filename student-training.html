@@ -131,8 +131,10 @@
   body.student-mode #lassoCombineMode { display:none !important; }
   .student-panel{background:linear-gradient(135deg,#fffdf8,#f7f4ff);border:1px solid #ddd6fe;border-radius:18px}
   .student-chip{border:1px solid #d8b4fe;background:#faf5ff;color:#6b21a8;border-radius:12px;font-size:10px;font-weight:800;padding:6px 9px}
-  .student-preview-wrap{background:#fff;border:1px solid #e9d5ff;border-radius:16px;overflow:hidden}
-  #studentModelPreview{display:block;width:100%;height:auto;max-height:220px;background:#fffdfb}
+  .student-preview-wrap{position:relative;background:#FEFDFB;border:1px solid #e9d5ff;border-radius:16px;overflow:hidden;height:380px}
+  @media(min-width:640px){.student-preview-wrap{height:440px}}
+  #studentModelPreview{position:absolute;inset:0;display:block;width:100%;height:100%;background:transparent;z-index:2}
+  #studentModelGuide{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
 </style>
 </head>
 <body class="font-sans text-stone-800 min-h-screen flex flex-col justify-between selection:bg-amber-200">
@@ -389,8 +391,20 @@
               <input id="studentModelRepeatCount" type="number" min="1" max="99" value="3" onchange="studentModelRepeatCount=Math.max(1,Math.min(99,Number(this.value)||3))" class="student-chip w-14 text-center bg-white" title="عدد مرات التكرار">
             </div>
           </div>
-          <div class="student-preview-wrap">
-            <canvas id="studentModelPreview" aria-label="معاينة النموذج"></canvas>
+          <div id="studentModelContainer" class="student-preview-wrap">
+            <svg id="studentModelGuide" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="none">
+              <defs>
+                <pattern id="studentGridPattern" width="24" height="24" patternUnits="userSpaceOnUse">
+                  <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#E5DEC9" stroke-width="0.8" vector-effect="non-scaling-stroke"/>
+                </pattern>
+              </defs>
+              <rect x="0" y="0" width="100%" height="100%" fill="url(#studentGridPattern)" opacity="0.40"/>
+              <line id="studentTopLine" x1="0" x2="100%" y1="20%" y2="20%" stroke="#D97706" stroke-opacity="0.8" stroke-width="2" stroke-dasharray="8 6" vector-effect="non-scaling-stroke"/>
+              <line id="studentMidLine" x1="0" x2="100%" y1="40%" y2="40%" stroke="#38BDF8" stroke-width="1" vector-effect="non-scaling-stroke"/>
+              <line id="studentBaseLine" x1="0" x2="100%" y1="62%" y2="62%" stroke="#DC2626" stroke-width="3" vector-effect="non-scaling-stroke"/>
+              <line id="studentBottomLine" x1="0" x2="100%" y1="82%" y2="82%" stroke="#059669" stroke-opacity="0.8" stroke-width="2" stroke-dasharray="8 6" vector-effect="non-scaling-stroke"/>
+            </svg>
+            <canvas id="studentModelPreview" aria-label="معاينة النموذج بالحجم الأصلي"></canvas>
           </div>
           <div class="mt-2 flex flex-wrap items-center gap-2">
             <span id="studentModelStatus" class="text-[10px] font-bold text-stone-600">لا يوجد نموذج بعد.</span>
@@ -1742,15 +1756,34 @@
 
     function studentSetupPreviewCanvas(){
       studentModelPreviewCanvas=document.getElementById('studentModelPreview');
-      if(!studentModelPreviewCanvas)return;
+      const container=document.getElementById('studentModelContainer');
+      if(!studentModelPreviewCanvas||!container)return;
       const dpr=Math.max(1,window.devicePixelRatio||1);
-      const logicalW=Math.max(1,canvasCssWidth||900),logicalH=Math.max(1,canvasCssHeight||440);
-      studentModelPreviewCanvas.width=Math.round(logicalW*dpr);
-      studentModelPreviewCanvas.height=Math.round(logicalH*dpr);
-      studentModelPreviewCanvas.style.aspectRatio=logicalW+' / '+logicalH;
+      const rect=container.getBoundingClientRect();
+      const previewW=Math.max(1,rect.width||canvasCssWidth||900);
+      const previewH=Math.max(1,rect.height||canvasCssHeight||440);
+
+      // Model and training area deliberately share the same normalized coordinate system.
+      // No fit-to-preview scaling: the visual area itself matches the training area's CSS height.
+      studentModelPreviewCanvas.width=Math.round(previewW*dpr);
+      studentModelPreviewCanvas.height=Math.round(previewH*dpr);
       studentModelPreviewCtx=studentModelPreviewCanvas.getContext('2d',{alpha:true});
       studentModelPreviewCtx.setTransform(dpr,0,0,dpr,0,0);
+
+      // Rendering helpers use canvasCssWidth/Height. Because both areas have the same CSS
+      // dimensions, the same normalized stroke retains its position, width and proportions.
       studentRenderModelStatic();
+    }
+
+    function studentPreviewPoint(p){
+      const r=document.getElementById('studentModelContainer')?.getBoundingClientRect();
+      const w=Math.max(1,r?.width||canvasCssWidth),h=Math.max(1,r?.height||canvasCssHeight);
+      return{x:(p.nx??0)*w,y:(p.ny??0)*h,pressure:p.pressure??.5,tiltX:p.tiltX??0,tiltY:p.tiltY??0,twist:p.twist??0,pointerType:p.pointerType||'unknown',t:p.t??0};
+    }
+    function studentPreviewScale(){
+      const r=document.getElementById('studentModelContainer')?.getBoundingClientRect();
+      const w=Math.max(1,r?.width||canvasCssWidth),h=Math.max(1,r?.height||canvasCssHeight);
+      return Math.min(w,h)/Math.max(1,Math.min(canvasCssWidth,canvasCssHeight));
     }
 
     function studentClearPreview(){
@@ -1764,12 +1797,17 @@
     function studentRenderSegment(targetCtx,a,b,stroke,segmentIndex=-1){
       if(!targetCtx||!stroke)return;
       if(stroke.tool==='smooth'){
-        const pa=denormalizePoint(a),pb=denormalizePoint(b),wa=strokeSizePx(stroke,a),wb=strokeSizePx(stroke,b);
+        const pa=studentPreviewPoint(a),pb=studentPreviewPoint(b),scale=studentPreviewScale(),wa=strokeSizePx(stroke,a)*scale,wb=strokeSizePx(stroke,b)*scale;
         targetCtx.save();targetCtx.globalAlpha=Number.isFinite(stroke.opacity)?stroke.opacity:1;targetCtx.strokeStyle=stroke.color||'#1A1817';
         targetCtx.lineWidth=(wa+wb)/2;targetCtx.lineCap='round';targetCtx.lineJoin='round';targetCtx.beginPath();targetCtx.moveTo(pa.x,pa.y);targetCtx.lineTo(pb.x,pb.y);targetCtx.stroke();targetCtx.restore();return;
       }
       if(stroke.tool==='eraser')return;
-      renderQalamFootprintSegmentToContext(targetCtx,a,b,stroke,Number.isFinite(stroke.opacity)?stroke.opacity:1,segmentIndex);
+      const r=document.getElementById('studentModelContainer')?.getBoundingClientRect();
+      const pw=Math.max(1,r?.width||canvasCssWidth),ph=Math.max(1,r?.height||canvasCssHeight);
+      const sx=pw/Math.max(1,canvasCssWidth),sy=ph/Math.max(1,canvasCssHeight);
+      const remap=p=>({...p,nx:(p.nx??0)*sx,ny:(p.ny??0)*sy});
+      const scaledStroke={...stroke,sizeNorm:(stroke.sizeNorm||0)*Math.min(sx,sy)};
+      renderQalamFootprintSegmentToContext(targetCtx,remap(a),remap(b),scaledStroke,Number.isFinite(stroke.opacity)?stroke.opacity:1,segmentIndex);
     }
 
     function studentRenderModelStrokeStatic(stroke){
@@ -1777,7 +1815,7 @@
       const s={...stroke,opacity:1};
       prepareStrokeDynamics(s);
       if(s.points.length===1){
-        const p=denormalizePoint(s.points[0]),size=strokeSizePx(s,s.points[0]);
+        const p=studentPreviewPoint(s.points[0]),scale=studentPreviewScale(),size=strokeSizePx(s,s.points[0])*scale;
         drawRoundedNibFootprint(studentModelPreviewCtx,p.x,p.y,size,effectiveNibAngle(s,s.points[0]),s,1);
       }else{
         s._descenderFlipProfile=computeDescenderFlipProfile(s);
