@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Qalam Physics Lab — مخطوطة</title>
+<meta name="theme-color" content="#3f2d20">
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#2e261f;background:#f6f0e5}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 15px 15px,#eadfce 1px,transparent 1.2px) 0 0/28px 28px,#f7f1e7}
+header{position:sticky;top:0;z-index:5;background:rgba(255,253,248,.94);backdrop-filter:blur(12px);border-bottom:1px solid #dec8a8}
+.wrap{max-width:1320px;margin:auto;padding:14px}.title{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:20px;margin:0;color:#55351f}.badge{font-size:11px;font-weight:800;padding:5px 9px;border-radius:999px;background:#efe5ff;color:#5b21b6;border:1px solid #d8c5ff}
+p{line-height:1.7}.card{background:#fffdf9;border:1px solid #dec8a8;border-radius:18px;box-shadow:0 8px 24px rgba(66,43,22,.06);padding:14px}
+.grid{display:grid;gap:12px}.controls{grid-template-columns:repeat(6,minmax(0,1fr))}.engines{grid-template-columns:repeat(3,minmax(0,1fr))}
+label{font-size:11px;font-weight:800;color:#5e4636}input[type=range]{width:100%}.v{float:left;font-family:ui-monospace,monospace;color:#6d28d9}
+button{border:1px solid #d8c2a4;background:#fff;border-radius:11px;padding:8px 11px;font-weight:800;color:#50351f;cursor:pointer}button:hover{background:#fff8ed}.primary{background:#5b3a25;color:#fff;border-color:#5b3a25}
+canvas{display:block;width:100%;height:230px;background:#fff;border:1px solid #e2d5c4;border-radius:14px;touch-action:none}
+#capture{height:280px;cursor:crosshair}.engine-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;font-size:12px;font-weight:900}.metric{font-size:10px;color:#76675c}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center}.hint{font-size:11px;color:#76675c;margin:7px 0 0}.status{padding:9px 11px;border-radius:12px;background:#f8f4ee;border:1px solid #e8ded0;font-size:11px;font-weight:700}
+.good{background:#ecfdf5;border-color:#a7f3d0;color:#166534}.warn{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:#6b5d52}.dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-left:4px}
+footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
+@media(max-width:900px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.engines{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap title">
+    <div>
+      <h1>مخطوطة — Qalam Physics Lab</h1>
+      <div style="font-size:11px;color:#746357;margin-top:3px">مقارنة نفس المسار بين Stamping وPerfect Freehand وContinuous Flat-Nib</div>
+    </div>
+    <span class="badge">P0.1 — Renderer Isolation</span>
+  </div>
+</header>
+
+<main class="wrap grid" style="gap:14px">
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <strong>1) ارسم Stroke واحدًا هنا</strong>
+      <div class="row">
+        <button data-shape="line">خط</button>
+        <button data-shape="curve">قوس</button>
+        <button data-shape="s">S</button>
+        <button data-shape="hook">Hook</button>
+        <button id="clearBtn">مسح</button>
+      </div>
+    </div>
+    <p class="hint">نحفظ x/y/pressure/time مرة واحدة. بعدها تُستخدم نفس البيانات في كل المحركات أدناه.</p>
+    <canvas id="capture"></canvas>
+    <div class="legend" style="margin-top:7px">
+      <span><i class="dot" style="background:#9ca3af"></i>Raw points</span>
+      <span><i class="dot" style="background:#7c3aed"></i>Shared centerline</span>
+      <span id="inputMeta">0 points</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <strong>2) إعدادات مشتركة</strong>
+    <div class="grid controls" style="margin-top:10px">
+      <label>Nib Size <span class="v" id="sizeV">28</span><input id="size" type="range" min="6" max="70" step=".5" value="28"></label>
+      <label>Angle <span class="v" id="angleV">60°</span><input id="angle" type="range" min="0" max="90" step="1" value="60"></label>
+      <label>Aspect <span class="v" id="aspectV">0.16</span><input id="aspect" type="range" min=".04" max=".65" step=".01" value=".16"></label>
+      <label>Centerline smoothing <span class="v" id="smoothV">70%</span><input id="smooth" type="range" min="0" max="95" step="1" value="70"></label>
+      <label>Resample spacing <span class="v" id="spacingV">4px</span><input id="spacing" type="range" min="1" max="14" step=".5" value="4"></label>
+      <label>Pressure influence <span class="v" id="pressureV">45%</span><input id="pressure" type="range" min="0" max="100" step="1" value="45"></label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="primary" id="aliMotionBtn">Ali-like motion: 80% / MA 30% / resample</button>
+      <button id="neutralMotionBtn">Neutral motion</button>
+      <button id="runTestsBtn">تشغيل Self-tests</button>
+      <span id="testStatus" class="status">لم تُشغّل الاختبارات بعد.</span>
+    </div>
+  </section>
+
+  <section class="grid engines">
+    <article class="card">
+      <div class="engine-title"><span>A — Current Stamp Model</span><span class="metric" id="stampMetric">—</span></div>
+      <canvas id="stamp"></canvas>
+      <p class="hint">Ellipse ثابتة تُطبع على نقاط centerline. يمثل منطق stamping الذي نحاول تجاوزه.</p>
+    </article>
+    <article class="card">
+      <div class="engine-title"><span>B — Perfect Freehand Reference</span><span class="metric" id="pfMetric">—</span></div>
+      <canvas id="perfect"></canvas>
+      <p class="hint">مرجع continuous round stroke. ليس قصبة عربية، لكنه يختبر جودة spline/outline المستمر.</p>
+    </article>
+    <article class="card">
+      <div class="engine-title"><span>C — Qalam Swept-Nib P0.1</span><span class="metric" id="sweptMetric">—</span></div>
+      <canvas id="swept"></canvas>
+      <p class="hint">Envelope مستمر لقصبة Ellipse مائلة وثابتة الزاوية. هذا هو النموذج المرشح للمحرك الجديد.</p>
+    </article>
+  </section>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between"><strong>3) Overlay تشخيصي</strong><span class="metric" id="overlayMetric">Stamp = أحمر • Swept = أخضر</span></div>
+    <canvas id="overlay"></canvas>
+    <p class="hint">الأخضر فقط يعني أن الـSwept يغطي منطقة لا يغطيها Stamping، والأحمر فقط العكس؛ المناطق الداكنة المتراكبة مشتركة.</p>
+  </section>
+</main>
+
+<footer class="wrap">
+  Perfect Freehand © Stephen Ruiz Ltd — MIT License. هذه الصفحة مختبر مستقل ولا تغيّر Brush Engine الحالي.
+</footer>
+
+<script type="module">
+import { getStroke } from 'https://cdn.jsdelivr.net/npm/perfect-freehand@1.2.3/+esm';
+
+const $=id=>document.getElementById(id);
+const capture=$('capture'), stamp=$('stamp'), perfect=$('perfect'), swept=$('swept'), overlay=$('overlay');
+const canvases=[capture,stamp,perfect,swept,overlay];
+let raw=[], drawing=false, activePointer=null;
+let movingAverage=.30, useResample=true;
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function dprCanvas(c){
+  const r=c.getBoundingClientRect(),d=Math.max(1,devicePixelRatio||1);
+  const w=Math.max(1,Math.round(r.width*d)),h=Math.max(1,Math.round(r.height*d));
+  if(c.width!==w||c.height!==h){c.width=w;c.height=h}
+  const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,r.width,r.height);
+  return{x,w:r.width,h:r.height}
+}
+function normPoint(e){
+  const r=capture.getBoundingClientRect();
+  return {nx:clamp((e.clientX-r.left)/r.width,0,1),ny:clamp((e.clientY-r.top)/r.height,0,1),
+    p:e.pointerType==='pen'&&Number.isFinite(e.pressure)&&e.pressure>0?e.pressure:.5,t:performance.now()};
+}
+function synthetic(kind){
+  const pts=[],N=84;
+  for(let i=0;i<N;i++){
+    const u=i/(N-1);let x=.12+.76*u,y=.5,p=.5;
+    if(kind==='line'){y=.62-.25*u;p=.4+.35*Math.sin(Math.PI*u)}
+    if(kind==='curve'){const a=Math.PI*(.05+.9*u);x=.18+.64*u;y=.72-.42*Math.sin(a);p=.35+.45*Math.sin(Math.PI*u)}
+    if(kind==='s'){x=.14+.72*u;y=.5+.23*Math.sin(u*Math.PI*2);p=.35+.4*Math.sin(Math.PI*u)}
+    if(kind==='hook'){x=.16+.7*u;y=.32+.42*u;if(u>.62){const q=(u-.62)/.38;x=.594+.25*Math.sin(q*Math.PI*.88);y=.58+.18*Math.sin(q*Math.PI*1.05)}p=.42+.32*Math.sin(Math.PI*u)}
+    pts.push({nx:x,ny:y,p,t:i*8});
+  }
+  raw=pts;renderAll();
+}
+function toPx(points,w,h){return points.map(q=>({x:q.nx*w,y:q.ny*h,p:q.p,t:q.t}))}
+function ema(points,s){
+  if(points.length<2)return points.slice();
+  const keep=clamp(1-s,0.04,1),out=[{...points[0]}];
+  for(let i=1;i<points.length;i++){const a=out[out.length-1],b=points[i];out.push({...b,x:a.x+(b.x-a.x)*keep,y:a.y+(b.y-a.y)*keep,p:a.p+(b.p-a.p)*Math.min(1,keep*1.35)})}
+  return out;
+}
+function ma(points,strength){
+  if(strength<=0||points.length<3)return points.slice();
+  const radius=Math.max(1,Math.round(1+strength*5)),out=[];
+  for(let i=0;i<points.length;i++){
+    let sx=0,sy=0,sp=0,sw=0;
+    for(let j=Math.max(0,i-radius);j<=Math.min(points.length-1,i+radius);j++){
+      const w=1/(1+Math.abs(i-j));sx+=points[j].x*w;sy+=points[j].y*w;sp+=points[j].p*w;sw+=w;
+    }
+    out.push({...points[i],x:sx/sw,y:sy/sw,p:sp/sw});
+  }
+  return out;
+}
+function resample(points,spacing){
+  if(points.length<2||!useResample)return points.slice();
+  const out=[{...points[0]}];let carry=0,a={...points[0]};
+  for(let i=1;i<points.length;i++){
+    const b=points[i];let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy);
+    while(dist+carry>=spacing&&dist>1e-6){
+      const need=spacing-carry,t=need/dist;
+      a={x:a.x+dx*t,y:a.y+dy*t,p:a.p+(b.p-a.p)*t,t:a.t+(b.t-a.t)*t};
+      out.push({...a});dx=b.x-a.x;dy=b.y-a.y;dist=Math.hypot(dx,dy);carry=0;
+    }
+    carry+=dist;a={...b};
+  }
+  if(out.length===1||Math.hypot(out[out.length-1].x-points.at(-1).x,out[out.length-1].y-points.at(-1).y)>.5)out.push({...points.at(-1)});
+  return out;
+}
+function centerline(w,h){
+  const pts=toPx(raw,w,h);
+  const s=Number($('smooth').value)/100;
+  return resample(ma(ema(pts,s),movingAverage),Number($('spacing').value));
+}
+function pressureScale(p){const k=Number($('pressure').value)/100;return clamp(1+(p-.5)*1.2*k,.42,1.55)}
+function clearWhite(ctx,w,h){ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h)}
+function drawCenterline(ctx,pts){
+  if(pts.length<2)return;ctx.save();ctx.strokeStyle='rgba(124,58,237,.55)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i].x,pts[i].y);ctx.stroke();ctx.restore();
+}
+function renderCapture(){
+  const {x,w,h}=dprCanvas(capture);clearWhite(x,w,h);
+  const rp=toPx(raw,w,h);
+  x.fillStyle='#9ca3af';for(const p of rp){x.beginPath();x.arc(p.x,p.y,2,0,Math.PI*2);x.fill()}
+  const cp=centerline(w,h);drawCenterline(x,cp);
+  $('inputMeta').textContent=raw.length+' raw • '+cp.length+' centerline';
+}
+function renderStamp(){
+  const {x,w,h}=dprCanvas(stamp);clearWhite(x,w,h);const pts=centerline(w,h),major=Number($('size').value),aspect=Number($('aspect').value),ang=-Number($('angle').value)*Math.PI/180;
+  const t0=performance.now();x.fillStyle='#201914';
+  for(const p of pts){const s=pressureScale(p.p);x.save();x.translate(p.x,p.y);x.rotate(ang);x.beginPath();x.ellipse(0,0,major*s/2,major*aspect*s/2,0,0,Math.PI*2);x.fill();x.restore()}
+  $('stampMetric').textContent=pts.length+' dabs • '+(performance.now()-t0).toFixed(2)+'ms';
+}
+function drawPolygon(ctx,poly,fill='#201914'){
+  if(poly.length<3)return;ctx.fillStyle=fill;ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);ctx.closePath();ctx.fill();
+}
+function renderPF(){
+  const {x,w,h}=dprCanvas(perfect);clearWhite(x,w,h);const pts=centerline(w,h),major=Number($('size').value),pressureInfluence=Number($('pressure').value)/100;
+  const input=pts.map(p=>[p.x,p.y,clamp(.5+(p.p-.5)*pressureInfluence,0,1)]);const t0=performance.now();
+  const poly=input.length>1?getStroke(input,{size:major,thinning:.72*pressureInfluence,smoothing:.65,streamline:.35,simulatePressure:false,last:true,start:{taper:0,cap:true},end:{taper:0,cap:true}}):[];
+  drawPolygon(x,poly);$('pfMetric').textContent=poly.length+' outline pts • '+(performance.now()-t0).toFixed(2)+'ms';
+}
+function ellipseSupport(nx,ny,a,b,theta){
+  const ca=Math.cos(theta),sa=Math.sin(theta);
+  const lx=nx*ca+ny*sa,ly=-nx*sa+ny*ca;
+  const den=Math.sqrt((a*lx)*(a*lx)+(b*ly)*(b*ly))||1;
+  const sx=(a*a*lx)/den,sy=(b*b*ly)/den;
+  return{x:sx*ca-sy*sa,y:sx*sa+sy*ca};
+}
+function sweptPolygon(pts,major,aspect,theta){
+  if(pts.length<2)return[];
+  const left=[],right=[];
+  for(let i=0;i<pts.length;i++){
+    const prev=pts[Math.max(0,i-1)],next=pts[Math.min(pts.length-1,i+1)];
+    let tx=next.x-prev.x,ty=next.y-prev.y,l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;
+    const nx=-ty,ny=tx,s=pressureScale(pts[i].p),sup=ellipseSupport(nx,ny,major*s/2,major*aspect*s/2,theta);
+    left.push([pts[i].x+sup.x,pts[i].y+sup.y]);right.push([pts[i].x-sup.x,pts[i].y-sup.y]);
+  }
+  return left.concat(right.reverse());
+}
+function renderSwept(target=swept,fill='#201914',alpha=1){
+  const {x,w,h}=dprCanvas(target);clearWhite(x,w,h);const pts=centerline(w,h),major=Number($('size').value),aspect=Number($('aspect').value),ang=-Number($('angle').value)*Math.PI/180,t0=performance.now();
+  const poly=sweptPolygon(pts,major,aspect,ang);x.globalAlpha=alpha;drawPolygon(x,poly,fill);x.globalAlpha=1;
+  if(target===swept)$('sweptMetric').textContent=poly.length+' envelope pts • '+(performance.now()-t0).toFixed(2)+'ms';
+}
+function renderOverlay(){
+  const {x,w,h}=dprCanvas(overlay);clearWhite(x,w,h);const pts=centerline(w,h),major=Number($('size').value),aspect=Number($('aspect').value),ang=-Number($('angle').value)*Math.PI/180;
+  x.globalAlpha=.52;x.fillStyle='#dc2626';for(const p of pts){const s=pressureScale(p.p);x.save();x.translate(p.x,p.y);x.rotate(ang);x.beginPath();x.ellipse(0,0,major*s/2,major*aspect*s/2,0,0,Math.PI*2);x.fill();x.restore()}
+  const poly=sweptPolygon(pts,major,aspect,ang);drawPolygon(x,poly,'#059669');x.globalAlpha=1;
+}
+function renderAll(){renderCapture();renderStamp();renderPF();renderSwept();renderOverlay()}
+
+function selfTests(){
+  const tests=[];
+  const near=(a,b,e=.01)=>Math.abs(a-b)<=e;
+  let s=ellipseSupport(1,0,20,5,0);tests.push(['ellipse-major-support',near(s.x,20,.001)&&near(s.y,0,.001)]);
+  s=ellipseSupport(0,1,20,5,0);tests.push(['ellipse-minor-support',near(s.y,5,.001)]);
+  const line=[{x:10,y:20,p:.5,t:0},{x:90,y:20,p:.5,t:10}],poly=sweptPolygon(line,20,.2,0);tests.push(['swept-polygon-finite',poly.length===4&&poly.flat().every(Number.isFinite)]);
+  const dense=Array.from({length:101},(_,i)=>({x:i,y:40,p:.5,t:i}));const rr=resample(dense,5);tests.push(['uniform-resample-count',rr.length>=20&&rr.length<=22]);
+  const sm=ema([{x:0,y:0,p:.5},{x:10,y:10,p:.5},{x:20,y:0,p:.5}],.8);tests.push(['smoothing-reduces-mid-excursion',sm[1].y<10]);
+  const ok=tests.every(x=>x[1]);return{ok,tests};
+}
+function runTests(){const r=selfTests(),el=$('testStatus');el.textContent=(r.ok?'PASS ':'FAIL ')+r.tests.filter(x=>x[1]).length+'/'+r.tests.length+' — '+r.tests.map(x=>(x[1]?'✓ ':'✗ ')+x[0]).join(' • ');el.className='status '+(r.ok?'good':'warn')}
+
+capture.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();drawing=true;activePointer=e.pointerId;raw=[normPoint(e)];capture.setPointerCapture?.(e.pointerId);renderAll()},{passive:false});
+capture.addEventListener('pointermove',e=>{if(!drawing||e.pointerId!==activePointer)return;e.preventDefault();const events=e.getCoalescedEvents?.()||[];(events.length?events:[e]).forEach(ev=>raw.push(normPoint(ev)));renderAll()},{passive:false});
+function end(e){if(!drawing||e.pointerId!==activePointer)return;drawing=false;activePointer=null;renderAll()}
+capture.addEventListener('pointerup',end);capture.addEventListener('pointercancel',end);
+document.querySelectorAll('[data-shape]').forEach(b=>b.addEventListener('click',()=>synthetic(b.dataset.shape)));
+$('clearBtn').addEventListener('click',()=>{raw=[];renderAll()});
+for(const id of ['size','angle','aspect','smooth','spacing','pressure'])$(id).addEventListener('input',()=>{
+  $('sizeV').textContent=Number($('size').value).toFixed(1);$('angleV').textContent=$('angle').value+'°';$('aspectV').textContent=Number($('aspect').value).toFixed(2);$('smoothV').textContent=$('smooth').value+'%';$('spacingV').textContent=$('spacing').value+'px';$('pressureV').textContent=$('pressure').value+'%';renderAll()
+});
+$('aliMotionBtn').addEventListener('click',()=>{$('smooth').value=80;$('smoothV').textContent='80%';movingAverage=.30;useResample=true;renderAll()});
+$('neutralMotionBtn').addEventListener('click',()=>{$('smooth').value=0;$('smoothV').textContent='0%';movingAverage=0;useResample=false;renderAll()});
+$('runTestsBtn').addEventListener('click',runTests);
+addEventListener('resize',()=>renderAll());
+synthetic('hook');runTests();
+</script>
+</body>
+</html>
