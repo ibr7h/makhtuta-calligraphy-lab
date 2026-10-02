@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="student-0.3.1">
+<html lang="ar" dir="rtl" data-app-version="student-0.4.0">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -242,6 +242,124 @@
     #mainAppPage{grid-template-columns:minmax(0,3.3fr) minmax(320px,.9fr)!important}
     #canvasContainer,.student-preview-wrap{height:500px!important}
   }
+
+  /* ===== Student V0.4 — task-first adaptive design system ===== */
+  :root{
+    --st-space-1:4px;--st-space-2:8px;--st-space-3:12px;--st-space-4:16px;--st-space-5:20px;--st-space-6:24px;
+    --st-radius-sm:10px;--st-radius-md:14px;--st-radius-lg:20px;--st-radius-xl:26px;
+    --st-ink:#292524;--st-muted:#78716c;--st-bg:#f7f5f1;--st-surface:#fffdf9;--st-line:#e7dfd3;
+    --st-primary:#8a4b08;--st-primary-strong:#6d3906;--st-primary-soft:#f7ead6;
+    --st-model:#6d28d9;--st-model-soft:#f3e8ff;--st-success:#047857;--st-danger:#be123c;
+    --st-header-h:64px;--st-bottom-h:64px;
+  }
+  html{scroll-padding-top:calc(var(--st-header-h) + 16px);background:var(--st-bg)}
+  body.student-mode{color:var(--st-ink);background:var(--st-bg);overscroll-behavior-y:none}
+  body.student-mode *{box-sizing:border-box}
+  body.student-mode :where(button,a,input,select,summary):focus-visible{
+    outline:3px solid #2563eb!important;outline-offset:2px!important;box-shadow:0 0 0 2px #fff!important
+  }
+  body.student-mode button:disabled{cursor:not-allowed}
+  #mainAppHeader{padding-top:env(safe-area-inset-top,0px)}
+  #mainAppHeader>div{min-height:var(--st-header-h)}
+  #studentFlowStrip{padding-inline:max(12px,env(safe-area-inset-left,0px)) max(12px,env(safe-area-inset-right,0px))}
+  .student-flow-track{grid-template-columns:repeat(3,minmax(0,1fr));max-width:920px;margin-inline:auto}
+  .student-flow-step{
+    min-height:54px;padding:8px 12px;border-color:var(--st-line);background:rgba(255,255,255,.82);
+    box-shadow:0 2px 8px rgba(70,50,25,.03);text-align:start;transition:border-color .18s ease,background .18s ease,transform .18s ease
+  }
+  .student-flow-step span{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+  .student-flow-step strong{font-size:12px;color:#44403c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .student-flow-step small{font-size:9px;font-weight:600;color:#78716c;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .student-flow-step.is-active{border-color:#d6a45f;background:#fff8ec;box-shadow:0 5px 16px rgba(138,75,8,.08)}
+  .student-flow-step.is-active b{background:var(--st-primary);color:#fff}
+  .student-flow-step.is-active strong{color:var(--st-primary-strong)}
+  .student-setup-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;
+    background:linear-gradient(135deg,#fffdf9,#fff9ef);border:1px solid var(--st-line);border-radius:var(--st-radius-lg);
+    box-shadow:0 6px 20px rgba(76,55,30,.05)
+  }
+  .student-setup-summary{display:flex;flex-direction:column;min-width:0}
+  .student-setup-summary>strong{font-size:12px;color:#44403c;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .student-kicker{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:900;letter-spacing:.02em;color:#a16207}
+  .student-setup-actions{display:flex;align-items:center;gap:6px;flex:none}
+  .student-setup-actions button,.student-help-button{
+    min-height:40px;padding:7px 10px;border:1px solid #e8d9c3;border-radius:12px;background:#fff;color:#78350f;font-size:10px;font-weight:800
+  }
+  #studentContentCard,#studentManualGuidePanel,#formBar,#wordsPanel,#customTrainingPanel,#tashkeelBar{box-shadow:none!important;border-color:var(--st-line)!important}
+  #studentContentCard{background:var(--st-surface)!important;border-radius:var(--st-radius-lg)!important}
+  #studentManualGuidePanel{background:#f8fbff!important;border-radius:var(--st-radius-lg)!important}
+  #studentWorkspaceCard{border:1px solid var(--st-line)!important;background:var(--st-surface)!important;border-radius:var(--st-radius-xl)!important;box-shadow:0 12px 38px rgba(60,42,20,.08)!important}
+  .student-workspace-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px 8px;background:var(--st-surface)}
+  .student-workspace-heading>div{display:flex;flex-direction:column}
+  .student-workspace-heading strong{font-size:13px;margin-top:2px;color:#3f3a34}
+  #canvasToolbar{background:#faf7f1!important;border-color:var(--st-line)!important}
+  #canvasContainer{background:#fffdfa!important;isolation:isolate}
+  #drawingCanvas{touch-action:none;cursor:crosshair}
+  #studentModelPanel{background:linear-gradient(145deg,#fffdf9,#faf6ff)!important;border-color:#e9ddf7!important}
+  #studentModelPanel .student-preview-wrap{box-shadow:inset 0 0 0 1px rgba(109,40,217,.04)}
+  #practiceTabsBar,#guideControlsBar{border-color:var(--st-line)!important;background:#fffdfa!important}
+  #studentAssessmentPanel{background:#f4fbf7!important;border-color:#cfe7da!important}
+  #sidePanel{scrollbar-width:thin}
+  #studentSessionSummary{max-width:54ch}
+  [data-student-settings="guides"]{transition:opacity .16s ease,transform .16s ease}
+  body[data-window-class="compact"] [data-student-settings="guides"]:not(.is-open){display:none}
+  body[data-window-class="medium"] [data-student-settings="guides"]:not(.is-open){display:none}
+  body[data-window-class="expanded"] [data-student-settings="guides"],
+  body[data-window-class="large"] [data-student-settings="guides"]{display:block}
+  #btnToggleGuideSettings[aria-expanded="true"]{background:#eef6ff;border-color:#bfdbfe;color:#1d4ed8}
+  .student-model-select{min-width:20px;min-height:20px}
+  #studentModelLibraryModal button{min-height:38px}
+  #studentMobileBottomNav button.is-active{background:#fff3df;color:#78350f}
+  #studentMobileBottomNav button.is-active i{color:#78350f}
+  @media(pointer:coarse){
+    body.student-mode :where(button,select,input[type="checkbox"],summary){min-height:44px}
+    body.student-mode button{min-width:40px}
+    body.student-mode input[type="checkbox"]{width:20px!important;height:20px!important}
+    .student-chip{min-height:40px!important}
+    #modeTabs .mode-btn,#formTabs .form-tab-btn{min-height:44px!important}
+  }
+  @media(prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto!important}
+    body.student-mode *,body.student-mode *::before,body.student-mode *::after{
+      animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important
+    }
+  }
+  @media(forced-colors:active){
+    body.student-mode :where(button,input,select){forced-color-adjust:auto}
+    .student-flow-step.is-active{outline:2px solid Highlight}
+  }
+  @media(max-width:599px){
+    :root{--st-header-h:58px}
+    #studentFlowStrip{padding-top:8px}
+    .student-flow-track{gap:6px}
+    .student-flow-step{min-width:128px;min-height:50px}
+    .student-flow-step small{display:none}
+    .student-setup-bar{padding:8px;border-radius:16px;align-items:flex-start}
+    .student-setup-summary>strong{font-size:11px}
+    .student-setup-actions button{width:42px;padding:0;display:flex;align-items:center;justify-content:center}
+    .student-setup-actions button span{display:none}
+    #studentContentCard{padding:8px!important}
+    .student-font-actions a{display:none}
+    #studentManualGuidePanel{margin:0!important}
+    #studentWorkspaceCard{border-radius:18px!important}
+    .student-workspace-heading{padding:10px 10px 6px}
+    .student-workspace-heading strong{font-size:12px}
+    #canvasToolbar{top:calc(var(--st-header-h) + env(safe-area-inset-top,0px));scrollbar-width:none}
+    #canvasToolbar::-webkit-scrollbar{display:none}
+    #studentMobileBottomNav{
+      right:max(8px,env(safe-area-inset-right,8px));left:max(8px,env(safe-area-inset-left,8px));
+      bottom:max(8px,env(safe-area-inset-bottom,8px));height:var(--st-bottom-h)
+    }
+    body.student-mode{padding-bottom:calc(var(--st-bottom-h) + env(safe-area-inset-bottom,0px) + 16px)}
+  }
+  @media(min-width:600px) and (max-width:839px){
+    #studentSetupBar{position:sticky;top:calc(var(--st-header-h) + 6px);z-index:22}
+    #studentWorkspaceCard{border-radius:22px!important}
+  }
+  @media(min-width:840px){
+    #studentSetupBar{position:sticky;top:calc(var(--st-header-h) + 8px);z-index:22}
+    #studentFlowStrip{position:sticky;top:var(--st-header-h);background:linear-gradient(#f7f5f1 75%,transparent);padding-bottom:8px}
+  }
 </style>
 
 <style id="studentModeStyles">
@@ -279,10 +397,10 @@
           <i class="fa-solid fa-pen-nib text-xl"></i>
         </div>
         <div>
-          <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
+          <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">تدريب الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
-            <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.3.1</span>
+            <span>اختر نموذجك، شاهده، ثم تدرب عليه</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.4.0</span>
           </p>
         </div>
       </div>
@@ -321,11 +439,16 @@
   </div>
   <nav id="studentFlowStrip" aria-label="مسار التدريب" class="max-w-none mx-auto w-full px-3 sm:px-6 pt-3">
     <div>
-      <div class="student-flow-track">
-        <button type="button" class="student-flow-step" onclick="goStudentSection('content')"><b>1</b><span>اختر المحتوى والخط</span></button>
-        <button type="button" class="student-flow-step" onclick="goStudentSection('settings')"><b>2</b><span>اضبط سطور التدريب</span></button>
-        <button type="button" class="student-flow-step" onclick="goStudentSection('model')"><b>3</b><span>جهّز النموذج</span></button>
-        <button type="button" class="student-flow-step" onclick="goStudentSection('training')"><b>4</b><span>تدرّب وقيّم المحاولة</span></button>
+      <div class="student-flow-track" role="tablist" aria-label="مراحل التدريب">
+        <button id="studentFlowContent" type="button" class="student-flow-step is-active" data-student-stage="content" onclick="goStudentSection('content')" role="tab" aria-selected="true">
+          <b>1</b><span><strong>اختر</strong><small>الحرف أو الكلمة والخط</small></span>
+        </button>
+        <button id="studentFlowModel" type="button" class="student-flow-step" data-student-stage="model" onclick="goStudentSection('model')" role="tab" aria-selected="false">
+          <b>2</b><span><strong>شاهد النموذج</strong><small>شغّل الإعادة واضبط السرعة</small></span>
+        </button>
+        <button id="studentFlowTraining" type="button" class="student-flow-step" data-student-stage="training" onclick="goStudentSection('training')" role="tab" aria-selected="false">
+          <b>3</b><span><strong>تدرّب</strong><small>اكتب ثم قيّم المحاولة</small></span>
+        </button>
       </div>
     </div>
   </nav>
@@ -334,6 +457,18 @@
     <!-- LEFT COLUMN: Canvas and controls (8 cols on lg) -->
     <section id="practiceSection" class="lg:col-span-8 flex flex-col gap-4">
 
+      <section id="studentSetupBar" aria-label="إعداد جلسة التدريب" class="student-setup-bar">
+        <div class="student-setup-summary">
+          <span class="student-kicker"><i class="fa-solid fa-wand-magic-sparkles"></i> إعداد الجلسة</span>
+          <strong id="studentSessionSummary">اختر المحتوى والخط المناسبين</strong>
+        </div>
+        <div class="student-setup-actions">
+          <button type="button" id="btnToggleGuideSettings" onclick="toggleStudentGuideSettings()" aria-expanded="false" aria-controls="studentManualGuidePanel">
+            <i class="fa-solid fa-ruler-horizontal"></i><span>ضبط السطور</span>
+          </button>
+          <button type="button" onclick="openStudentModelLibrary()"><i class="fa-solid fa-folder-open"></i><span>النماذج</span></button>
+        </div>
+      </section>
       <div id="studentContentCard" class="bg-white rounded-2xl p-2.5 border border-amber-200 shadow-sm flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-1" id="modeTabs">
           <button data-mode="letters" onclick="setMode('letters')" class="mode-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold border"><i class="fa-solid fa-font ml-1"></i>حروف</button>
@@ -390,7 +525,7 @@
       </div>
 
 
-      <section id="studentManualGuidePanel" class="bg-sky-50/80 rounded-2xl p-3 border border-sky-200 shadow-sm">
+      <section id="studentManualGuidePanel" data-student-settings="guides" aria-label="إعدادات سطور الكتابة" class="bg-sky-50/80 rounded-2xl p-3 border border-sky-200 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
           <div>
             <div class="text-xs font-black text-sky-950"><i class="fa-solid fa-ruler-horizontal ml-1"></i>ضبط سطور الكتابة يدويًا</div>
@@ -463,6 +598,10 @@
 
       <div id="studentWorkspaceCard" class="relative bg-white rounded-3xl border-2 border-amber-300/80 shadow-lg overflow-hidden flex flex-col">
         
+        <div class="student-workspace-heading" id="studentToolsHeading">
+          <div><span class="student-kicker">أدوات الكتابة</span><strong>اختر الفرشاة واكتب بحرية</strong></div>
+          <button type="button" class="student-help-button" onclick="toggleGuide(true)" title="إرشادات الخط"><i class="fa-solid fa-circle-question"></i></button>
+        </div>
         <!-- Canvas Toolbar -->
         <div id="canvasToolbar" class="bg-parchment-100/90 border-b border-amber-200 p-2 sm:p-3 flex flex-wrap items-center justify-between gap-2 text-stone-700">
           
@@ -632,7 +771,7 @@
             <canvas id="studentModelPreview" aria-label="معاينة النموذج بالحجم الأصلي"></canvas>
           </div>
           <div class="mt-2 flex flex-wrap items-center gap-2">
-            <span id="studentModelStatus" class="text-[10px] font-bold text-stone-600">لا يوجد نموذج بعد.</span>
+            <span id="studentModelStatus" role="status" aria-live="polite" class="text-[10px] font-bold text-stone-600">لا يوجد نموذج بعد.</span>
             <span class="text-[9px] text-violet-600 bg-violet-50 border border-violet-100 rounded-lg px-2 py-1"><i class="fa-solid fa-arrows-left-right-to-line ml-1"></i>الأبعاد مرتبطة بمنطقة التدريب</span>
             <label class="mr-auto flex items-center gap-1 text-[10px] font-bold text-violet-900"><input id="studentAutoClearAfterModel" type="checkbox" checked class="accent-violet-700"> ابدأ مساحة التدريب فارغة بعد إنشاء النموذج</label>
           </div>
@@ -707,7 +846,7 @@
           </svg>
 
           <!-- Active Interactive Drawing Canvas -->
-          <canvas id="drawingCanvas" class="absolute inset-0 w-full h-full z-20"></canvas>
+          <canvas id="drawingCanvas" tabindex="0" aria-label="منطقة التدريب على الخط. استخدم القلم أو اللمس للكتابة." class="absolute inset-0 w-full h-full z-20"></canvas>
           <canvas id="selectionOverlay" class="absolute inset-0 w-full h-full z-30 pointer-events-none" aria-hidden="true"></canvas>
           <div id="objectFloatingToolbar" class="hidden absolute z-40 items-center gap-1 p-1 rounded-xl bg-stone-900/95 text-white shadow-xl border border-white/10" style="direction:rtl">
             <span id="objectInspectorText" class="px-2 text-[9px] font-bold whitespace-nowrap"></span>
@@ -759,7 +898,7 @@
             <button type="button" onclick="assessStudentAgainstModel()" class="px-3 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm">
               <i class="fa-solid fa-chart-simple ml-1"></i> تقييم المحاولة
             </button>
-            <span id="assessmentStatus" class="text-[10px] font-bold text-stone-600">عيّن نموذجًا ثم اكتب المحاولة.</span>
+            <span id="assessmentStatus" role="status" aria-live="polite" class="text-[10px] font-bold text-stone-600">عيّن نموذجًا ثم اكتب المحاولة.</span>
             <button id="btnClearStudentAttempt" type="button" onclick="clearStudentAttempt()" class="mr-auto px-2.5 py-1.5 rounded-lg border border-rose-200 bg-white text-rose-700 text-[10px] font-bold">مسح المحاولة فقط</button>
           </div>
           <div id="assessmentResults" class="hidden mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
@@ -860,10 +999,10 @@
 
 
   <nav id="studentMobileBottomNav" aria-label="التنقل السريع">
-    <button type="button" onclick="goStudentSection('content')"><i class="fa-solid fa-book-open"></i><span>المحتوى</span></button>
-    <button type="button" onclick="goStudentSection('settings')"><i class="fa-solid fa-ruler-horizontal"></i><span>السطور</span></button>
-    <button type="button" onclick="goStudentSection('model')"><i class="fa-solid fa-person-chalkboard"></i><span>النموذج</span></button>
-    <button type="button" onclick="goStudentSection('training')"><i class="fa-solid fa-pen-nib"></i><span>التدريب</span></button>
+    <button type="button" data-student-stage="content" onclick="goStudentSection('content')"><i class="fa-solid fa-book-open"></i><span>المحتوى</span></button>
+    <button type="button" data-student-stage="model" onclick="goStudentSection('model')"><i class="fa-solid fa-person-chalkboard"></i><span>النموذج</span></button>
+    <button type="button" data-student-stage="training" onclick="goStudentSection('training')"><i class="fa-solid fa-pen-nib"></i><span>التدريب</span></button>
+    <button type="button" onclick="toggleStudentGuideSettings(true)"><i class="fa-solid fa-sliders"></i><span>الإعدادات</span></button>
   </nav>
 
   <!-- Arabic Shaping / HarfBuzz Lab — full application page -->
@@ -1421,7 +1560,7 @@
           <button id="deleteSelectedStudentModelsBtn" type="button" onclick="deleteSelectedStudentModels()" disabled class="px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold disabled:opacity-35"><i class="fa-solid fa-trash-can ml-1"></i>حذف المحدد</button>
           <button type="button" onclick="deleteAllStudentModels()" class="px-3 py-2 rounded-xl bg-white border border-rose-300 text-rose-700 text-xs font-bold"><i class="fa-solid fa-trash ml-1"></i>حذف الكل</button>
           <span id="studentModelSelectionCount" class="self-center text-[10px] font-bold text-violet-700"></span>
-          <span id="studentModelLibraryStatus" class="self-center text-[10px] text-stone-500"></span>
+          <span id="studentModelLibraryStatus" role="status" aria-live="polite" class="self-center text-[10px] text-stone-500"></span>
         </div>
         <div id="studentModelLibraryList" class="flex flex-col gap-2"></div>
       </div>
@@ -2570,6 +2709,14 @@
 
     function studentToggleModelReplay(){if(studentModelReplayActive)studentStopModelReplay(true);else studentStartModelReplay()}
 
+    function setStudentActiveStage(stage){
+      document.querySelectorAll('[data-student-stage]').forEach(el=>{
+        const active=el.dataset.studentStage===stage;
+        el.classList.toggle('is-active',active);
+        if(el.getAttribute('role')==='tab')el.setAttribute('aria-selected',String(active));
+      });
+    }
+
     function goStudentSection(section){
       const map={
         content:'studentContentCard',
@@ -2577,10 +2724,103 @@
         model:'studentModelPanel',
         training:'canvasContainer'
       };
+      if(section==='settings')toggleStudentGuideSettings(true);
       const target=document.getElementById(map[section]||section);
       if(!target)return;
-      target.scrollIntoView({behavior:'smooth',block:'start'});
+      const stage=section==='settings'?'content':section;
+      if(['content','model','training'].includes(stage))setStudentActiveStage(stage);
+      const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      target.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
       const menu=document.getElementById('studentMobileHeaderMenu');if(menu)menu.removeAttribute('open');
+    }
+
+    function studentWindowClass(width=window.innerWidth){
+      if(width<600)return'compact';
+      if(width<840)return'medium';
+      if(width<1200)return'expanded';
+      return'large';
+    }
+    function updateStudentWindowClass(){
+      const cls=studentWindowClass();
+      document.body.dataset.windowClass=cls;
+      const panel=document.getElementById('studentManualGuidePanel');
+      const btn=document.getElementById('btnToggleGuideSettings');
+      const always=cls==='expanded'||cls==='large';
+      if(panel){
+        if(always)panel.classList.add('is-open');
+        else if(!panel.dataset.userOpened)panel.classList.remove('is-open');
+      }
+      if(btn)btn.setAttribute('aria-expanded',String(always||panel?.classList.contains('is-open')));
+      return cls;
+    }
+    function toggleStudentGuideSettings(force){
+      const panel=document.getElementById('studentManualGuidePanel'),btn=document.getElementById('btnToggleGuideSettings');
+      if(!panel)return;
+      const cls=studentWindowClass(),always=cls==='expanded'||cls==='large';
+      if(always){
+        panel.classList.add('is-open');
+      }else{
+        const next=typeof force==='boolean'?force:!panel.classList.contains('is-open');
+        panel.classList.toggle('is-open',next);
+        panel.dataset.userOpened=next?'1':'';
+      }
+      const open=always||panel.classList.contains('is-open');
+      if(btn)btn.setAttribute('aria-expanded',String(open));
+      if(open&&force===true){
+        const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+        panel.scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+      }
+    }
+
+    function updateStudentSessionSummary(){
+      const summary=document.getElementById('studentSessionSummary');if(!summary)return;
+      let text='';
+      try{text=String(curItemText?.()||'').trim()}catch(_){}
+      const modeLabel=mode==='letters'?'حرف':mode==='words'?'كلمة':mode==='phrases'?'عبارة':'محتوى خاص';
+      const fontLabel=FONTS?.[fontKey]?.name||document.getElementById('fontSelect')?.selectedOptions?.[0]?.textContent||'الخط الحالي';
+      summary.textContent=text?(`${modeLabel}: «${text}» • ${fontLabel}`):(`${modeLabel} • ${fontLabel}`);
+    }
+
+    let studentResizeObserver=null;
+    let studentResizeRaf=0;
+    function initStudentAdaptiveObservers(){
+      updateStudentWindowClass();
+      const resizeTargets=['canvasContainer','studentModelContainer'].map(id=>document.getElementById(id)).filter(Boolean);
+      if('ResizeObserver'in window&&resizeTargets.length){
+        studentResizeObserver?.disconnect?.();
+        let lastCanvasW=0,lastCanvasH=0,lastModelW=0,lastModelH=0;
+        studentResizeObserver=new ResizeObserver(entries=>{
+          let canvasChanged=false,modelChanged=false;
+          for(const entry of entries){
+            const w=Math.round(entry.contentRect.width),h=Math.round(entry.contentRect.height);
+            if(entry.target.id==='canvasContainer'&&(w!==lastCanvasW||h!==lastCanvasH)){lastCanvasW=w;lastCanvasH=h;canvasChanged=true}
+            if(entry.target.id==='studentModelContainer'&&(w!==lastModelW||h!==lastModelH)){lastModelW=w;lastModelH=h;modelChanged=true}
+          }
+          cancelAnimationFrame(studentResizeRaf);
+          studentResizeRaf=requestAnimationFrame(()=>{
+            if(canvasChanged)resizeCanvasToContainer();
+            else if(modelChanged)studentSetupPreviewCanvas();
+          });
+        });
+        resizeTargets.forEach(el=>studentResizeObserver.observe(el));
+      }
+      const stageTargets=[
+        ['content',document.getElementById('studentContentCard')],
+        ['model',document.getElementById('studentModelPanel')],
+        ['training',document.getElementById('canvasContainer')]
+      ].filter(x=>x[1]);
+      if('IntersectionObserver'in window){
+        const stageObserver=new IntersectionObserver(entries=>{
+          const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
+          if(!visible)return;
+          const found=stageTargets.find(x=>x[1]===visible.target);
+          if(found)setStudentActiveStage(found[0]);
+        },{rootMargin:'-18% 0px -55% 0px',threshold:[.15,.35,.6]});
+        stageTargets.forEach(x=>stageObserver.observe(x[1]));
+      }
+      window.addEventListener('resize',()=>{updateStudentWindowClass()},{passive:true});
+      window.addEventListener('orientationchange',()=>setTimeout(()=>{updateStudentWindowClass();resizeCanvasToContainer()},120),{passive:true});
+      document.fonts?.ready?.then(()=>{try{updateLetterView();studentSetupPreviewCanvas()}catch(_){}});
     }
 
     // Initialize on page load
@@ -2596,6 +2836,8 @@
       restoreAppSettings(true);
       syncBrushSettingsUI();
       renderNamedBrushPresets();
+      updateStudentSessionSummary();
+      initStudentAdaptiveObservers();
       window.addEventListener('resize', debounceResizeCanvas);
     });
 
@@ -6492,7 +6734,7 @@
         idx=0;persistCustomTrainingItems();
       }
       if(input)input.value='';
-      mode='custom';itemIdx=idx;renderCustomTrainingItems();updateModeLayout();updateLetterView();
+      mode='custom';itemIdx=idx;renderCustomTrainingItems();updateModeLayout();updateLetterView();updateStudentSessionSummary();
     }
     function selectCustomTrainingItem(index){
       if(index<0||index>=CUSTOM_TRAINING_ITEMS.length)return;
@@ -6752,7 +6994,7 @@
       if(mode==='custom')renderCustomTrainingItems();
       else if(mode!=='letters')renderChips();
       syncGhostOverlayVisibility();updateLetterView();
-      requestAnimationFrame(()=>{resizeCanvasToContainer();updateLetterView();});
+      requestAnimationFrame(()=>{resizeCanvasToContainer();updateLetterView();updateStudentSessionSummary();});
     }
     function renderChips() {
       const box = document.getElementById('wordChips'); box.innerHTML = '';
@@ -6768,7 +7010,7 @@
     function stepItem(d) { const n = curList().length; itemIdx = (itemIdx + d + n) % n; updateLetterView(); }
     function setCategory(c) { wordCat = c; itemIdx = 0; renderChips(); updateLetterView(); }
     function toggleWordTashkeel(v) { wordTashkeel = v; renderChips(); updateLetterView(); }
-    function setFont(k) { fontKey = k; document.getElementById('fontSelect').value = k; if(mode==='custom')renderCustomTrainingItems(); else if(mode!=='letters')renderChips(); updateLetterView(); }
+    function setFont(k) { fontKey = k; document.getElementById('fontSelect').value = k; if(mode==='custom')renderCustomTrainingItems(); else if(mode!=='letters')renderChips(); updateLetterView(); updateStudentSessionSummary(); }
 
     /* --- ملء الشاشة --- */
     function toggleFullscreen() {
@@ -8580,6 +8822,6 @@
     </div>
   </div>
 
-  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.3.1",label:"Student V0.3.1",build:"2026-10-02.09",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
+  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.4.0",label:"Student V0.4.0",build:"2026-10-02.10",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
   </body>
 </html>
