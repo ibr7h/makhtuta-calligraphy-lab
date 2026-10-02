@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'makhtuta-pwa-v6-35-6-reconstruction-auto-calibration-2026-10-01-26';
+const CACHE_VERSION = 'makhtuta-pwa-v6-35-6-1-dynamics-validation-2026-10-02-01';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
 const CORE = [
