@@ -1,0 +1,20 @@
+{
+  "id": "./student-mobile.html",
+  "name": "مخطوطة — تدريب الخط",
+  "short_name": "مخطوطة",
+  "description": "نسخة الجوال من مخطوطة للتدريب على الخط العربي والنماذج المتحركة.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./student-mobile.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#F7F3E9",
+  "theme_color": "#78350F",
+  "orientation": "any",
+  "categories": ["education"],
+  "icons": [
+    {"src":"./icons/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"},
+    {"src":"./icons/icon-maskable.svg","sizes":"any","type":"image/svg+xml","purpose":"maskable"}
+  ]
+}
