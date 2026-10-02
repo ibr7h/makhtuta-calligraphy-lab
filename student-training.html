@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="student-0.2">
+<html lang="ar" dir="rtl" data-app-version="student-0.2.1">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -149,7 +149,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2.1</span>
           </p>
         </div>
       </div>
@@ -223,8 +223,11 @@
             <i class="fa-solid fa-plus ml-1"></i>إضافة للتدريب
           </button>
         </div>
-        <div class="text-[9px] text-stone-500 leading-5">
-          اكتب النص كما تريد ظهوره: بدون مسافات للحروف المتصلة مثل «بلا»، أو بمسافات للحروف المنفصلة مثل «ب ت ث». التشكيل يُحفظ كما كتبته.
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="text-[9px] text-stone-500 leading-5">
+            اكتب النص كما تريد ظهوره: بدون مسافات للحروف المتصلة مثل «بلا»، أو بمسافات للحروف المنفصلة مثل «ب ت ث». التشكيل يُحفظ كما كتبته.
+          </div>
+          <span id="studentGuideStatus" class="student-chip">ميزان السطور مرتبط بالفرشاة</span>
         </div>
         <div id="customTrainingChips" class="flex flex-wrap gap-1.5"></div>
         <div id="customTrainingEmpty" class="text-[10px] text-stone-500 border border-dashed border-violet-200 bg-white/60 rounded-xl px-3 py-2">
@@ -1754,6 +1757,57 @@
     let currentQuizLetter = null;
     let currentQuizCorrectForm = '';
 
+    // Student writing-scale metrics. Point counts follow the uploaded reference studio;
+    // actual pixel spacing is normalized to this training surface and follows the active brush size/angle.
+    const STUDENT_SCRIPT_METRICS = Object.freeze({
+      naskh:   {name:'النسخ',   ascenderPts:5,   meanPts:2,   descenderPts:3},
+      ruqaa:   {name:'الرقعة',  ascenderPts:3,   meanPts:1.5, descenderPts:2},
+      diwani:  {name:'الديواني',ascenderPts:6,   meanPts:2,   descenderPts:3.5},
+      thuluth: {name:'الثلث',   ascenderPts:7.5, meanPts:2.5, descenderPts:4},
+      farsi:   {name:'الفارسي', ascenderPts:4.5, meanPts:2,   descenderPts:3}
+    });
+    function studentScriptKey(){
+      const raw=String(activeBrushPresetKey||'naskh').replace(/^ali_/,'');
+      return STUDENT_SCRIPT_METRICS[raw]?raw:'naskh';
+    }
+    function studentScriptSpec(){return STUDENT_SCRIPT_METRICS[studentScriptKey()]||STUDENT_SCRIPT_METRICS.naskh}
+    function studentPresetReference(){
+      const key=activeBrushPresetKey||studentScriptKey();
+      const p=BRUSH_PRESETS?.[key]||BRUSH_PRESETS?.[studentScriptKey()]||null;
+      return{size:Number(p?.size)||Math.max(1,brushSize),angle:Number(p?.angle)||nibAngleDeg};
+    }
+    function studentGuideMetricsForHeight(h){
+      h=Math.max(180,Number(h)||440);
+      const spec=studentScriptSpec(),ref=studentPresetReference();
+      const base=h*.62,pad=Math.max(12,h*.035);
+      const topAvail=Math.max(30,base-pad),bottomAvail=Math.max(30,h-base-pad);
+      const canonicalPoint=Math.min(topAvail/spec.ascenderPts,bottomAvail/spec.descenderPts)*.90;
+      const sizeRatio=clamp(brushSize/Math.max(1,ref.size),.60,1.55);
+      const sinNow=Math.max(.18,Math.sin(clamp(nibAngleDeg,10,90)*Math.PI/180));
+      const sinRef=Math.max(.18,Math.sin(clamp(ref.angle,10,90)*Math.PI/180));
+      const pointUnit=canonicalPoint*sizeRatio*(sinNow/sinRef);
+      const maxPoint=Math.min(topAvail/spec.ascenderPts,bottomAvail/spec.descenderPts)*.98;
+      const p=clamp(pointUnit,Math.max(8,canonicalPoint*.52),maxPoint);
+      return{
+        ...spec,pointUnit:p,base,
+        top:base-spec.ascenderPts*p,
+        mid:base-spec.meanPts*p,
+        bottom:base+spec.descenderPts*p
+      };
+    }
+    function syncStudentModelGuideGeometry(){
+      const container=document.getElementById('studentModelContainer');
+      const svg=document.getElementById('studentModelGuide');
+      if(!container||!svg)return;
+      const w=Math.max(1,container.clientWidth||canvasCssWidth||600),h=Math.max(1,container.clientHeight||canvasCssHeight||440);
+      svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+      const g=studentGuideMetricsForHeight(h);
+      [['studentTopLine',g.top],['studentMidLine',g.mid],['studentBaseLine',g.base],['studentBottomLine',g.bottom]].forEach(([id,y])=>{
+        const line=document.getElementById(id);if(!line)return;
+        line.setAttribute('x1','0');line.setAttribute('x2',String(w));line.setAttribute('y1',String(y));line.setAttribute('y2',String(y));
+      });
+    }
+
     // ===== Student V0.1: independent model preview/replay =====
     document.body.classList.add('student-mode');
     let studentTrainingModelActions = [];
@@ -1793,6 +1847,7 @@
       studentModelPreviewCanvas.height=Math.round(previewH*dpr);
       studentModelPreviewCtx=studentModelPreviewCanvas.getContext('2d',{alpha:true});
       studentModelPreviewCtx.setTransform(dpr,0,0,dpr,0,0);
+      syncStudentModelGuideGeometry();
 
       // Rendering helpers use canvasCssWidth/Height. Because both areas have the same CSS
       // dimensions, the same normalized stroke retains its position, width and proportions.
@@ -4377,11 +4432,13 @@
     function updateBrushSize(val) {
       brushSize = clamp(parseFloat(val) || 15, 4, 48);
       document.getElementById('brushSizeVal').textContent = Number(brushSize.toFixed(1));
+      requestAnimationFrame(()=>{updateGuideSvgGeometry();updateLetterView();syncStudentModelGuideGeometry()});
     }
 
     function updateNibAngle(val) {
       nibAngleDeg = clamp(parseFloat(val) || 42, 0, 90);
       document.getElementById('nibAngleVal').textContent = `${Math.round(nibAngleDeg)}°`;
+      requestAnimationFrame(()=>{updateGuideSvgGeometry();updateLetterView();syncStudentModelGuideGeometry()});
     }
 
     function setPressureEnabled(on) {
@@ -4751,6 +4808,7 @@
       const ps=document.getElementById('pressureSensitivity'); if(ps) ps.value=Math.round(pressureSensitivity*100);
       setPressureEnabled(pressureEnabled); syncBrushSettingsUI();
       renderAliCalibrationPanel();
+      requestAnimationFrame(()=>{updateGuideSvgGeometry();updateLetterView();syncStudentModelGuideGeometry()});
     }
 
     function currentBrushPresetData() {
@@ -5927,18 +5985,13 @@
       const w = Math.max(1, box.clientWidth || 600);
       const h = Math.max(1, box.clientHeight || 400);
       svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      const g = studentGuideMetricsForHeight(h);
 
-      const ys = {
-        top: h * 0.20,
-        mid: h * 0.40,
-        base: h * 0.62,
-        bottom: h * 0.82
-      };
       const lineMap = [
-        ['svgTopLine', ys.top],
-        ['svgMidLine', ys.mid],
-        ['svgBaseLine', ys.base],
-        ['svgBottomLine', ys.bottom]
+        ['svgTopLine', g.top],
+        ['svgMidLine', g.mid],
+        ['svgBaseLine', g.base],
+        ['svgBottomLine', g.bottom]
       ];
       lineMap.forEach(([id, y]) => {
         const line = document.getElementById(id);
@@ -5949,86 +6002,57 @@
         line.setAttribute('y2', String(y));
       });
 
-      const badges = [
-        ['svgTopBadge', 246, 30, ys.top],
-        ['svgMidBadge', 260, 30, ys.mid],
-        ['svgBaseBadge', 278, 32, ys.base],
-        ['svgBottomBadge', 264, 30, ys.bottom]
+      const labels=[
+        ['svgTopBadge',246,30,g.top,`خط القمة (${g.ascenderPts} نقاط)`],
+        ['svgMidBadge',260,30,g.mid,`خط الوسط (${g.meanPts} نقطة)`],
+        ['svgBaseBadge',278,32,g.base,'خط الأساس'],
+        ['svgBottomBadge',264,30,g.bottom,`خط الهبوط (${g.descenderPts} نقاط)`]
       ];
-      badges.forEach(([id, bw, bh, y]) => {
-        const g = document.getElementById(id);
-        if (!g) return;
-        const x = Math.max(8, w - bw - 12);
-        const gy = Math.max(4, Math.min(h - bh - 4, y - (bh / 2)));
-        g.setAttribute('transform', `translate(${x} ${gy})`);
+      labels.forEach(([id,bw,bh,y,label])=>{
+        const badge=document.getElementById(id);if(!badge)return;
+        const x=Math.max(8,w-bw-12),gy=Math.max(4,Math.min(h-bh-4,y-(bh/2)));
+        badge.setAttribute('transform',`translate(${x} ${gy})`);
+        const tx=badge.querySelector('text');if(tx)tx.textContent=label;
       });
+      const st=document.getElementById('studentGuideStatus');
+      if(st)st.textContent=`${g.name} • النقطة ${g.pointUnit.toFixed(1)}px • ${Number(brushSize.toFixed(1))}px / ${Math.round(nibAngleDeg)}°`;
+      syncStudentModelGuideGeometry();
     }
-
     function fitGhost(text) {
-      const box = document.getElementById('canvasContainer');
-      const t = document.getElementById('ghostSvgText');
-      if (!box || !t) return;
-
+      const box=document.getElementById('canvasContainer'),t=document.getElementById('ghostSvgText');
+      if(!box||!t)return;
       updateGuideSvgGeometry();
-      const w = box.clientWidth || 600;
-      const h = box.clientHeight || 400;
-      const baseY = h * 0.62;
-      const sidePadding = Math.max(20, Math.min(44, w * 0.04));
+      const w=Math.max(1,box.clientWidth||600),h=Math.max(1,box.clientHeight||400),g=studentGuideMetricsForHeight(h);
+      const sidePadding=Math.max(20,Math.min(44,w*.04)),actual=String(text||'');
+      t.style.fontFamily=FONTS[fontKey].css;t.style.fontWeight='700';t.setAttribute('y',String(g.base));
 
-      t.textContent = text;
-      t.setAttribute('y', String(baseY));
-      t.style.fontFamily = FONTS[fontKey].css;
-      t.style.fontWeight = '700';
+      // Calibrate the selected font to the script's ascender line using alif as the reference.
+      t.textContent='ا';t.style.fontSize='100px';
+      let alifRise=72;
+      try{const bb=t.getBBox();alifRise=Math.max(20,g.base-bb.y)}catch(_){}
+      let size=100*Math.max(20,g.base-g.top)/Math.max(20,alifRise);
 
-      let available, size, minSize;
-      if (mode === 'letters') {
-        t.setAttribute('x', String(w / 2));
-        t.setAttribute('text-anchor', 'middle');
-        available = w * 0.72;
-        size = Math.min(h * 0.60, 260);
-        minSize = 72;
-      } else if (mode === 'words') {
-        t.setAttribute('x', String(w / 2));
-        t.setAttribute('text-anchor', 'middle');
-        available = w * 0.88;
-        size = Math.min(h * 0.42, 170);
-        minSize = 38;
-      } else {
-        // In RTL SVG text, x is the right-side starting point when direction=rtl + text-anchor=start.
-        t.setAttribute('x', String(w - sidePadding));
-        t.setAttribute('text-anchor', 'start');
-        available = Math.max(120, w - (sidePadding * 2));
-        size = Math.min(112, h * 0.29);
-        minSize = Math.max(28, Math.min(38, h * 0.09));
-      }
+      const wide=(mode==='phrases'||mode==='custom');
+      if(mode==='letters'){t.setAttribute('x',String(w/2));t.setAttribute('text-anchor','middle')}
+      else if(mode==='words'){t.setAttribute('x',String(w/2));t.setAttribute('text-anchor','middle')}
+      else{t.setAttribute('x',String(w-sidePadding));t.setAttribute('text-anchor','start')}
 
-      t.style.fontSize = size + 'px';
-      let measured = 0;
-      try { measured = t.getComputedTextLength(); } catch (_) { measured = 0; }
-      if (measured > available && measured > 0) {
-        size = Math.max(minSize, size * (available / measured));
-        t.style.fontSize = size + 'px';
-      }
+      t.textContent=actual;t.style.fontSize=size+'px';
+      const available=mode==='letters'?w*.72:mode==='words'?w*.88:Math.max(120,w-sidePadding*2);
+      let measured=0;try{measured=t.getComputedTextLength()}catch(_){}
+      if(measured>available&&measured>0){size*=available/measured;t.style.fontSize=size+'px'}
 
-      // Baseline is fixed at 62%; keep tall Arabic glyphs/diacritics inside the writing surface too.
-      // This prevents letters such as أ / ل and stacked tashkeel from being clipped at the top edge.
-      try {
-        const bb = t.getBBox();
-        const padY = 8;
-        const topNeed = Math.max(0, baseY - bb.y);
-        const bottomNeed = Math.max(0, (bb.y + bb.height) - baseY);
-        const topAvail = Math.max(1, baseY - padY);
-        const bottomAvail = Math.max(1, h - baseY - padY);
-        let vScale = 1;
-        if (topNeed > topAvail) vScale = Math.min(vScale, topAvail / topNeed);
-        if (bottomNeed > bottomAvail) vScale = Math.min(vScale, bottomAvail / bottomNeed);
-        if (vScale < 0.999) {
-          size = Math.max(minSize, size * vScale);
-          t.style.fontSize = size + 'px';
-        }
-      } catch (_) {}
+      // Never let the selected text cross the script-specific top/bottom limits.
+      try{
+        const bb=t.getBBox(),topPad=5,bottomPad=5;
+        const topNeed=Math.max(0,g.base-bb.y),bottomNeed=Math.max(0,(bb.y+bb.height)-g.base);
+        const topAvail=Math.max(1,g.base-g.top-topPad),bottomAvail=Math.max(1,g.bottom-g.base-bottomPad);
+        let shrink=1;
+        if(topNeed>topAvail)shrink=Math.min(shrink,topAvail/topNeed);
+        if(bottomNeed>bottomAvail)shrink=Math.min(shrink,bottomAvail/bottomNeed);
+        if(shrink<.999){size*=shrink;t.style.fontSize=Math.max(18,size)+'px'}
+      }catch(_){}
     }
-
     function syncGhostOverlayVisibility(show = document.getElementById('toggleGhostCheckbox')?.checked !== false) {
       const ghostGroup = document.getElementById('svgGhostGroup');
       if (ghostGroup) ghostGroup.style.display = show ? '' : 'none';
@@ -7927,6 +7951,6 @@
     </div>
   </div>
 
-  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2",label:"Student V0.2",build:"2026-10-02.02",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
+  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2.1",label:"Student V0.2.1",build:"2026-10-02.03",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
   </body>
 </html>
