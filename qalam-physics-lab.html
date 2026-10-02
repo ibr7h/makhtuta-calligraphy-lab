@@ -168,8 +168,8 @@ function ma(points,strength){
   }
   return out
 }
-function resample(points,spacing){
-  if(points.length<2||!useResample)return points.slice();
+function resample(points,spacing,force=false){
+  if(points.length<2||(!useResample&&!force))return points.slice();
   const out=[{...points[0]}];let carry=0,a={...points[0]};
   for(let i=1;i<points.length;i++){
     const b=points[i];let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy);
@@ -220,7 +220,7 @@ function renderStamp(){
 }
 function procreatePoints(w,h,g){
   const base=centerline(w,h),spacingPx=Math.max(.6,g.width*g.spacingPct/100);
-  return resample(base,spacingPx)
+  return resample(base,spacingPx,true)
 }
 function renderProcreate(){
   const {x,w,h}=dprCanvas(procreate);clearWhite(x,w,h);const g=geometry(),pts=procreatePoints(w,h,g),t0=performance.now();x.fillStyle='#201914';
@@ -264,7 +264,7 @@ function selfTests(){
   s=capsuleSupport(Math.SQRT1_2,Math.SQRT1_2,20,4,Math.PI/4);tests.push(['capsule-rotation-finite',Number.isFinite(s.x)&&Number.isFinite(s.y)]);
   const g={width:32,thickness:1.92,theta:-Math.PI/4},line=[{x:10,y:20,p:.5,t:0},{x:90,y:20,p:.5,t:10}],poly=sweptPolygon(line,g);
   tests.push(['swept-polygon-finite',poly.length===4&&poly.flat().every(Number.isFinite)]);
-  const dense=Array.from({length:101},(_,i)=>({x:i,y:40,p:.5,t:i})),save=useResample;useResample=true;const rr=resample(dense,5);useResample=save;
+  const dense=Array.from({length:101},(_,i)=>({x:i,y:40,p:.5,t:i})),save=useResample;useResample=true;const rr=resample(dense,5,true);useResample=save;
   tests.push(['uniform-resample-count',rr.length>=20&&rr.length<=22]);
   tests.push(['video-spacing-17pct',near(32*.17,5.44,.001)]);
   const oldP=$('pressure').value;$('pressure').value='0';tests.push(['pressure-neutral',near(pressureScale(.1),1,.001)&&near(pressureScale(.9),1,.001)]);$('pressure').value=oldP;
