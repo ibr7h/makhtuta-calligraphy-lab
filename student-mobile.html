@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="student-mobile-0.1">
+<html lang="ar" dir="rtl" data-app-version="student-mobile-0.2">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -543,6 +543,47 @@
   @media(prefers-reduced-motion:reduce){
     .mobile-sheet,.mobile-sheet-backdrop{transition:none!important}
   }
+
+  /* ===== Mobile V0.2 — icon-first controls ===== */
+  body.student-mobile-page .mobile-icon-btn{
+    width:42px!important;height:42px!important;min-width:42px!important;min-height:42px!important;
+    padding:0!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;
+    border-radius:12px!important
+  }
+  body.student-mobile-page .mobile-icon-btn i{margin:0!important;font-size:15px}
+  body.student-mobile-page #studentMobileBottomNav button{
+    position:relative!important;gap:0!important;font-size:0!important
+  }
+  body.student-mobile-page #studentMobileBottomNav button i{font-size:19px!important}
+  body.student-mobile-page #studentMobileBottomNav button.is-active::after{
+    content:"";position:absolute;bottom:7px;width:5px;height:5px;border-radius:50%;background:#92400e
+  }
+  body.student-mobile-page #canvasToolbar button>span{display:none!important}
+  body.student-mobile-page #canvasToolbar .brush-btn{
+    width:42px!important;min-width:42px!important;padding:0!important;justify-content:center!important
+  }
+  body.student-mobile-page #canvasToolbar .brush-btn i{font-size:15px!important;margin:0!important}
+  body.student-mobile-page #studentModelPanel .mobile-icon-btn{
+    flex:0 0 42px!important
+  }
+  body.student-mobile-page #studentModelPlayBtn i{margin:0!important}
+  body.student-mobile-page .mobile-symbol-select{
+    width:46px!important;min-width:46px!important;padding-inline:8px!important;text-align:center!important;font-size:16px!important
+  }
+  body.student-mobile-page #studentModelSpeed{
+    width:58px!important;min-width:58px!important;text-align:center!important
+  }
+  body.student-mobile-page #studentModelRepeatCount{
+    width:46px!important;min-width:46px!important
+  }
+  body.student-mobile-page .mobile-target-actions button,
+  body.student-mobile-page .mobile-sheet-head button{
+    font-size:0
+  }
+  body.student-mobile-page .mobile-target-actions button i,
+  body.student-mobile-page .mobile-sheet-head button i{
+    font-size:16px
+  }
 </style>
 
 <style id="studentModeStyles">
@@ -595,7 +636,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">تدريب الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>اختر نموذجك، شاهده، ثم تدرب عليه</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Mobile V0.1</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Mobile V0.2</span>
           </p>
         </div>
       </div>
@@ -934,9 +975,8 @@
             <button onclick="clearCanvas()" title="مسح اللوحة" class="p-2 rounded-xl bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 transition">
               <i class="fa-solid fa-trash-can"></i>
             </button>
-            <button onclick="saveCanvasAsImage()" title="حفظ لوحة الخط كصورة" class="px-2.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition flex items-center gap-1">
+            <button onclick="saveCanvasAsImage()" aria-label="حفظ لوحة الخط كصورة" title="حفظ لوحة الخط كصورة" class="mobile-icon-btn px-2.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition flex items-center justify-center">
               <i class="fa-solid fa-download"></i>
-              <span class="hidden sm:inline">حفظ</span>
             </button>
           </div>
         </div>
@@ -948,16 +988,16 @@
               <div class="text-[9px] text-stone-500">اكتب النموذج مرة واحدة، ثم حوّله إلى نموذج وشغّل الإعادة بينما تتدرب في المساحة أسفله.</div>
             </div>
             <div class="flex flex-wrap items-center gap-1.5">
-              <button type="button" onclick="studentCaptureCurrentAsModel()" class="student-chip"><i class="fa-solid fa-bullseye ml-1"></i>تحويل الكتابة إلى نموذج</button>
-              <button type="button" onclick="saveStudentTrainingModel()" class="student-chip bg-emerald-50 border-emerald-200 text-emerald-800"><i class="fa-solid fa-floppy-disk ml-1"></i>حفظ النموذج</button>
-              <button type="button" onclick="openStudentModelLibrary()" class="student-chip bg-white"><i class="fa-solid fa-folder-open ml-1"></i>النماذج المحفوظة</button>
-              <button type="button" onclick="clearStudentCurrentModel()" class="student-chip bg-rose-50 border-rose-200 text-rose-700"><i class="fa-solid fa-xmark ml-1"></i>مسح الحالي</button>
-              <button id="studentModelPlayBtn" type="button" onclick="studentToggleModelReplay()" class="student-chip"><i class="fa-solid fa-play ml-1"></i><span>تشغيل</span></button>
+              <button type="button" onclick="studentCaptureCurrentAsModel()" class="student-chip mobile-icon-btn" aria-label="تحويل الكتابة إلى نموذج" title="تحويل الكتابة إلى نموذج"><i class="fa-solid fa-bullseye"></i></button>
+              <button type="button" onclick="saveStudentTrainingModel()" class="student-chip mobile-icon-btn bg-emerald-50 border-emerald-200 text-emerald-800" aria-label="حفظ النموذج" title="حفظ النموذج"><i class="fa-solid fa-floppy-disk"></i></button>
+              <button type="button" onclick="openStudentModelLibrary()" class="student-chip mobile-icon-btn bg-white" aria-label="النماذج المحفوظة" title="النماذج المحفوظة"><i class="fa-solid fa-folder-open"></i></button>
+              <button type="button" onclick="clearStudentCurrentModel()" class="student-chip mobile-icon-btn bg-rose-50 border-rose-200 text-rose-700" aria-label="مسح النموذج الحالي" title="مسح النموذج الحالي"><i class="fa-solid fa-xmark"></i></button>
+              <button id="studentModelPlayBtn" type="button" onclick="studentToggleModelReplay()" class="student-chip mobile-icon-btn" aria-label="تشغيل النموذج" title="تشغيل النموذج"><i class="fa-solid fa-play"></i></button>
               <select id="studentModelSpeed" onchange="studentModelReplaySpeed=Number(this.value)||1" class="student-chip bg-white">
                 <option value="0.5">×0.5</option><option value="0.75">×0.75</option><option value="1" selected>×1</option><option value="1.5">×1.5</option><option value="2">×2</option>
               </select>
-              <select id="studentModelRepeatMode" onchange="studentSetModelRepeatMode(this.value)" class="student-chip bg-white">
-                <option value="count">تكرار</option><option value="infinite">∞ مستمر</option>
+              <select id="studentModelRepeatMode" onchange="studentSetModelRepeatMode(this.value)" class="student-chip bg-white mobile-symbol-select" aria-label="نمط التكرار" title="نمط التكرار">
+                <option value="count">↻</option><option value="infinite">∞</option>
               </select>
               <input id="studentModelRepeatCount" type="number" min="1" max="99" value="3" onchange="studentModelRepeatCount=Math.max(1,Math.min(99,Number(this.value)||3))" class="student-chip w-14 text-center bg-white" title="عدد مرات التكرار">
             </div>
@@ -1206,10 +1246,10 @@
 
 
   <nav id="studentMobileBottomNav" class="mobile-bottom-nav" aria-label="التنقل الرئيسي">
-    <button type="button" class="is-active" data-mobile-nav="training" onclick="mobileGoTraining()"><i class="fa-solid fa-pen-nib"></i><span>التدريب</span></button>
-    <button type="button" data-mobile-nav="model" onclick="mobileGoModel()"><i class="fa-solid fa-person-chalkboard"></i><span>النموذج</span></button>
-    <button type="button" data-mobile-nav="content" onclick="openMobileSheet('content')"><i class="fa-solid fa-book-open"></i><span>المحتوى</span></button>
-    <button type="button" data-mobile-nav="settings" onclick="openMobileSheet('settings')"><i class="fa-solid fa-sliders"></i><span>الإعدادات</span></button>
+    <button type="button" class="is-active" data-mobile-nav="training" onclick="mobileGoTraining()" aria-label="التدريب" title="التدريب"><i class="fa-solid fa-pen-nib"></i></button>
+    <button type="button" data-mobile-nav="model" onclick="mobileGoModel()" aria-label="النموذج" title="النموذج"><i class="fa-solid fa-person-chalkboard"></i></button>
+    <button type="button" data-mobile-nav="content" onclick="openMobileSheet('content')" aria-label="المحتوى" title="المحتوى"><i class="fa-solid fa-book-open"></i></button>
+    <button type="button" data-mobile-nav="settings" onclick="openMobileSheet('settings')" aria-label="الإعدادات" title="الإعدادات"><i class="fa-solid fa-sliders"></i></button>
   </nav>
 
   <div id="mobileSheetBackdrop" class="mobile-sheet-backdrop" onclick="closeMobileSheets()" aria-hidden="true"></div>
@@ -2901,8 +2941,10 @@
     function studentUpdateModelPlayButton(){
       const b=document.getElementById('studentModelPlayBtn');if(!b)return;
       const i=b.querySelector('i'),s=b.querySelector('span');
-      if(i)i.className=studentModelReplayActive?'fa-solid fa-stop ml-1':'fa-solid fa-play ml-1';
+      if(i)i.className=studentModelReplayActive?'fa-solid fa-stop':'fa-solid fa-play';
       if(s)s.textContent=studentModelReplayActive?'إيقاف':'تشغيل';
+      const label=studentModelReplayActive?'إيقاف النموذج':'تشغيل النموذج';
+      b.setAttribute('aria-label',label);b.title=label;
     }
 
     function studentStopModelReplay(restore=true){
@@ -9149,6 +9191,6 @@
     </div>
   </div>
 
-  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-mobile-0.1",label:"Student Mobile V0.1",build:"2026-10-02.01",releasedAt:"2026-10-02",entry:"./student-mobile.html"});</script>
+  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-mobile-0.2",label:"Student Mobile V0.2",build:"2026-10-02.02",releasedAt:"2026-10-02",entry:"./student-mobile.html"});</script>
   </body>
 </html>
