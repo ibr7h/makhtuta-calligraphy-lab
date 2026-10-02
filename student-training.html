@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="student-0.2.3">
+<html lang="ar" dir="rtl" data-app-version="student-0.2.4">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -149,7 +149,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">معمل الحروف وقواعد الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>تعلم رسم الحروف على خطوط التسطير والأساس العربي الأصيل</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2.3</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Student V0.2.4</span>
           </p>
         </div>
       </div>
@@ -245,22 +245,34 @@
           <button type="button" onclick="resetStudentManualGuides()" class="student-chip bg-white"><i class="fa-solid fa-rotate-left ml-1"></i>إعادة الضبط</button>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-          <label class="text-[10px] font-bold text-red-800 bg-white rounded-xl border border-red-100 px-2 py-2">
+          <label class="text-[10px] font-bold bg-white rounded-xl border px-2 py-2" style="color:#D97706;border-color:#F59E0B55">
             القمة <span id="manualTopVal" class="float-left font-mono">20%</span>
-            <input id="manualTop" type="range" min="5" max="45" step="1" value="20" oninput="setStudentManualGuide('top',this.value)" class="w-full accent-red-500 mt-1">
+            <input id="manualTop" type="range" min="5" max="45" step="1" value="20" oninput="setStudentManualGuide('top',this.value)" class="w-full mt-1" style="accent-color:#D97706">
           </label>
-          <label class="text-[10px] font-bold text-sky-800 bg-white rounded-xl border border-sky-100 px-2 py-2">
+          <label class="text-[10px] font-bold bg-white rounded-xl border px-2 py-2" style="color:#0284C7;border-color:#38BDF855">
             الوسط <span id="manualMidVal" class="float-left font-mono">40%</span>
-            <input id="manualMid" type="range" min="10" max="60" step="1" value="40" oninput="setStudentManualGuide('mid',this.value)" class="w-full accent-sky-500 mt-1">
+            <input id="manualMid" type="range" min="10" max="60" step="1" value="40" oninput="setStudentManualGuide('mid',this.value)" class="w-full mt-1" style="accent-color:#38BDF8">
           </label>
-          <label class="text-[10px] font-bold text-blue-900 bg-white rounded-xl border border-blue-100 px-2 py-2">
+          <label class="text-[10px] font-bold bg-white rounded-xl border px-2 py-2" style="color:#DC2626;border-color:#DC262655">
             الأساس <span id="manualBaseVal" class="float-left font-mono">62%</span>
-            <input id="manualBase" type="range" min="35" max="80" step="1" value="62" oninput="setStudentManualGuide('base',this.value)" class="w-full accent-blue-700 mt-1">
+            <input id="manualBase" type="range" min="35" max="80" step="1" value="62" oninput="setStudentManualGuide('base',this.value)" class="w-full mt-1" style="accent-color:#DC2626">
           </label>
-          <label class="text-[10px] font-bold text-emerald-800 bg-white rounded-xl border border-emerald-100 px-2 py-2">
+          <label class="text-[10px] font-bold bg-white rounded-xl border px-2 py-2" style="color:#059669;border-color:#05966955">
             الهبوط <span id="manualBottomVal" class="float-left font-mono">82%</span>
-            <input id="manualBottom" type="range" min="55" max="95" step="1" value="82" oninput="setStudentManualGuide('bottom',this.value)" class="w-full accent-emerald-500 mt-1">
+            <input id="manualBottom" type="range" min="55" max="95" step="1" value="82" oninput="setStudentManualGuide('bottom',this.value)" class="w-full mt-1" style="accent-color:#059669">
           </label>
+        </div>
+        <div class="mt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <label class="flex-1 bg-white border border-violet-200 rounded-xl px-3 py-2 text-[10px] font-bold text-violet-900">
+            حجم نص التدريب
+            <span id="studentReferenceSizeVal" class="float-left font-mono">100%</span>
+            <input id="studentReferenceSize" type="range" min="50" max="180" step="5" value="100"
+              oninput="setStudentReferenceSize(this.value)"
+              class="w-full mt-1" style="accent-color:#7C3AED">
+          </label>
+          <button type="button" onclick="resetStudentReferenceSize()" class="student-chip bg-white whitespace-nowrap">
+            <i class="fa-solid fa-text-height ml-1"></i>الحجم الافتراضي
+          </button>
         </div>
         <div id="studentGuideStatus" class="mt-2 text-[9px] font-bold text-sky-900">يدوي • القمة 20% • الوسط 40% • الأساس 62% • الهبوط 82%</div>
       </section>
@@ -1789,7 +1801,13 @@
     // Student V0.2.3 — manual writing-guide geometry.
     const STUDENT_MANUAL_GUIDE_STORAGE='makhtuta-student-manual-guides-v1';
     const STUDENT_MANUAL_GUIDE_DEFAULTS=Object.freeze({top:.20,mid:.40,base:.62,bottom:.82});
+    const STUDENT_REFERENCE_SIZE_STORAGE='makhtuta-student-reference-size-v1';
     let studentManualGuide={...STUDENT_MANUAL_GUIDE_DEFAULTS};
+    let studentReferenceSizeScale=1;
+    try{
+      const savedScale=Number(localStorage.getItem(STUDENT_REFERENCE_SIZE_STORAGE));
+      if(Number.isFinite(savedScale)&&savedScale>=.5&&savedScale<=1.8)studentReferenceSizeScale=savedScale;
+    }catch(_){}
     try{
       const saved=JSON.parse(localStorage.getItem(STUDENT_MANUAL_GUIDE_STORAGE)||'null');
       if(saved&&typeof saved==='object'){
@@ -1844,6 +1862,26 @@
       updateLetterView();
       syncStudentModelGuideGeometry();
     }
+    function syncStudentReferenceSizeUI(){
+      const pct=Math.round(studentReferenceSizeScale*100);
+      const input=document.getElementById('studentReferenceSize');
+      const val=document.getElementById('studentReferenceSizeVal');
+      if(input&&Number(input.value)!==pct)input.value=pct;
+      if(val)val.textContent=pct+'%';
+    }
+    function setStudentReferenceSize(value){
+      studentReferenceSizeScale=clamp((Number(value)||100)/100,.5,1.8);
+      try{localStorage.setItem(STUDENT_REFERENCE_SIZE_STORAGE,String(studentReferenceSizeScale))}catch(_){}
+      syncStudentReferenceSizeUI();
+      updateLetterView();
+    }
+    function resetStudentReferenceSize(){
+      studentReferenceSizeScale=1;
+      try{localStorage.setItem(STUDENT_REFERENCE_SIZE_STORAGE,'1')}catch(_){}
+      syncStudentReferenceSizeUI();
+      updateLetterView();
+    }
+
     function resetStudentManualGuides(){
       studentManualGuide={...STUDENT_MANUAL_GUIDE_DEFAULTS};
       normalizeStudentManualGuides();
@@ -6091,7 +6129,7 @@
         const bb=t.getBBox();
         alifRise=Math.max(1,(Number(t.getAttribute('y'))||g.base)-bb.y);
       }catch(_){}
-      let size=100*g.ascenderDist/Math.max(1,alifRise);
+      let size=(100*g.ascenderDist/Math.max(1,alifRise))*studentReferenceSizeScale;
 
       if(mode==='letters'){
         t.setAttribute('x',String(w/2));
@@ -7983,6 +8021,7 @@
       window.addEventListener('resize', () => updateLetterView());
       renderCustomTrainingItems();
       syncStudentManualGuideUI();
+      syncStudentReferenceSizeUI();
       setMode('letters');
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(() => updateLetterView()).catch(() => {});
@@ -8019,6 +8058,6 @@
     </div>
   </div>
 
-  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2.3",label:"Student V0.2.3",build:"2026-10-02.05",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
+  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-0.2.4",label:"Student V0.2.4",build:"2026-10-02.06",releasedAt:"2026-10-02",entry:"./student-training.html"});</script>
   </body>
 </html>
