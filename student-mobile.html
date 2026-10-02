@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl" data-app-version="student-mobile-0.2">
+<html lang="ar" dir="rtl" data-app-version="0.3.0">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -11,8 +11,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="مخطوطة">
   <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="./student-mobile.webmanifest">
   <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="./icons/icon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAEz0lEQVR42u3dQU4UURSFYSmZGpbAJjAyceKIGStwH8QetxtxBc4cMXGiCZtgDU4xODBg0kJrdVW9evfe709MCASJ9/59+tTrsjm6en1y/wJIwmAEIDRAaIDQAKFBaIDQAKEBQgOEBqEBQgOEBggNEBqEBggNEBogNEBoEBogNEBogNAAoUFoIAzHRjAfH6+/nB76vR/eXdya4HSOvLddW3GJTuhSAhOc0OklJjeh00pMbkKnFpnYhE4pMrELC51Z5OpilxK6kshVxS4hdGWRq4k9kFndktAWJ60lNJnNidCWZF41KweRVZA0CT2nzD9v3pd9pS1DKAyW8LfMpCZ06OH/vHl/uysxqQkdVmb1I4/UQ9VhP5XKpI4v9VBVZheKOaUeKg33f1MZcaUeKsm85veTmtCzDHPOVCZ1/1KnvttuCQFVFkI3T4Wlu7KLREI3lfnQn3d8/p3UwaUesg3t5dmn0ykykzq21OXfrPH4/PsoiUmtQzd/9P9vSj8n8ljBq0rdY0oPlYd09+3NLH2a1IRenEO79BTUD0Kv/mifM6VdIBK6i5RWPSR0iQsM1SPe/tIf262R0pK6uNC9PLpJHX+PJV5YmevEg9QSOlx33pfSOnX/+yzz0veYlF7iKE9SFxC655MNUsfca6mbk9Z49VBSEzp19UBSoaO8kKJ6xNpvyfuhVQ8JXZqlqgepkwjdQ90Ym9KkjrFnCd0BkprQqVKa1IRO16dJHVTo3o7rejjxyCx1631L6M5SWlITepWUJjWhAUJLaRBanyZ0xiveFilN6r72LqGDIKkJnSqlSU1oUhMa6gehpXTjlCY1oZtCakKnSmn1g9BSGoTuPaVVD0KD1ISW0qQmdNI+XV1qQjdIafWD0FIa/Qv94d1F6OSYmtJVpW65dwndEZJ6hhkawfiUntJR77692Svuc19b4ldlqBxYvHrsE12CEzrkRaJaQuhwKa1rJxE6+kmHC8i+9y2hg6Y0CJ0uYVUPQktpQuvRiLNnCS2lJTRA6OS1Y87f19Ly78i2XwmtAklorJ/SblbqUGinHYeJ2bvMa+5VQnfwdD9GUMncudBS+o+o+2T919el82/c4L9QSh/6nwAkcILKkTGlX559On34U0WmHvaoQzeU2yQKCV2hS2dO7V72p0OvKPfDx97CK2nlqHriET25e9qbDq1vS2gpLbV73ddgSOTOtCcXhS4mVQ4prW/3up+uLwpJ3Wcl6Xkv3Z9ykPrwSlJxH47toENL6ZpE2MNgmMg0/8FQkWnug+Ei07wHQ0amOQ+GjUzzDSX09vPmxfbzhtSNZN6ddwSOrl6f3EcQeZfN5fbx44/XX9xuuYDM+2YuoWeUeffzknp5mfd9vidC3233MODN5fZxGdJ6fpFVjkYp/dxTIqnHyTx2voRuLPbjP+7VW2I/wf2Pr6MqWgSRQwo99WmxquBjBY4qc0ihl7pAiS77FGkziBxe6LWuvFuLP7eoWUVOI/RaYmcjusjphCZ3XYnTC03wOgKXFLqi5BXkJXRC0auKS+gJ7L7y2Ork4akTFfetEHpxwZeEwIQOKTpxCQ38hTeaAaEBQgOEBggNQgOEBggNEBogNAgNEBogNEBogNAgNEBogNAAoQFCg9AAoQFCA4QGCI3k/AIONiJuwv86fAAAAABJRU5ErkJggg==">
+  <link rel="apple-touch-icon-precomposed" sizes="180x180" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAEz0lEQVR42u3dQU4UURSFYSmZGpbAJjAyceKIGStwH8QetxtxBc4cMXGiCZtgDU4xODBg0kJrdVW9evfe709MCASJ9/59+tTrsjm6en1y/wJIwmAEIDRAaIDQAKFBaIDQAKEBQgOEBqEBQgOEBggNEBqEBggNEBogNEBoEBogNEBogNAAoUFoIAzHRjAfH6+/nB76vR/eXdya4HSOvLddW3GJTuhSAhOc0OklJjeh00pMbkKnFpnYhE4pMrELC51Z5OpilxK6kshVxS4hdGWRq4k9kFndktAWJ60lNJnNidCWZF41KweRVZA0CT2nzD9v3pd9pS1DKAyW8LfMpCZ06OH/vHl/uysxqQkdVmb1I4/UQ9VhP5XKpI4v9VBVZheKOaUeKg33f1MZcaUeKsm85veTmtCzDHPOVCZ1/1KnvttuCQFVFkI3T4Wlu7KLREI3lfnQn3d8/p3UwaUesg3t5dmn0ykykzq21OXfrPH4/PsoiUmtQzd/9P9vSj8n8ljBq0rdY0oPlYd09+3NLH2a1IRenEO79BTUD0Kv/mifM6VdIBK6i5RWPSR0iQsM1SPe/tIf262R0pK6uNC9PLpJHX+PJV5YmevEg9QSOlx33pfSOnX/+yzz0veYlF7iKE9SFxC655MNUsfca6mbk9Z49VBSEzp19UBSoaO8kKJ6xNpvyfuhVQ8JXZqlqgepkwjdQ90Ym9KkjrFnCd0BkprQqVKa1IRO16dJHVTo3o7rejjxyCx1631L6M5SWlITepWUJjWhAUJLaRBanyZ0xiveFilN6r72LqGDIKkJnSqlSU1oUhMa6gehpXTjlCY1oZtCakKnSmn1g9BSGoTuPaVVD0KD1ISW0qQmdNI+XV1qQjdIafWD0FIa/Qv94d1F6OSYmtJVpW65dwndEZJ6hhkawfiUntJR77692Svuc19b4ldlqBxYvHrsE12CEzrkRaJaQuhwKa1rJxE6+kmHC8i+9y2hg6Y0CJ0uYVUPQktpQuvRiLNnCS2lJTRA6OS1Y87f19Ly78i2XwmtAklorJ/SblbqUGinHYeJ2bvMa+5VQnfwdD9GUMncudBS+o+o+2T919el82/c4L9QSh/6nwAkcILKkTGlX559On34U0WmHvaoQzeU2yQKCV2hS2dO7V72p0OvKPfDx97CK2nlqHriET25e9qbDq1vS2gpLbV73ddgSOTOtCcXhS4mVQ4prW/3up+uLwpJ3Wcl6Xkv3Z9ykPrwSlJxH47toENL6ZpE2MNgmMg0/8FQkWnug+Ei07wHQ0amOQ+GjUzzDSX09vPmxfbzhtSNZN6ddwSOrl6f3EcQeZfN5fbx44/XX9xuuYDM+2YuoWeUeffzknp5mfd9vidC3233MODN5fZxGdJ6fpFVjkYp/dxTIqnHyTx2voRuLPbjP+7VW2I/wf2Pr6MqWgSRQwo99WmxquBjBY4qc0ihl7pAiS77FGkziBxe6LWuvFuLP7eoWUVOI/RaYmcjusjphCZ3XYnTC03wOgKXFLqi5BXkJXRC0auKS+gJ7L7y2Ork4akTFfetEHpxwZeEwIQOKTpxCQ38hTeaAaEBQgOEBggNQgOEBggNEBogNAgNEBogNEBogNAgNEBogNAAoQFCg9AAoQFCA4QGCI3k/AIONiJuwv86fAAAAABJRU5ErkJggg==">
   
   <!-- Google Fonts: Cairo, Amiri, Reem Kufi -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -593,6 +595,19 @@
   body.student-mobile-page #modeTabs{gap:7px!important}
   body.student-mobile-page #modeTabs .mode-btn{flex:0 0 44px!important}
   body.student-mobile-page #studentAssessmentPanel>div:first-child{gap:8px!important}
+
+  body.student-mobile-page #pwaInstallDock{
+    left:12px!important;bottom:calc(var(--mobile-nav) + env(safe-area-inset-bottom,0px) + 18px)!important;z-index:85!important
+  }
+  body.student-mobile-page #pwaInstallBtn{
+    width:44px!important;height:44px!important;padding:0!important;border-radius:14px!important;font-size:0!important
+  }
+  body.student-mobile-page #pwaInstallBtn i{font-size:16px!important;margin:0!important}
+  body.student-mobile-page #pwaUpdateBar{
+    bottom:calc(var(--mobile-nav) + env(safe-area-inset-bottom,0px) + 18px)!important;
+    right:10px!important;left:10px!important;z-index:110!important
+  }
+  body.student-mobile-page .svg-guide-badge{pointer-events:none}
 </style>
 
 <style id="studentModeStyles">
@@ -645,7 +660,7 @@
           <h1 class="text-xl sm:text-2xl font-black text-amber-950 font-kufi tracking-tight">مَخْطوطَة <span class="text-amber-700 text-xs sm:text-sm font-sans font-bold px-2 py-0.5 bg-amber-100 rounded-full border border-amber-300">تدريب الخط</span></h1>
           <p class="text-xs text-stone-600 flex flex-wrap items-center gap-2">
             <span>اختر نموذجك، شاهده، ثم تدرب عليه</span>
-            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Mobile V0.2</span>
+            <span id="appVersionBadge" class="inline-flex items-center px-2 py-0.5 rounded-full bg-stone-100 border border-stone-300 text-[10px] font-black text-stone-600" title="إصدار التطبيق">Mobile V0.3</span>
           </p>
         </div>
       </div>
@@ -1070,22 +1085,22 @@
               <line id="svgBaseLine" x1="0" x2="100%" y1="0" y2="0" stroke="#DC2626" stroke-width="3" vector-effect="non-scaling-stroke"/>
               <line id="svgBottomLine" x1="0" x2="100%" y1="0" y2="0" stroke="#059669" stroke-opacity="0.8" stroke-width="2" stroke-dasharray="8 6" vector-effect="non-scaling-stroke"/>
 
-              <g id="svgGuideLabelsGroup" font-family="Cairo, sans-serif" font-size="12" font-weight="700">
+              <g id="svgGuideLabelsGroup" font-family="Cairo, sans-serif" font-size="10" font-weight="800">
                 <g id="svgTopBadge" class="svg-guide-badge">
-                  <rect width="246" height="30" rx="8" fill="#F59E0B" stroke="#D97706"/>
-                  <text x="234" y="20" direction="rtl" text-anchor="start" fill="#fff" style="unicode-bidi:plaintext">خط القمة (الألف واللام والكاف)</text>
+                  <rect width="72" height="24" rx="12" fill="#F59E0B" fill-opacity=".92" stroke="#D97706"/>
+                  <text x="36" y="16" direction="rtl" text-anchor="middle" fill="#fff" style="unicode-bidi:plaintext">القمة</text>
                 </g>
                 <g id="svgMidBadge" class="svg-guide-badge">
-                  <rect width="260" height="30" rx="8" fill="#0284C7" stroke="#0369A1"/>
-                  <text x="248" y="20" direction="rtl" text-anchor="start" fill="#fff" style="unicode-bidi:plaintext">خط الوسط (رؤوس الحروف والحركات)</text>
+                  <rect width="72" height="24" rx="12" fill="#0284C7" fill-opacity=".92" stroke="#0369A1"/>
+                  <text x="36" y="16" direction="rtl" text-anchor="middle" fill="#fff" style="unicode-bidi:plaintext">الوسط</text>
                 </g>
                 <g id="svgBaseBadge" class="svg-guide-badge">
-                  <rect width="278" height="32" rx="8" fill="#DC2626" stroke="#B91C1C" stroke-width="2"/>
-                  <text x="266" y="21" direction="rtl" text-anchor="start" fill="#fff" font-size="13" font-weight="900" style="unicode-bidi:plaintext">خط الأساس (سطر الارتكاز الرئيسي)</text>
+                  <rect width="78" height="24" rx="12" fill="#DC2626" fill-opacity=".92" stroke="#B91C1C"/>
+                  <text x="39" y="16" direction="rtl" text-anchor="middle" fill="#fff" font-weight="900" style="unicode-bidi:plaintext">الأساس</text>
                 </g>
                 <g id="svgBottomBadge" class="svg-guide-badge">
-                  <rect width="264" height="30" rx="8" fill="#047857" stroke="#065F46"/>
-                  <text x="252" y="20" direction="rtl" text-anchor="start" fill="#fff" style="unicode-bidi:plaintext">خط الهبوط (كؤوس النون والراء والجيم)</text>
+                  <rect width="76" height="24" rx="12" fill="#047857" fill-opacity=".92" stroke="#065F46"/>
+                  <text x="38" y="16" direction="rtl" text-anchor="middle" fill="#fff" style="unicode-bidi:plaintext">الهبوط</text>
                 </g>
               </g>
             </g>
@@ -3206,6 +3221,12 @@
         }
       }
       document.getElementById('studentSetupBar')?.remove();
+      if(!localStorage.getItem(APP_SETTINGS_KEY)){
+        applyBrushPreset('ali_naskh');
+        const aliSel=document.getElementById('studentAliBrushSelect');if(aliSel)aliSel.value='ali_naskh';
+      }else if(activeBrushPresetKey){
+        const aliSel=document.getElementById('studentAliBrushSelect');if(aliSel&&BRUSH_PRESETS?.[activeBrushPresetKey])aliSel.value=activeBrushPresetKey;
+      }
       updateMobileTargetSummary();
       setMobileNavActive('training');
       document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMobileSheets()});
@@ -6314,7 +6335,7 @@
     }
 
     const NAMED_BRUSH_PRESETS_KEY = 'makhtuta.namedBrushPresets.v1';
-    const APP_SETTINGS_KEY = 'makhtuta.appSettings.v1';
+    const APP_SETTINGS_KEY = 'makhtuta.studentMobile.appSettings.v1';
 
     function applySavedBrushSettings(p) {
       if (!p || typeof p !== 'object') return;
@@ -6562,7 +6583,10 @@
       setPressureEnabled(pressureEnabled); syncBrushSettingsUI();
     }
 
-    function resetBrushSettings() { applyBrushPreset('naskh'); }
+    function resetBrushSettings() {
+      applyBrushPreset('ali_naskh');
+      const sel=document.getElementById('studentAliBrushSelect');if(sel)sel.value='ali_naskh';
+    }
 
     const REPLAY_DB_NAME = 'makhtuta-replays';
     const REPLAY_DB_VERSION = 1;
@@ -7255,14 +7279,14 @@
       });
 
       const labels=[
-        ['svgTopBadge',246,30,g.top,'خط القمة'],
-        ['svgMidBadge',260,30,g.mid,'خط الوسط'],
-        ['svgBaseBadge',278,32,g.base,'خط الأساس'],
-        ['svgBottomBadge',264,30,g.bottom,'خط الهبوط']
+        ['svgTopBadge',72,24,g.top,'القمة'],
+        ['svgMidBadge',72,24,g.mid,'الوسط'],
+        ['svgBaseBadge',78,24,g.base,'الأساس'],
+        ['svgBottomBadge',76,24,g.bottom,'الهبوط']
       ];
       labels.forEach(([id,bw,bh,y,label])=>{
         const badge=document.getElementById(id);if(!badge)return;
-        const x=Math.max(8,w-bw-12),gy=Math.max(4,Math.min(h-bh-4,y-(bh/2)));
+        const x=Math.max(6,w-bw-6),gy=Math.max(4,Math.min(h-bh-4,y-(bh/2)));
         badge.setAttribute('transform',`translate(${x} ${gy})`);
         const tx=badge.querySelector('text');if(tx)tx.textContent=label;
       });
@@ -9218,6 +9242,7 @@
     </div>
   </div>
 
-  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"student-mobile-0.2",label:"Student Mobile V0.2",build:"2026-10-02.02",releasedAt:"2026-10-02",entry:"./student-mobile.html"});</script>
+  <script>globalThis.MAKHTUTA_VERSION=Object.freeze({version:"0.3.0",label:"Student Mobile V0.3",build:"2026-10-02.03",releasedAt:"2026-10-02",entry:"./student-mobile.html"});</script>
+  <script src="./student-mobile-updater.js?v=0.3.0" defer></script>
   </body>
 </html>
