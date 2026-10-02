@@ -34,7 +34,7 @@ footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
       <h1>مخطوطة — Qalam Physics Lab</h1>
       <div style="font-size:11px;color:#746357;margin-top:3px">اختبار نموذج القصبة الرفيعة المستنتج من طريقة Procreate مقابل Stamping الحالي وSwept Qalam</div>
     </div>
-    <span class="badge">P0.2 — Procreate Qalam Model</span>
+    <span class="badge">P0.2.1 — Video-Grounded Qalam Model</span>
   </div>
 </header>
 
@@ -65,13 +65,13 @@ footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
       <div class="row">
         <span class="fact">من الفيديو: Spacing 17%</span>
         <span class="fact">Count 2</span>
-        <span class="fact">Pressure → Size 0%</span>
+        <span class="fact">Pressure → Size 0%</span><span class="fact">Shape angle 30°</span>
       </div>
     </div>
     <div class="grid controls" style="margin-top:10px">
       <label>Nib Width <span class="v" id="widthV">32px</span><input id="width" type="range" min="8" max="80" step=".5" value="32"></label>
-      <label>Nib Thickness <span class="v" id="thicknessV">6%</span><input id="thickness" type="range" min="2" max="30" step=".5" value="6"></label>
-      <label>Nib Angle <span class="v" id="angleV">45°</span><input id="angle" type="range" min="0" max="90" step="1" value="45"></label>
+      <label>Nib Thickness <span class="v" id="thicknessV">4%</span><input id="thickness" type="range" min="2" max="30" step=".5" value="4"></label>
+      <label>Nib Angle <span class="v" id="angleV">30°</span><input id="angle" type="range" min="0" max="90" step="1" value="30"></label>
       <label>Procreate Spacing <span class="v" id="pSpacingV">17%</span><input id="pSpacing" type="range" min="1" max="40" step="1" value="17"></label>
       <label>Count <span class="v" id="countV">2</span><input id="count" type="range" min="1" max="5" step="1" value="2"></label>
       <label>Pressure→Size <span class="v" id="pressureV">0%</span><input id="pressure" type="range" min="0" max="100" step="1" value="0"></label>
@@ -84,7 +84,7 @@ footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
       <button id="runTestsBtn">تشغيل Self-tests</button>
       <span id="testStatus" class="status">لم تُشغّل الاختبارات بعد.</span>
     </div>
-    <p class="hint">ملاحظة منهجية: زاوية الـShape في الفيديو تُضبط بصريًا؛ لذلك لا نفرض قيمة رقمية من الفيديو. القيمة 45° هنا مجرد نقطة بدء قابلة للتغيير.</p>
+    <p class="hint">ملاحظة منهجية: زاوية الـShape في الفيديو تُضبط بصريًا؛ لذلك لا نفرض قيمة رقمية من الفيديو. القيمة الافتراضية 30° مأخوذة من شاشة Shape في الفيديو؛ يمكن تغييرها للاختبار.</p>
   </section>
 
   <section class="grid engines">
@@ -94,9 +94,9 @@ footer{font-size:10px;color:#7c6b5f;padding:6px 0 20px}
       <p class="hint">Ellipse بنفس Width وThickness. هذا هو خط الأساس الذي يقارب منطق رأس القصبة الحالي لدينا.</p>
     </article>
     <article class="card">
-      <div class="engine-title"><span>B — Procreate-style Thin Nib Stamp</span><span class="metric" id="proMetric">—</span></div>
+      <div class="engine-title"><span>B — Procreate Stamp Approximation</span><span class="metric" id="proMetric">—</span></div>
       <canvas id="procreate"></canvas>
-      <p class="hint">Capsule/line shape رفيعة، ثابتة الزاوية، تُطبع بمسافة نسبية من عرض القصبة. Count يُطبق دون Randomize.</p>
+      <p class="hint">محاكاة Stamp مرجعية مبنية على فيديو Procreate: Shape رفيعة، 30°، Count 2، Randomized/Azimuth مغلقان. معادلة Spacing الداخلية في Procreate غير موثقة، لذلك هذه مقارنة تقريبية لا نسخة مطابقة.</p>
     </article>
     <article class="card">
       <div class="engine-title"><span>C — Continuous Swept Qalam</span><span class="metric" id="sweptMetric">—</span></div>
@@ -246,14 +246,33 @@ function sweptPolygon(pts,g){
 function drawPolygon(ctx,poly,fill='#201914'){
   if(poly.length<3)return;ctx.fillStyle=fill;ctx.beginPath();ctx.moveTo(poly[0][0],poly[0][1]);for(let i=1;i<poly.length;i++)ctx.lineTo(poly[i][0],poly[i][1]);ctx.closePath();ctx.fill()
 }
+function drawSweptUnion(ctx,pts,g,fill='#201914'){
+  if(pts.length<2)return 0;
+  ctx.save();ctx.fillStyle=fill;ctx.strokeStyle=fill;
+  let pieces=0;
+  for(let i=0;i<pts.length-1;i++){
+    const a=pts[i],b=pts[i+1],sa=pressureScale(a.p),sb=pressureScale(b.p);
+    const ga={...g,width:g.width*sa,thickness:g.thickness*sa};
+    const gb={...g,width:g.width*sb,thickness:g.thickness*sb};
+    let tx=b.x-a.x,ty=b.y-a.y,L=Math.hypot(tx,ty);if(L<1e-6)continue;tx/=L;ty/=L;
+    const nx=-ty,ny=tx,ha=capsuleSupport(nx,ny,ga.width,ga.thickness,g.theta),hb=capsuleSupport(nx,ny,gb.width,gb.thickness,g.theta);
+    ctx.beginPath();
+    ctx.moveTo(a.x+ha.x,a.y+ha.y);ctx.lineTo(b.x+hb.x,b.y+hb.y);
+    ctx.lineTo(b.x-hb.x,b.y-hb.y);ctx.lineTo(a.x-ha.x,a.y-ha.y);ctx.closePath();ctx.fill();
+    drawCapsuleDab(ctx,a,{...g,width:ga.width,thickness:ga.thickness});
+    if(i===pts.length-2)drawCapsuleDab(ctx,b,{...g,width:gb.width,thickness:gb.thickness});
+    pieces++;
+  }
+  ctx.restore();return pieces
+}
 function renderSwept(){
-  const {x,w,h}=dprCanvas(swept);clearWhite(x,w,h);const g=geometry(),pts=centerline(w,h),t0=performance.now(),poly=sweptPolygon(pts,g);
-  drawPolygon(x,poly);$('sweptMetric').textContent=poly.length+' envelope pts • '+(performance.now()-t0).toFixed(2)+'ms'
+  const {x,w,h}=dprCanvas(swept);clearWhite(x,w,h);const g=geometry(),pts=centerline(w,h),t0=performance.now();
+  const pieces=drawSweptUnion(x,pts,g);$('sweptMetric').textContent=pieces+' swept segments • '+(performance.now()-t0).toFixed(2)+'ms'
 }
 function renderOverlay(){
   const {x,w,h}=dprCanvas(overlay);clearWhite(x,w,h);const g=geometry(),ppts=procreatePoints(w,h,g),spts=centerline(w,h);
   x.globalAlpha=.50;x.fillStyle='#dc2626';for(const p of ppts)for(let k=0;k<g.count;k++)drawCapsuleDab(x,p,g);
-  const poly=sweptPolygon(spts,g);x.globalAlpha=.50;drawPolygon(x,poly,'#059669');x.globalAlpha=1
+  x.globalAlpha=.50;drawSweptUnion(x,spts,g,'#059669');x.globalAlpha=1
 }
 function renderAll(){renderCapture();renderStamp();renderProcreate();renderSwept();renderOverlay()}
 
@@ -267,6 +286,7 @@ function selfTests(){
   const dense=Array.from({length:101},(_,i)=>({x:i,y:40,p:.5,t:i})),save=useResample;useResample=true;const rr=resample(dense,5,true);useResample=save;
   tests.push(['uniform-resample-count',rr.length>=20&&rr.length<=22]);
   tests.push(['video-spacing-17pct',near(32*.17,5.44,.001)]);
+  tests.push(['video-angle-30deg',Number($('angle').min)===0&&Number($('angle').max)===90]);
   const oldP=$('pressure').value;$('pressure').value='0';tests.push(['pressure-neutral',near(pressureScale(.1),1,.001)&&near(pressureScale(.9),1,.001)]);$('pressure').value=oldP;
   const sm=ema([{x:0,y:0,p:.5},{x:10,y:10,p:.5},{x:20,y:0,p:.5}],.8);tests.push(['smoothing-reduces-mid-excursion',sm[1].y<10]);
   const ok=tests.every(t=>t[1]);return{ok,tests}
@@ -281,7 +301,8 @@ function syncLabels(){
   $('pressureV').textContent=$('pressure').value+'%';$('smoothV').textContent=$('smooth').value+'%'
 }
 function setVideoBaseline(){
-  $('pSpacing').value=17;$('count').value=2;$('pressure').value=0;$('smooth').value=0;movingAverage=0;useResample=true;syncLabels();renderAll()
+  $('pSpacing').value=17;$('count').value=2;$('pressure').value=0;$('smooth').value=0;$('angle').value=30;$('thickness').value=4;
+  movingAverage=0;useResample=true;syncLabels();renderAll()
 }
 capture.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'&&e.button!==0)return;e.preventDefault();drawing=true;activePointer=e.pointerId;raw=[normPoint(e)];capture.setPointerCapture?.(e.pointerId);renderAll()},{passive:false});
 capture.addEventListener('pointermove',e=>{if(!drawing||e.pointerId!==activePointer)return;e.preventDefault();const events=e.getCoalescedEvents?.()||[];(events.length?events:[e]).forEach(ev=>raw.push(normPoint(ev)));renderAll()},{passive:false});
