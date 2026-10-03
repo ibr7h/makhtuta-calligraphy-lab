@@ -1,4 +1,4 @@
-const MOBILE_CACHE_VERSION='makhtuta-student-mobile-v0-3-1-2026-10-02-04';
+const MOBILE_CACHE_VERSION='makhtuta-student-mobile-v0-3-2-2026-10-03-01';
 const MOBILE_RUNTIME_CACHE=MOBILE_CACHE_VERSION+'-runtime';
 const MOBILE_CORE=[
   './student-mobile.html',
