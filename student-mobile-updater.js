@@ -11,6 +11,7 @@
   const bar=$('pwaUpdateBar'),text=$('pwaUpdateText'),button=$('pwaUpdateBtn');
   const overlay=$('pwaUpdateOverlay'),detail=$('pwaUpdateOverlayDetail'),progress=$('pwaUpdateProgress'),progressText=$('pwaUpdateProgressText');
   const status=$('pwaUpdateSettingsStatus'),versionEl=$('pwaCurrentVersion');
+  const mobileStatus=$('mobilePwaStatus'),mobileVersionEl=$('mobilePwaVersion');
   const installDock=$('pwaInstallDock'),installBtn=$('pwaInstallBtn');
 
   const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
@@ -28,7 +29,13 @@
       label:source.match(/label:\s*["']([^"']+)["']/)?.[1]||''
     };
   }
-  function setStatus(message,ok=true){if(status){status.textContent=message;status.style.color=ok?'#166534':'#b91c1c'}}
+  function setStatus(message,ok=true){
+    for(const el of [status,mobileStatus]){
+      if(!el)continue;
+      el.textContent=message;
+      el.style.color=ok?'#166534':'#b91c1c';
+    }
+  }
   function showUpdate(worker,meta={}){
     waitingWorker=worker||waitingWorker;
     if(text)text.textContent=meta.label?('يتوفر '+meta.label):'يتوفر تحديث جديد لنسخة الجوال.';
@@ -117,6 +124,7 @@
 
   async function init(){
     if(versionEl)versionEl.textContent=CURRENT_VERSION;
+    if(mobileVersionEl)mobileVersionEl.textContent=CURRENT_VERSION;
     if(installDock&&!isStandalone()&&isIOS)installDock.style.display='block';
     if(!('serviceWorker'in navigator))return;
     try{
